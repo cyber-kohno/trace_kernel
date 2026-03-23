@@ -1,0 +1,479 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Trace Kernel - 環境構築不要のTypeScript実行基盤">
+	<main>
+		<!-- Hero Section -->
+		<section class="hero">
+			<div class="container hero-content">
+				<div class="hero-text">
+					<h1 class="catchphrase">
+						環境構築という壁をなくした、<br/>
+						<span class="text-accent">TypeScript実行基盤</span>
+					</h1>
+					<p class="sub-copy">
+						プロジェクト作成も、<code>npm install</code> も不要。<br/>
+						思いついた処理を、今すぐ型安全に実行できるエンジニアのための完全なsandbox。
+					</p>
+					<div class="hero-actions">
+						<a href="#" class="btn btn-primary">Download Trace Kernel (Free)</a>
+						<span class="os-note">Windows対応版</span>
+					</div>
+				</div>
+				<div class="hero-visual">
+					<video src="/demo.mp4" autoplay loop muted playsinline class="demo-video"></video>
+				</div>
+			</div>
+		</section>
+
+		<!-- Why Trace Kernel? -->
+		<section class="section">
+			<div class="container reverse-layout">
+                <div class="section-image">
+                    <img src="/images/workspace-mgmt.jpg" alt="Trace Kernel ワークスペースとコンテキスト管理" class="feature-img" />
+                </div>
+				<div class="section-text">
+					<h2 class="section-title">「ちょっとした処理を書く」までのハードルが高すぎる。</h2>
+					<p>
+						ログファイルを一部抽出したい。数百のCSVデータをサクッとSQLに変換したい。<br/>
+						ほんの数行のスクリプトで解決する問題なのに、わざわざ作業用のディレクトリを作り、TypeScriptの環境をセットアップし、ファイルを読み込むためのボイラープレートを書く...。
+					</p>
+					<p class="highlight-text">
+						Trace Kernelなら、<strong>アプリを開くだけで即座にコードを書き始められます。</strong><br/>
+						「問題を解くこと」だけに集中できる環境を提供します。
+					</p>
+				</div>
+			</div>
+		</section>
+
+		<!-- Workspace & Context -->
+		<section class="section bg-alt">
+			<div class="container">
+				<div class="text-center">
+					<h2 class="section-title">ファイル読み取りのコードはもう書かなくていい</h2>
+					<p class="section-desc">
+						Trace Kernelでは、設定やリソースなどの前提情報（<strong>コンテキスト</strong>）と、処理本体（<strong>ワーク</strong>）を一つの<strong>ワークスペース</strong>内で集中管理します。<br/>
+                        GUI上で定義したコンテキストは、Monacoエディタに自動的に注入され、強力な型推論・補完とともに即座に呼び出せます。
+					</p>
+				</div>
+				
+				<div class="cards-grid">
+					<div class="card">
+						<div class="card-icon">🏷️</div>
+						<h3>env（環境変数）</h3>
+						<p class="card-subtitle">パスや設定値の定数化</p>
+						<p>ファイルの出力先ディレクトリなどをGUI上で変数（例：<code>DEST_DIR</code>）として定義します。プログラムに直書きしないためエスケープミスを防ぎ、環境ごとのパス変更もGUIからワンタッチで行えます。<br/><span class="code-ref">呼び出し例：$env.DEST_DIR</span></p>
+					</div>
+					<div class="card">
+						<div class="card-icon">📄</div>
+						<h3>resource（静的リソース）</h3>
+						<p class="card-subtitle">テキストやCSVを直接オブジェクト化</p>
+						<p>GUIのテキストエリアにCSVやTSVを貼り付け、「CSV to JSON」パースを指定するだけ。実行時には自動でJSONオブジェクトの配列としてパースされるため、面倒な文字列分割を書くことなく、即座にループ処理へ移行できます。<br/><span class="code-ref">呼び出し例：$resource.userData</span></p>
+					</div>
+					<div class="card">
+						<div class="card-icon">📂</div>
+						<h3>dataset（動的データセット）</h3>
+						<p class="card-subtitle">ローカルPC内の大量ファイルを安全にバインド</p>
+						<p>指定したディレクトリ配下から、複雑なフィルタ条件（例：「.gitフォルダを除外し、*.javaのみ抽出」）に合致するファイルだけをGUIで直感的に抽出。数千のファイル群でも遅延ロードで安全に走査・解析が可能です。<br/><span class="code-ref">呼び出し例：$dataset.workspace</span></p>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Trace Kernel APIs -->
+		<section class="section">
+			<div class="container layout-split">
+				<div class="section-text">
+					<h2 class="section-title">ターミナル不要の直感的なインターフェース</h2>
+					<p class="mb-6">
+						ただのTS実行環境ではありません。GUIアプリならではの利便性を高める独自API群（<code>$</code>で始まる関数）が最初から組み込まれています。
+					</p>
+					<ul class="feature-list">
+						<li>
+							<strong><code>$print</code> / <code>$println</code></strong>
+							<p>ターミナルを開くことなく、アプリ内の出力結果パネルに直接文字列を表示します。</p>
+						</li>
+						<li>
+							<strong>プログレスバー表示 (<code>$state</code>)</strong>
+							<p>「いつ終わるかわからないループ処理」も、数行追加するだけでGUI上にリアルタイムなプログレスバーやモニター（解析中のファイル名表示など）を簡単に表示できます。</p>
+						</li>
+						<li>
+							<strong>テーブル出力 (<code>$channel</code>)</strong>
+							<p>単なるテキストだけでなく、出力結果をチャンネルに分けて、整った表（テーブル）形式のストリームとして表示・整理することが可能です。</p>
+						</li>
+					</ul>
+				</div>
+				<div class="section-image">
+					<img src="/images/program-run.jpg" alt="ターミナル不要の出力パネルと補完" class="feature-img" />
+				</div>
+			</div>
+		</section>
+
+		<!-- Use Cases -->
+		<section class="section bg-alt use-case-section">
+			<div class="container">
+				<h2 class="section-title text-center mb-10">Use Cases</h2>
+				
+				<div class="code-showcase-grid">
+					<!-- Case 1 -->
+					<div class="use-case-box">
+						<div class="use-case-header">
+							<h3>TSVから一括でSQLやコマンドを生成（Simple）</h3>
+							<p>TSVを直接バインド。事前準備なしでループを書き、必要なUPDATEクエリを一気に出力パネルへ生成できます。</p>
+						</div>
+						<div class="code-block-wrapper">
+							<pre><code><span class="comment">// resourceに 'users' としてTSVをバインドした場合</span>
+<span class="keyword">for</span>(<span class="keyword">const</span> row <span class="keyword">of</span> <span class="variable">$resource</span>.users) &#123;
+  <span class="comment">// 自動パースされ、プロパティ補完が効く</span>
+  <span class="function">$println</span>(<span class="string">`UPDATE user_table SET status = 1 WHERE uuid = '<span class="keyword">&#36;&#123;</span>row.uuid<span class="keyword">&#125;</span>';`</span>);
+&#125;</code></pre>
+						</div>
+					</div>
+
+					<!-- Case 2 -->
+					<div class="use-case-box">
+						<div class="use-case-header">
+							<h3>大規模プロジェクトの不参照プロパティ特定（Complex）</h3>
+							<p>複数データセットを走査。ワークを2工程に分け、中間データを保持させながら処理することで、複雑なリファクタリング調査もアプリ内で完結。</p>
+						</div>
+						<div class="code-block-wrapper">
+							<pre><code><span class="comment">// Work 1: propertiesファイルから全行を出力し中間データとして保存後...</span>
+<span class="comment">// Work 2: javaファイルを走査し、不参照キーを絞り込む</span>
+<span class="keyword">const</span> dict = <span class="variable">$resource</span>.messages; 
+<span class="keyword">for</span>(<span class="keyword">const</span> file <span class="keyword">of</span> <span class="variable">$dataset</span>.javaFiles) &#123;
+   <span class="keyword">const</span> content = <span class="keyword">await</span> file.<span class="function">content</span>();
+   <span class="comment">// ソースコードとの照合・複雑な集計処理...</span>
+&#125;</code></pre>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- No Clutter & CTA -->
+		<section class="section cta-section">
+			<div class="container text-center max-w-3xl">
+				<div class="icon-clean mb-6">✨</div>
+				<h2 class="section-title">ストレージを散らかさない、完全なサンドボックス</h2>
+				<p class="mb-10 text-lg">
+					<code>package.json</code> やコンパイル後の <code>.js</code> ファイルなどが、あなたのローカルディレクトリに出力されて散らかることはありません。すべてのコードと状態は、一つのワークスペースファイル（<code>.trk</code>）内にクリーンに保たれます。
+				</p>
+				
+				<div class="cta-box">
+					<h3>準備は不要。アプリを開いて、書き始めるだけ。</h3>
+					<div class="hero-actions justify-center mt-6">
+						<a href="#" class="btn btn-primary btn-large">Download Trace Kernel (Free)</a>
+						<span class="os-note block mt-3">Windows向け</span>
+					</div>
+				</div>
+			</div>
+		</section>
+	</main>
+</Layout>
+
+<style>
+	/* Utilities */
+	.container {
+		width: 100%;
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 0 24px;
+	}
+	.text-center { text-align: center; }
+	.text-accent { color: var(--accent); }
+	.mb-6 { margin-bottom: 1.5rem; }
+	.mb-10 { margin-bottom: 2.5rem; }
+	.mt-6 { margin-top: 1.5rem; }
+	.mt-3 { margin-top: 0.75rem; }
+	.block { display: block; }
+	.max-w-3xl { max-width: 800px; margin-left: auto; margin-right: auto; }
+	
+	.section {
+		padding: 6rem 0;
+	}
+	.bg-alt {
+		background-color: var(--bg-surface);
+		border-top: 1px solid rgba(255,255,255,0.05);
+		border-bottom: 1px solid rgba(255,255,255,0.05);
+	}
+	.section-title {
+		font-size: 2.5rem;
+		font-weight: 700;
+		margin-bottom: 1.5rem;
+		letter-spacing: -0.02em;
+	}
+	
+	/* Typography */
+	p {
+		font-size: 1.125rem;
+		line-height: 1.7;
+		margin-bottom: 1rem;
+	}
+	
+	/* Buttons */
+	.btn {
+		display: inline-block;
+		text-decoration: none;
+		font-weight: 600;
+		border-radius: 8px;
+		transition: all 0.2s ease;
+		cursor: pointer;
+	}
+	.btn-primary {
+		background-color: var(--accent);
+		color: #fff;
+		padding: 0.8rem 1.5rem;
+		box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+	}
+	.btn-primary:hover {
+		background-color: var(--accent-hover);
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.39);
+	}
+	.btn-large {
+		padding: 1rem 2rem;
+		font-size: 1.1rem;
+	}
+
+	/* Hero */
+	.hero {
+		padding: 8rem 0 6rem;
+		position: relative;
+		overflow: hidden;
+	}
+	.hero::before {
+		content: '';
+		position: absolute;
+		top: -100px;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 800px;
+		height: 400px;
+		background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(15,23,42,0) 70%);
+		z-index: -1;
+	}
+	.hero-content {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 3rem;
+		align-items: center;
+	}
+	.catchphrase {
+		font-size: 3.5rem;
+		font-weight: 800;
+		line-height: 1.2;
+		letter-spacing: -0.03em;
+		margin-bottom: 1.5rem;
+	}
+	.sub-copy {
+		font-size: 1.25rem;
+		color: var(--text-muted);
+		margin-bottom: 2.5rem;
+	}
+	.hero-actions {
+		display: flex;
+		align-items: center;
+		gap: 1.5rem;
+	}
+	.os-note {
+		font-size: 0.9rem;
+		color: var(--text-muted);
+		opacity: 0.8;
+	}
+	.demo-video {
+		width: 100%;
+		border-radius: 12px;
+		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+		border: 1px solid rgba(255,255,255,0.1);
+	}
+
+	/* Feature Layouts */
+	.reverse-layout {
+		display: flex;
+		flex-direction: row-reverse;
+		align-items: center;
+		gap: 4rem;
+	}
+	.layout-split {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 4rem;
+		align-items: center;
+	}
+	.section-text {
+		flex: 1;
+	}
+	.section-image {
+		flex: 1;
+		width: 100%;
+	}
+	.feature-img {
+		width: 100%;
+		border-radius: 12px;
+		box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+		border: 1px solid rgba(255,255,255,0.1);
+		display: block;
+	}
+	.highlight-text {
+		font-size: 1.2rem;
+		color: var(--text-color);
+		margin-top: 1.5rem;
+		padding-left: 1rem;
+		border-left: 4px solid var(--accent);
+	}
+
+	/* Cards */
+	.section-desc {
+		max-width: 800px;
+		margin: 0 auto 4rem;
+		font-size: 1.2rem;
+	}
+	.cards-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 2rem;
+	}
+	.card {
+		background-color: rgba(15,23,42,0.5);
+		border: 1px solid rgba(255,255,255,0.05);
+		padding: 2rem;
+		border-radius: 12px;
+		transition: transform 0.2s, background-color 0.2s;
+	}
+	.card:hover {
+		transform: translateY(-5px);
+		background-color: rgba(30,41,59,0.8);
+		border-color: rgba(255,255,255,0.1);
+	}
+	.card-icon {
+		font-size: 2.5rem;
+		margin-bottom: 1rem;
+	}
+	.card h3 {
+		font-size: 1.4rem;
+		margin-bottom: 0.5rem;
+	}
+	.card-subtitle {
+		color: var(--accent);
+		font-weight: 600;
+		font-size: 1rem;
+		margin-bottom: 1rem;
+	}
+	.code-ref {
+		display: inline-block;
+		margin-top: 1rem;
+		font-family: monospace;
+		padding: 0.3rem 0.6rem;
+		background: rgba(0,0,0,0.3);
+		border-radius: 4px;
+		font-size: 0.9rem;
+		color: #38bdf8;
+	}
+
+	/* Lists */
+	.feature-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+	.feature-list li {
+		margin-bottom: 1.5rem;
+		padding-left: 1rem;
+		border-left: 2px solid rgba(255,255,255,0.1);
+	}
+	.feature-list li strong {
+		display: block;
+		font-size: 1.2rem;
+		margin-bottom: 0.3rem;
+		color: var(--text-color);
+	}
+
+	/* Code Showcase */
+	.code-showcase-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 2rem;
+	}
+	.use-case-box {
+		background-color: #0b1120;
+		border: 1px solid rgba(255,255,255,0.05);
+		border-radius: 12px;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+	}
+	.use-case-header {
+		padding: 1.5rem;
+		background-color: rgba(255,255,255,0.02);
+		border-bottom: 1px solid rgba(255,255,255,0.05);
+	}
+	.use-case-header h3 {
+		font-size: 1.2rem;
+		margin-bottom: 0.5rem;
+		color: var(--text-color);
+	}
+	.use-case-header p {
+		margin: 0;
+		font-size: 0.95rem;
+	}
+	.code-block-wrapper {
+		padding: 1.5rem;
+		flex: 1;
+		font-family: 'Fira Code', Consolas, Monaco, monospace;
+		font-size: 0.9rem;
+		overflow-x: auto;
+	}
+	pre { margin: 0; }
+	code .comment { color: #64748b; }
+	code .keyword { color: #c678dd; }
+	code .variable { color: #e5c07b; }
+	code .function { color: #61afef; }
+	code .string { color: #98c379; }
+
+	/* CTA */
+	.cta-section {
+		padding: 8rem 0;
+		background: linear-gradient(180deg, var(--bg-color) 0%, #0b1120 100%);
+	}
+	.icon-clean {
+		font-size: 3rem;
+	}
+	.cta-box {
+		background: rgba(30,41,59,0.3);
+		border: 1px solid rgba(255,255,255,0.1);
+		border-radius: 16px;
+		padding: 3rem;
+		margin-top: 3rem;
+	}
+	.cta-box h3 {
+		font-size: 2rem;
+		margin-bottom: 1rem;
+	}
+
+	/* Responsive */
+	@media (max-width: 992px) {
+		.hero-content, 
+		.reverse-layout, 
+		.layout-split {
+			grid-template-columns: 1fr;
+			flex-direction: column;
+		}
+		.hero {
+			padding: 5rem 0 3rem;
+			text-align: center;
+		}
+		.hero-actions {
+			justify-content: center;
+		}
+		.cards-grid {
+			grid-template-columns: 1fr;
+		}
+		.code-showcase-grid {
+			grid-template-columns: 1fr;
+		}
+		.catchphrase {
+			font-size: 2.8rem;
+		}
+	}
+</style>

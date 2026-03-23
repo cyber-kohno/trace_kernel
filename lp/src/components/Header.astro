@@ -1,0 +1,107 @@
+---
+---
+<header class="header">
+  <div class="container">
+    <a href="/" class="logo-area">
+      <div class="logo-placeholder"></div>
+      <span class="app-name">Trace Kernel</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#api-docs">API Docs</a>
+      <a href="#pro-version">Pro Version</a>
+      <div class="lang-switcher">
+        <button class="active">JP</button>
+        <span class="divider">/</span>
+        <button>EN</button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .header {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    height: 64px;
+    background-color: rgba(15, 23, 42, 0.85); /* Slightly bluish dark gray (slate) */
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    font-family: 'Inter', sans-serif;
+  }
+  .container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .logo-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: #fff;
+  }
+  .logo-placeholder {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #3b82f6, #10b981); /* Cool gradient placeholder */
+    border-radius: 8px;
+  }
+  .app-name {
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+  }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .nav-links a {
+    color: #94a3b8;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover {
+    color: #fff;
+  }
+  .lang-switcher {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #94a3b8;
+    margin-left: 12px;
+    padding-left: 24px;
+    border-left: 1px solid rgba(255,255,255,0.1);
+  }
+  .lang-switcher button {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.85rem;
+    padding: 2px;
+    transition: color 0.2s;
+  }
+  .lang-switcher button.active {
+    color: #fff;
+    cursor: default;
+  }
+  .lang-switcher button:not(.active):hover {
+    color: #cbd5e1;
+  }
+  .divider {
+    font-size: 0.8rem;
+    opacity: 0.5;
+  }
+</style>
