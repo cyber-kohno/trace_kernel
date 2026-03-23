@@ -59,11 +59,15 @@
 
     let processes: StoreProcess.Props[] = [];
     if (StorePermission.isPro()) {
-      processes = workspace.processes.filter((_, i) => !isDisable("process", i));
+      processes = workspace.processes.filter(
+        (_, i) => !isDisable("process", i),
+      );
     }
     const injectionalData: ContextDataUtil.Props = {
       envs: workspace.envs.filter((_, i) => !isDisable("env", i)),
-      resources: workspace.resources.filter((_, i) => !isDisable("resource", i)),
+      resources: workspace.resources.filter(
+        (_, i) => !isDisable("resource", i),
+      ),
       datasets: workspace.datasets.filter((_, i) => !isDisable("dataset", i)),
       processes,
     };
@@ -358,13 +362,14 @@
             isDisable={$phase === "coding"}
             tooltip={"Ctrl + ArrowLeft"}
           />
-          <OperationButton
-            name={"Transaction"}
-            callback={() => ($isDispTxDialog = true)}
-            isLineup
-            width={190}
-            isDisable={$txCache == null}
-          />
+          {#if $txCache != null}
+            <OperationButton
+              name={"Transaction"}
+              callback={() => ($isDispTxDialog = true)}
+              isLineup
+              width={190}
+            />
+          {/if}
         </Record>
       </div>
     </div>

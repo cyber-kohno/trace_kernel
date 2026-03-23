@@ -38,6 +38,7 @@ namespace DclFileSystem {
             saveText: (filePath: string, content: string) => void;
             updateText: (token: FileToken, content: string) => void;
             copyFile: (from: string, dest: string) => void;
+            copyFileByToken: (token: FileToken, dest: string) => void;
             deleteFile: (filePath: string) => void;
             deleteFileByToken: (token: FileToken) => void;
             renameFile: (targetFilePath: string, newFileName: string) => void;

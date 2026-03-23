@@ -5,7 +5,7 @@ namespace RenameFile {
     // Public API
     // ==========================
 
-    export const executeByPath = (
+    export const byPath = (
         vfs: RuntimeUtil.VFSState,
         filePath: string,
         newName: string
@@ -37,11 +37,11 @@ namespace RenameFile {
             pathIndex.set(filePath, newToken);
         }
 
-        renameCore(vfs, state, filePath, newName);
+        core(vfs, state, filePath, newName);
     };
 
 
-    export const executeByToken = (
+    export const byToken = (
         vfs: RuntimeUtil.VFSState,
         token: RuntimeUtil.FileToken,
         newName: string
@@ -61,7 +61,7 @@ namespace RenameFile {
             throw new Error("invalid file token");
         }
 
-        renameCore(vfs, state, state.path, newName);
+        core(vfs, state, state.path, newName);
     };
 
 
@@ -69,7 +69,7 @@ namespace RenameFile {
     // Internal Shared Logic
     // ==========================
 
-    const renameCore = (
+    const core = (
         vfs: RuntimeUtil.VFSState,
         state: RuntimeUtil.FileState,
         oldPath: string,

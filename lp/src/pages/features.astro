@@ -1,0 +1,980 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const toc = [{"id":"section-1","title":"画面の全体構成"},{"id":"section-2","title":"スタート画面"},{"id":"section-3","title":"ワークスペース管理画面"},{"id":"section-4","title":"ワークスペースの保存について"},{"id":"section-5","title":"コンテキスト要素「env」について"},{"id":"section-6","title":"コンテキスト要素「resource」について"},{"id":"section-7","title":"コンテキスト要素「dataset」について"},{"id":"section-8","title":"コンテキスト要素「process」について"},{"id":"section-9","title":"プログラム要素「work」について"},{"id":"section-10","title":"プログラムエディタ"},{"id":"section-11","title":"独自API「$state」について"},{"id":"section-12","title":"独自API「$fs」について"},{"id":"section-13","title":"独自API「$channel」について"}];
+---
+
+<Layout title="Features - Trace Kernel">
+  <div class="features-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-content">
+        <h3>Contents</h3>
+        <nav id="toc">
+          <ul>
+            {toc.map(item => (
+              <li><a href={`#${item.id}`} class="toc-link" data-target={item.id}>{item.title}</a></li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="content-wrapper">
+        <h1 class="page-title">Trace Kernel - 機能概要</h1>
+        <h2 id="section-1" class="feature-heading">画面の全体構成</h2><div class="section-content">
+      <br/>
+      <span>・スタート画面</span><br/>
+      <span>・<strong class="feature-kw">ワークスペース管理画面</strong></span><br/>
+      <span>・<strong class="feature-kw">プログラムコードエディタ</strong>（Monaco）</span><br/>
+      <span>・<strong class="feature-kw">トランザクションダイアログ</strong></span><br/>
+      <br/>
+      </div><h2 id="section-2" class="feature-heading">スタート画面</h2><div class="section-content">
+      <div class="feature-img-wrapper"><img src="/screen_shot/スタート.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>アプリを起動した直後はこの画面を表示する。</span><br/>
+      <span>この画面は<strong class="feature-kw">ワークスペース</strong>を開く際に、</span><br/>
+      <span>新規で始めるか、既存のファイルから読み込んで始めるかを、</span><br/>
+      <span>選択するために存在する。</span><br/>
+      <br/>
+      <span><strong class="feature-kw">ワークスペース</strong>を起動することで、</span><br/>
+      <span>作業が可能な状態となる。</span><br/>
+      <br/>
+      <span>・Start Emply：新規に始める</span><br/>
+      <span>・Open File　：既存ファイルを読み込んで始める</span><br/>
+      <br/>
+      </div><h2 id="section-3" class="feature-heading">ワークスペース管理画面</h2><div class="section-content">
+      <div class="feature-img-wrapper"><img src="/screen_shot/ワークスペース管理.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span><strong class="feature-kw">ワークスペース</strong>を開くと必ずこの画面に遷移する。</span><br/>
+      <br/>
+      <span>メニューヘッダー</span><br/>
+      <span>左半分：<strong class="feature-kw">コンテキストツリー</strong></span><br/>
+      <span>右半分：ツリーで選択中の<strong class="feature-kw">詳細編集画面</strong></span><br/>
+      <br/>
+      <span>の3つで構成される。</span><br/>
+      <br/>
+      <span>左半分は、<strong class="feature-kw">コンテキストツリー</strong>で、</span><br/>
+      <span><strong class="feature-kw">ワークスペース</strong>で管理する要素</span><br/>
+      <span>・env</span><br/>
+      <span>・resource</span><br/>
+      <span>・dataset</span><br/>
+      <span>・process</span><br/>
+      <span>・work</span><br/>
+      <span>の5要素が存在する。</span><br/>
+      <br/>
+      <span>いずれも、＋ボタンから要素を追加することができ、</span><br/>
+      <span>名前をつけて複数持つことができる。</span><br/>
+      <br/>
+      <span>この中で、workだけが他とは違い、</span><br/>
+      <span>プログラムを書いて実行する作業単位である。</span><br/>
+      <br/>
+      <span>work以外の要素は、</span><br/>
+      <span>workのプログラムで参照するコンテキスト情報である。</span><br/>
+      <br/>
+      <span>よって、いずれも<strong class="feature-kw">ワークスペース</strong>で管理する要素であるが、</span><br/>
+      <br/>
+      <span>・context</span><br/>
+      <span>  -env</span><br/>
+      <span>  -resource</span><br/>
+      <span>  -dataset</span><br/>
+      <span>  -process</span><br/>
+      <span>・program</span><br/>
+      <span>  -work</span><br/>
+      <br/>
+      <span>と大きく分類される。</span><br/>
+      <br/>
+      <br/>
+      <span>各要素の＋ボタンを押下すると、</span><br/>
+      <span>要素が追加される。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/要素追加.JPG" alt="screenshot" loading="lazy" /></div>
+      <span>（画面イメージはresourceを追加した例）</span><br/>
+      <br/>
+      <span>追加した要素を選択すると、</span><br/>
+      <span>右半分の詳細エリアに、選択した要素の編集画面が表示される。</span><br/>
+      <br/>
+      <span>要素の編集に保存やキャンセルなどの概念はなく、</span><br/>
+      <span>編集すると即<strong class="feature-kw">ワークスペース</strong>に反映される。</span><br/>
+      <br/>
+      <span>要素は、必ず名前を持っており、</span><br/>
+      <span>同じ要素で名前が重複した場合エラーとなる。</span><br/>
+      <br/>
+      <span>要素は、<strong class="feature-kw">enable</strong>/<strong class="feature-kw">error</strong>の状態を持っており、</span><br/>
+      <span>必須項目が未入力であったり、</span><br/>
+      <span>入力状態に不整合がある場合は、</span><br/>
+      <span><strong class="feature-kw">error</strong>となる。</span><br/>
+      <br/>
+      <span>要素の必要な情報がすべて正常であれば、</span><br/>
+      <span><strong class="feature-kw">enable</strong>となる。</span><br/>
+      <br/>
+      <span><strong class="feature-kw">enable</strong>/<strong class="feature-kw">error</strong>の状態は、</span><br/>
+      <span><strong class="feature-kw">コンテキストツリー</strong>の表示で常に確認可能である。</span><br/>
+      <span>緑：<strong class="feature-kw">enable</strong></span><br/>
+      <span>赤：<strong class="feature-kw">error</strong></span><br/>
+      <br/>
+      <span>名前（変数名）が他の要素と重複した場合、</span><br/>
+      <span>重複した両方が<strong class="feature-kw">error</strong>となる。</span><br/>
+      <br/>
+      <br/>
+      <span>各<strong class="feature-kw">コンテキスト要素</strong>は、</span><br/>
+      <span>以下のようにworkのコンテキスト情報として扱えるようになる。</span><br/>
+      <br/>
+      <span><strong class="feature-kw">ワークスペース</strong>設定例</span><br/>
+      <span>～～～～～～～～～～～～～</span><br/>
+      <span>・env</span><br/>
+      <span>  -DEST_DIR</span><br/>
+      <span>・resource</span><br/>
+      <span>  -userData</span><br/>
+      <span>  -setting</span><br/>
+      <span>・dataset</span><br/>
+      <span>  -workspace</span><br/>
+      <span>・process</span><br/>
+      <span>～～～～～～～～～～～～～</span><br/>
+      <br/>
+      <span>上記のように定義していた場合、</span><br/>
+      <span>$env.DEST_DIR</span><br/>
+      <span>$resource.userData</span><br/>
+      <span>$resource.setting</span><br/>
+      <span>$dataset.workspace</span><br/>
+      <br/>
+      <span>の4要素がworkで書くプログラムで利用できるようになる。</span><br/>
+      <br/>
+      <span>具体的には、monacoに注入され、</span><br/>
+      <span>TypeScriptのエディタで、</span><br/>
+      <span>補完情報として参照できるようになる。</span><br/>
+      <br/>
+      <span><strong class="feature-kw">コンテキスト要素</strong>に、エラーが存在した場合、</span><br/>
+      <span>要素は存在しないものとして扱われるため、</span><br/>
+      <span>プログラムで利用できない。</span><br/>
+      <br/>
+      <br/>
+      </div><h2 id="section-4" class="feature-heading">ワークスペースの保存について</h2><div class="section-content">
+      <span><strong class="feature-kw">ワークスペース管理画面</strong>のヘッダメニューのSaveボタンを押下するか、</span><br/>
+      <span>Ctrl+Sキーで、<strong class="feature-kw">ワークスペース</strong>をファイルに保存することができる。</span><br/>
+      <span>保存するファイルは、拡張子が.trkとなる。</span><br/>
+      <span>中身は<strong class="feature-kw">ワークスペース</strong>のjsonをgZip圧縮したプレーンテキストである。</span><br/>
+      <br/>
+      <span><strong class="feature-kw">ワークスペース</strong>を新規で開いて、</span><br/>
+      <span>一度も保存していない場合は、</span><br/>
+      <span>アプリフレームのヘッダが(Untitled)*の表示となり、</span><br/>
+      <span>保存時に、ファイル保存ダイアログを表示する。</span><br/>
+      <br/>
+      <span>一度保存した後は、</span><br/>
+      <span>ファイル名の表示となり、保存時は上書きとなる。</span><br/>
+      <br/>
+      <span>既存のファイルを読み込んで<strong class="feature-kw">ワークスペース</strong>を開いた場合も、</span><br/>
+      <span>上書き保存となる。</span><br/>
+      <br/>
+      <br/>
+      </div><h2 id="section-5" class="feature-heading">コンテキスト要素「env」について</h2><div class="section-content">
+      <span>envは、変数名と値のペアを登録し、</span><br/>
+      <span>変数名から値を取得することができるシンプルな要素である。</span><br/>
+      <span><strong class="feature-kw">環境変数</strong>として利用することを目的としている。</span><br/>
+      <br/>
+      <span>例えば、プログラムの中でファイル出力を行う処理を書く場合、</span><br/>
+      <span>出力先のディレクトリを、</span><br/>
+      <span>プログラムに直書きするのではなく、</span><br/>
+      <span>envのGUI上で定義しておくことで、</span><br/>
+      <span>\のエスケープミス防止や、</span><br/>
+      <span>環境が変わった際に、</span><br/>
+      <span>プログラムを開かずともスムーズにメンテナンスできる。</span><br/>
+      <br/>
+      <span>変数名を「DEST_DIR」と定義した場合、スクリプト上では、</span><br/>
+      <span>tx.saveFile(`$&#123;$env.DEST_DIR&#125;\\$&#123;fileName&#125;`, content);</span><br/>
+      <span>のように参照することができます。</span><br/>
+      <br/>
+      <span>また、envで定義した変数は、</span><br/>
+      <span>他のコンテキストのパスを扱う項目で、</span><br/>
+      <span>%のブレースフォルダで囲うことで、</span><br/>
+      <span>%WORKSPACE%\testApp\src\</span><br/>
+      <span>のように参照することができます。</span><br/>
+      <br/>
+      <span>envの＋ボタン押下時は、以下の状態となる。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/env追加時.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>・name：変数名（大文字のみ許容）</span><br/>
+      <span>・value: 値</span><br/>
+      <span>・purpose：用途</span><br/>
+      <br/>
+      <span>purposeは、用途がパスである場合は、</span><br/>
+      <span>選択することで、</span><br/>
+      <span>値に入力したパス（ファイル or ディレクトリ）が、</span><br/>
+      <span>存在するかリアタイムでチェックできる。</span><br/>
+      <span>この項目はあくまでチェック用で、</span><br/>
+      <span>パスが不正（存在しない、ファイル・ディレクトリの不一致）であっても、</span><br/>
+      <span>env要素としてはエラーにならない。</span><br/>
+      <br/>
+      <br/>
+      </div><h2 id="section-6" class="feature-heading">コンテキスト要素「resource」について</h2><div class="section-content">
+      <span>resourceは、<strong class="feature-kw">静的なリソース</strong>を変数で紐づけして割り当てするためのものである。</span><br/>
+      <span>変数と値のペアを直接GUI上で管理する点以外は、</span><br/>
+      <span>envと同じであるが、</span><br/>
+      <span>resourceは、解析対象のソース（ログ・csvなど）を割り当てるために利用する。</span><br/>
+      <br/>
+      <span>resourceの＋ボタン押下時は、以下の状態となる。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/resource追加時.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>・variable_name：変数名</span><br/>
+      <span>・source：ソース（値）</span><br/>
+      <span>・parse_method：ソースの変換方法</span><br/>
+      <br/>
+      <span>値割り当てでenvと違うのは、</span><br/>
+      <span>複数行テキストである点のみ。</span><br/>
+      <br/>
+      <span>ここに、ログのテキストやcsvのテキストを、</span><br/>
+      <span>直接貼り付けて、静的リソースとして割り当てる。</span><br/>
+      <br/>
+      <span>ソースがテーブルデータ（csv or tsv）の場合、</span><br/>
+      <span>parse_methodを指定することで、</span><br/>
+      <span>ソーステキストのヘッダから、カラム名を解析し、</span><br/>
+      <span>プログラムから呼び出す際に、</span><br/>
+      <span>オブジェクトとして扱うことができる。</span><br/>
+      <br/>
+      <span>例えば、userDataという変数名で、</span><br/>
+      <span>csvを定義していた場合、</span><br/>
+      <span>parse_method指定していなければ、</span><br/>
+      <span>プログラムではstring型の純粋なテキストとして注入されるため、</span><br/>
+      <span>要素の解析（改行、カンマで分割など）は手動となるが、</span><br/>
+      <span>パースを指定していた場合は、</span><br/>
+      <span>型付けされたオブジェクトとして最初から扱えるようになる。</span><br/>
+      <br/>
+      <span>$resource.userData.forEach(user =&gt; &#123;</span><br/>
+      <span>  user.name // ヘッダがnameの各レコードの値を直接参照できる</span><br/>
+      <span>&#125;);</span><br/>
+      <br/>
+      <span>parse_method</span><br/>
+      <span>・CSV to JSON</span><br/>
+      <span>・TSV to JSON</span><br/>
+      <span>テキストに合わせて任意の変換方法を選択する。</span><br/>
+      <br/>
+      <span>TSVの場合は、全ての列がstring型として変換されるが、</span><br/>
+      <span>CSVの場合は、解析時に全てのレコードの値が、</span><br/>
+      <span>NULLでなくダブルクォーテーションで囲われていない場合、</span><br/>
+      <span>数値変換が可能であれば、number型として変換される。</span><br/>
+      <br/>
+      <br/>
+      </div><h2 id="section-7" class="feature-heading">コンテキスト要素「dataset」について</h2><div class="section-content">
+      <span>datasetは、ルートパスとルートからの相対パスの集合を管理することができる。</span><br/>
+      <span>resourceが静的リソースを扱うのに対して、</span><br/>
+      <span>datasetは<strong class="feature-kw">動的リソース</strong>を扱うために利用する。</span><br/>
+      <br/>
+      <span>PC内のファイルを<strong class="feature-kw">遅延ロード</strong>することができる。</span><br/>
+      <br/>
+      <span>用途としては、</span><br/>
+      <span>・大量ファイルのリネーム</span><br/>
+      <span>・大量ログを解析</span><br/>
+      <span>・プロジェクト内のアンチ実装パターンの検出</span><br/>
+      <span>など。</span><br/>
+      <br/>
+      <br/>
+      <span>datasetの＋ボタン押下時は、以下の状態となる。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/dataset追加時.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>・variable_name：変数名</span><br/>
+      <span>・root_path：ルートパス</span><br/>
+      <span>・encoding：ファイルを開く際のエンコード（utf8 or sjis）</span><br/>
+      <br/>
+      <span>・scan_phase：ルート配下のファイルをどのタイミングでスキャンするか</span><br/>
+      <span>→</span><br/>
+      <span>「<strong class="feature-kw">Runtime auto</strong>」「<strong class="feature-kw">Direct choose</strong>」の2拓。</span><br/>
+      <span><strong class="feature-kw">Runtime auto</strong>を選択した場合、</span><br/>
+      <span>プログラムを実行時に、</span><br/>
+      <span>前処理でルート配下のファイルを検索し、</span><br/>
+      <span>全てのファイルを相対パスとして取得する。</span><br/>
+      <br/>
+      <span>ただし、後述するフィルター条件を指定した場合、</span><br/>
+      <span>条件に一致するファイルのみ対象とする。</span><br/>
+      <br/>
+      <span><strong class="feature-kw">Direct choose</strong>を選択した場合、</span><br/>
+      <span>GUI（datasetの詳細画面上）で、直接相対パスを選択する。</span><br/>
+      <br/>
+      <span>抽出対象パネル（以下のイメージの部分を指す）</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/抽出対象パネル.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>相対パスとして取得する対象ファイルをフィルターする条件を指定可能。</span><br/>
+      <span>（”スキャン時”はscan_phaseで何を選択していたかによる）</span><br/>
+      <span>・limit_depth：スキャンする階層数を制限する（無指定可）</span><br/>
+      <span>・directory_filter_conditions：ディレクトリの抽出条件を指定する（詳細は後述）</span><br/>
+      <span>・file_filter_conditions：ファイルの抽出条件を指定する（詳細は後述）</span><br/>
+      <br/>
+      <span>directory_filter_conditions、file_filter_conditionsは、</span><br/>
+      <span>＋ボタンで条件を追加することができ、</span><br/>
+      <span>それぞれ複数条件を指定することができる。</span><br/>
+      <br/>
+      <span>directory_filter_conditionsで＋ボタン押下直後は以下の状態となる。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/ディレクトリ条件追加時.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>左端のマイナスボタンで条件自体を削除できる。</span><br/>
+      <span>その右隣の入力欄は条件を適用する階層数を指定する。</span><br/>
+      <br/>
+      <span>その右隣の「+include」は、条件に一致したものを含むことを意味する。</span><br/>
+      <span>押下することで「-exclude」とトグルになっており、</span><br/>
+      <span>-excludeにすると、一致したディレクトリ配下は走査しない。</span><br/>
+      <br/>
+      <span>一番右の入力欄は、条件の文字列を指定する。</span><br/>
+      <span>（ワイルドカード指定可能）</span><br/>
+      <br/>
+      <span>file_filter_conditionsで＋ボタン押下直後は以下の状態となる。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/ファイル条件追加時.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>基本的にはディレクトリ条件と同じであるが、</span><br/>
+      <span>こちらは、階層指定がなくすべての階層のファイルが条件の対象となる。</span><br/>
+      <br/>
+      <br/>
+      <span>※設定例</span><br/>
+      <span>ディレクトリ条件</span><br/>
+      <span>1階層目：「.git」を除外</span><br/>
+      <span>1階層目：「entity*」を除外</span><br/>
+      <span>2階層目：「src」を対象</span><br/>
+      <br/>
+      <span>ファイル条件</span><br/>
+      <span>「*Impl.java」を対象</span><br/>
+      <span>「*Abstract*」を除外</span><br/>
+      <br/>
+      <span>→</span><br/>
+      <span>entity*と.gitフォルダを除いた全ての1階層目のフォルダを走査。</span><br/>
+      <span>2階層目はsrcフォルダ以外は走査しない。</span><br/>
+      <span>以降は全て走査。</span><br/>
+      <span>ファイルが見つかった場合、*Impl.javaを対象にするが、</span><br/>
+      <span>*Abstract*を含むファイルは除外する。</span><br/>
+      <br/>
+      <br/>
+      <span>「<strong class="feature-kw">Runtime auto</strong>」を選択していた場合は、</span><br/>
+      <span>ここで指定した条件がプログラム実行時に適用される。</span><br/>
+      <br/>
+      <span>「<strong class="feature-kw">Direct choose</strong>」を選択していた場合は、</span><br/>
+      <span>この画面上で対象を直接選択する必要があるため、</span><br/>
+      <span>画面右下にScanボタンを表示する。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/Scanボタン表示.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>Snanボタンを押下すると、</span><br/>
+      <span>その場でファイルの走査が始まる。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/スキャン実行時.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>検索が終わると以下のようにツリーを表示する。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/ファイル選択（ツリー表示）.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>このツリーでは、ノードに対して、</span><br/>
+      <span>DIRかFILEを表示し、ノードの種類を表している。</span><br/>
+      <span>DIRの右隣には＋ボタンがあり、</span><br/>
+      <span>押下することでディレクトリを開いて中の階層を表示することができる。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/ファイル選択（フォルダを展開）.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>FILEを押下すると、ファイルを相対パスの候補として選択状態にする。</span><br/>
+      <span>（まだ確定ではない）</span><br/>
+      <span>DIRを押下すると、ディレクトリ配下のファイルを全て選択状態にする。</span><br/>
+      <br/>
+      <span>各ノードの選択状態はDIR or FILEの色で区別される</span><br/>
+      <span>・未選択：半透明（DIR、FILEどちらも共通）</span><br/>
+      <span>・ファイル選択：FILEの色が濃いピンクになる</span><br/>
+      <span>・ディレクトリ配下全て選択：DIRが濃い緑になる</span><br/>
+      <span>・ディレクトリ配下１つ以上選択（未選択あり）：DIRが黄色になる</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/ファイル選択（選択状態の色分け）.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>画面右上の「<strong class="feature-kw">Flat</strong>」を押下すると、</span><br/>
+      <span>ツリーでなく相対パスを全て表示したフラット表示に切り替わる。</span><br/>
+      <span>「<strong class="feature-kw">Flat</strong>」「<strong class="feature-kw">Tree</strong>」はトグルになっており、</span><br/>
+      <span>いつでも切り替えることが可能。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/ファイル選択（フラット表示）.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>ここで選択した候補を確定するには、</span><br/>
+      <span>画面右下の<strong class="feature-kw">Transfer</strong>ボタンを押下する。</span><br/>
+      <span>確定すると、選択したファイルのみを一覧表示する。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/Transfer押下後（リストアップ）.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>「<strong class="feature-kw">Direct choose</strong>」の場合は、上記操作で対象を決め打ちにしているため、</span><br/>
+      <span>プログラム実行時の前処理はなく、</span><br/>
+      <span>常に選択した相対パスが対象となる。</span><br/>
+      <br/>
+      <br/>
+      <span>データセットの要素は、変数に対して、</span><br/>
+      <span>相対パスを配列で管理しており、</span><br/>
+      <span>プログラム中で以下のように参照することができる。</span><br/>
+      <br/>
+      <span>for(const d of $dataset.workspace) &#123;</span><br/>
+      <span>  d.fileName // 相対パスのファイル名のみ取得</span><br/>
+      <span>  d.absolutePath // 相対パスのルートからのフルパスを取得</span><br/>
+      <span>  d.relativePath // 相対パスを取得</span><br/>
+      <span>  await d.content(); // ファイルの中身のソースを非同期で取得（await必須）</span><br/>
+      <span>&#125;</span><br/>
+      <br/>
+      <br/>
+      <span>実用例として、以下のようにscan_phaseを使い分ける。</span><br/>
+      <span>・フォルダ内のログファイルを全て解析</span><br/>
+      <span>→</span><br/>
+      <span>「<strong class="feature-kw">Runtime auto</strong>」を選択しておく。</span><br/>
+      <span>フォルダにファイルを放り込むと、</span><br/>
+      <span>プログラム実行の都度最新状態が反映される。</span><br/>
+      <span>フォルダにログ以外のファイルがある場合は、</span><br/>
+      <span>条件で事前にフィルターしておく。</span><br/>
+      <br/>
+      <span>・PGプロジェクトのソース解析</span><br/>
+      <span>→</span><br/>
+      <span>解析対象のファイルが常に同じである場合は、</span><br/>
+      <span>プログラム実行速度向上のため、</span><br/>
+      <span>「<strong class="feature-kw">Direct choose</strong>」先に選択しておく。</span><br/>
+      <br/>
+      <br/>
+      </div><h2 id="section-8" class="feature-heading">コンテキスト要素「process」について</h2><div class="section-content">
+      <span>processは、外部のプログラムを、</span><br/>
+      <span>Trace Kernelのスクリプト上で、</span><br/>
+      <span>関数として呼び出して利用できるようにする、</span><br/>
+      <span>橋渡しの仕組みを提供する。</span><br/>
+      <br/>
+      <span>関数名と実行するプログラムのパスを設定することで、</span><br/>
+      <span>$process.test()のように関数として呼び出すことができる。</span><br/>
+      <br/>
+      <span>プロセスの管理では、<strong class="feature-kw">コマンドライン引数</strong>を指定することが可能で、</span><br/>
+      <span>実行するプログラムに引数を与えて実行することができる。</span><br/>
+      <span>また、<strong class="feature-kw">スクリプト引数</strong>を定義し、</span><br/>
+      <span><strong class="feature-kw">コマンドライン引数</strong>に注入することで、</span><br/>
+      <span>スクリプトで実行時に関数の引数を経由して、</span><br/>
+      <span>任意の<strong class="feature-kw">コマンドライン引数</strong>を与えることも可能。</span><br/>
+      <br/>
+      <span>スクリプトからプロセス経由で、</span><br/>
+      <span>外部プログラムを実行すると。</span><br/>
+      <span>実際にexeなどを直接叩いた時と同じように、</span><br/>
+      <span>即処理が行わるが、</span><br/>
+      <br/>
+      <span>プログラムが標準出力を行う場合は、</span><br/>
+      <span>stdout, stderrをスクリプトで取得することができる。</span><br/>
+      <span>（プログラムの実行は非同期なのでawait必須）</span><br/>
+      <br/>
+      <span>processの＋ボタン押下時は、以下の状態となる。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/process追加時.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>・function_name：関数名</span><br/>
+      <span>・program_path：プログラムのフルパス</span><br/>
+      <span>・script_argument_defs：<strong class="feature-kw">スクリプト引数</strong></span><br/>
+      <span>・command_argument_values：<strong class="feature-kw">コマンドライン引数</strong></span><br/>
+      <span>・timeout_millisecond：タイムアウトまでの時間（ミリ秒）</span><br/>
+      <span>・response_encoding：stdout,stderrそれぞれにエンコードを指定</span><br/>
+      <br/>
+      <span>script_argument_defsは、</span><br/>
+      <span>＋ボタンを押下することで、<strong class="feature-kw">スクリプト引数</strong>を追加する。</span><br/>
+      <span>追加すると、スクリプトで関数呼び出し時に引数を求められる。</span><br/>
+      <br/>
+      <span><strong class="feature-kw">スクリプト引数</strong>の定義は、</span><br/>
+      <span>変数名のみの指定で良いが、数値を指定したい場合は、</span><br/>
+      <span>右隣の「Number」を押下してONにすることで、</span><br/>
+      <span>スクリプトで実装時の引数の型をnumber型にすることができる。</span><br/>
+      <span>（数値以外はエラーとなる）</span><br/>
+      <span>左の－ボタンで削除できる。</span><br/>
+      <br/>
+      <span><strong class="feature-kw">スクリプト引数</strong>は変数名を__（アンダースコア２つ）で囲った、</span><br/>
+      <span>ブレースフォルダで、後述する<strong class="feature-kw">コマンドライン引数</strong>に注入することができる。</span><br/>
+      <span><strong class="feature-kw">コマンドライン引数</strong>に注入しない限り、</span><br/>
+      <span><strong class="feature-kw">スクリプト引数</strong>の定義だけしても、プログラム実行には反映されない。</span><br/>
+      <br/>
+      <span>command_argument_valuesは、</span><br/>
+      <span>＋ボタンを押下することで、実行するプログラムの<strong class="feature-kw">コマンドライン引数</strong>を追加する。</span><br/>
+      <span>必要な項目は引数の値のみである。</span><br/>
+      <span>左のーボタン押下で削除できる。</span><br/>
+      <br/>
+      <span>スクリプトで呼び出して、timeout_millisecondで指定した時間を超えると、</span><br/>
+      <span>ランタイムエラーとなる。</span><br/>
+      <br/>
+      <span>例として、JavaScriptで、</span><br/>
+      <span>”〇〇さんこんにちは”と出力するだけのプログラムを、</span><br/>
+      <span>（名前の部分は<strong class="feature-kw">コマンドライン引数</strong>）</span><br/>
+      <span>node.jsを用いて実行する場合の設定例は以下のようになる。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/プロセス設定例.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>ポイントとして、実行するプログラムは、</span><br/>
+      <span>nodeのランタイムなので、node.exeとであり、</span><br/>
+      <span>nodeで実行するJSのプログラムファイルが第一引数となる。</span><br/>
+      <span>JSプログラムの引数は、定義上は第二引数となる。</span><br/>
+      <br/>
+      <span>スクリプトでは、以下のように利用する。</span><br/>
+      <span>const &#123;stdout&#125; = await $process.hello('taro');</span><br/>
+      <span>$println(stdout); // "taroさんこんにちは"</span><br/>
+      <br/>
+      <br/>
+      <span>実用例としては、</span><br/>
+      <span>本番環境で稼働しているJavaプログラムモジュールに対して、</span><br/>
+      <span>脆弱性の含まれたライブラリが利用されていないかチェックしたいが、</span><br/>
+      <span>モジュールは数10個のjarで固められており、</span><br/>
+      <span>中にclassファイルが入っている。</span><br/>
+      <span>全てのclassファイルを逆コンパイルして、</span><br/>
+      <span>該当のライブラリが含まれていないかgrep検索する必要がある。</span><br/>
+      <br/>
+      <span>上記のような場合に、</span><br/>
+      <span>datasetでモジュールの全てのjarを対象にし、</span><br/>
+      <span>jarを解凍する外部プログラムで、一括解凍する。</span><br/>
+      <span>解凍したclassファイル群を、別のdatasetで割り当てし、</span><br/>
+      <span>classファイルを逆コンパイルして、文字列検索し、</span><br/>
+      <span>対象のプログラムをリストアップする。</span><br/>
+      <br/>
+      <span>このようなことが可能となる。</span><br/>
+      <br/>
+      <br/>
+      </div><h2 id="section-9" class="feature-heading">プログラム要素「work」について</h2><div class="section-content">
+      <span>workは、TypeScriptのプログラムを書いて、</span><br/>
+      <span>実行するワーク単位として扱う。</span><br/>
+      <span>プログラムのファイル分割や、インポート・エクスポートはなく、</span><br/>
+      <span>1ワークで1プログラムとなる。</span><br/>
+      <br/>
+      <span>ワークの用途としては、</span><br/>
+      <span>・ワーク1：データの収集→出力結果を中間データとしてリソースに保存（手動）</span><br/>
+      <span>・ワーク2：データの解析、整形→〃（中間データ保存）</span><br/>
+      <span>・ワーク3：ファイル出力</span><br/>
+      <span>のように、フェーズを分けて個別に実行していくことを想定している。</span><br/>
+      <br/>
+      <span>プログラムでは、$（ドルマーク）で始まるAPIにより、</span><br/>
+      <span>様々な独自プログラムと、注入したコンテキストを利用することができる。</span><br/>
+      <br/>
+      <span>コンテキストについては、前述で説明したが、</span><br/>
+      <span>注入されるAPIの代表として、</span><br/>
+      <span>$print</span><br/>
+      <span>$println</span><br/>
+      <span>がある。</span><br/>
+      <span>これは、console.logとは異なり、</span><br/>
+      <span>Trace KernelのGUI上の出力パネル（本来であればターミナル）に、</span><br/>
+      <span>文字列を出力することができる。</span><br/>
+      <br/>
+      <span>その他</span><br/>
+      <span>・$fs：ファイルシステムを扱う</span><br/>
+      <span>・$parse：Excel,XML,CSVなどのパースを行う</span><br/>
+      <span>・$net：htmlのソース取得や、外部APIを叩く</span><br/>
+      <span>などがある。</span><br/>
+      <br/>
+      <span>workの＋ボタン押下時は、以下の状態となる。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/work追加時.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>・name：ワーク名</span><br/>
+      <span>→名前を設定するが、コンテキストと違い、</span><br/>
+      <span>　他所で参照されることはないため、ワークの識別名でしかない。</span><br/>
+      <span>・output_method：出力方式</span><br/>
+      <span>→基本は「Plain」$print（$println）でシンプルに文字列出力ができる。</span><br/>
+      <span>　他の方式を選ぶと$printは注入されず、</span><br/>
+      <span>　別の方法で出力する。</span><br/>
+      <span>　例）Channelを選択すると、</span><br/>
+      <span>　チャンネル<strong class="feature-kw">ストリーム</strong>をスクリプト上で動的に生成して、</span><br/>
+      <span>　複数<strong class="feature-kw">ストリーム</strong>に対してテキストや<strong class="feature-kw">テーブル形式</strong>で出力できる。</span><br/>
+      <span>・api_injections：注入される独自API</span><br/>
+      <span>→output_methodにより変わる</span><br/>
+      <span>・context_injections：注入されるコンテキスト</span><br/>
+      <span>→注入可能なコンテキストの一覧を表示する。</span><br/>
+      <span>　コンテキスト定義していてもエラーがある場合は、</span><br/>
+      <span>　ここに表示されない。</span><br/>
+      <br/>
+      <span>Open Editorボタンを押下すると、</span><br/>
+      <span>プログラムエディタ（monaco）を全画面で表示する。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/プログラムエディタ表示時.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <br/>
+      </div><h2 id="section-10" class="feature-heading">プログラムエディタ</h2><div class="section-content">
+      <span>プログラムエディタでは、ワークに紐づくソースコードを表示する。</span><br/>
+      <span>ここで編集したソースコードは、</span><br/>
+      <span>リアルタイムで<strong class="feature-kw">ワークスペース</strong>のワーク要素に反映されるため、</span><br/>
+      <span>保存・取り消しという操作は存在しない。</span><br/>
+      <br/>
+      <span>右上の×ボタン押下かESCキーで、</span><br/>
+      <span>エディタを閉じることができる。</span><br/>
+      <br/>
+      <span><strong class="feature-kw">ワークスペース</strong>で定義したコンテキストは、</span><br/>
+      <span>補完情報としてmonacoに注入されているため、</span><br/>
+      <span>プログラム内で利用できる。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/補完.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>プログラムを書いて、右下のRunボタン押下か、</span><br/>
+      <span>F5キー or Alt+Enterキーで、</span><br/>
+      <span>プログラムを実行する。</span><br/>
+      <br/>
+      <span>プログラムを実行すると、</span><br/>
+      <span>左半分：ソースコード</span><br/>
+      <span>右半分：出力結果</span><br/>
+      <span>の表示に切り替わる</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/プログラム実行時（出力結果）.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>画面上部のClipboadボタンを押下すると、</span><br/>
+      <span>出力結果をクリップボードにコピーする。</span><br/>
+      <br/>
+      <span>画面下部のCancelボタンを押下するか、</span><br/>
+      <span>Alt+左キーで、実行取り消しし、</span><br/>
+      <span>ソースコード編集に戻る。</span><br/>
+      <br/>
+      </div><h2 id="section-11" class="feature-heading">独自API「$state」について</h2><div class="section-content">
+      <span>「$state」APIは、スクリプト実行時に、</span><br/>
+      <span>GUIに<strong class="feature-kw">プログレスバー</strong>や、<strong class="feature-kw">モニター</strong>（固定文字）を表示することができる。</span><br/>
+      <br/>
+      <span>例えばデータセットで定義した数1000のファイルを、</span><br/>
+      <span>順番にオープンして解析していく処理において、</span><br/>
+      <span>実行完了までに5分ほどかかる場合、</span><br/>
+      <span>実行中は「Executing...」の表示しかされない。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/スクリプト実行中.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>いつ終わるのか、今どこを解析しているのか、</span><br/>
+      <span>$printで出力しないと状況がわからない。</span><br/>
+      <br/>
+      <span>そこで、このAPIを用いることで簡単に<strong class="feature-kw">プログレスバー</strong>を表示できる。</span><br/>
+      <span>$state.useProgress(totalCount)</span><br/>
+      <span>を実行することで、指定の母数の<strong class="feature-kw">プログレスバー</strong>を、</span><br/>
+      <span>GUIに表示することを宣言し、</span><br/>
+      <span>操作するためのハンドルを取得できる。</span><br/>
+      <br/>
+      <span>ハンドルのプロパティであるtick()関数で、</span><br/>
+      <span>プログレスを1つ進めることができる。</span><br/>
+      <span>使い方は以下のようになる。</span><br/>
+      <br/>
+      <span>const &#123;tick&#125; = $state.useProgress($dataset.files.length);</span><br/>
+      <span>for(const d of $dataset.files) &#123;</span><br/>
+      <span>  // 処理</span><br/>
+      <span>  tick(); // <strong class="feature-kw">プログレスバー</strong>加算</span><br/>
+      <span>&#125;</span><br/>
+      <br/>
+      <span>このように、</span><br/>
+      <span>・<strong class="feature-kw">プログレスバー</strong>の宣言</span><br/>
+      <span>・加算関数呼び出し</span><br/>
+      <span>の2行を追加するだけで、</span><br/>
+      <span>簡単に<strong class="feature-kw">プログレスバー</strong>を実行中の画面に表示できる。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/スクリプト実行中（プログレスバー）.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <br/>
+      <span>また、条件に一致したファイルの件数（実行中にリアルタイム更新）や、</span><br/>
+      <span>解析中のファイルを、実行中に確認したい場合は、</span><br/>
+      <span><strong class="feature-kw">モニター</strong>を使えば簡単に実現できる。</span><br/>
+      <br/>
+      <span><strong class="feature-kw">モニター</strong>は、$state.useMonitor()関数で宣言し、</span><br/>
+      <span>引数で利用する<strong class="feature-kw">モニター</strong>数を指定することで、</span><br/>
+      <span>指定した数だけ、<strong class="feature-kw">モニター</strong>の更新関数を配列で返すようになっている。</span><br/>
+      <br/>
+      <span>例えば、条件に一致した合計数と、解析中のファイル名を、</span><br/>
+      <span><strong class="feature-kw">モニター</strong>で画面に固定表示（リアルタイムで更新）したい場合、</span><br/>
+      <span>以下のように2つ確保し、分割代入で更新関数を取得する。</span><br/>
+      <span>const [summary, current] = $state.useMonitor(2);</span><br/>
+      <br/>
+      <span>取得した関数は、</span><br/>
+      <span>summary(`パターン一致件数： $&#123;matchCnt&#125;件`);</span><br/>
+      <span>current(`解析中のファイル： [$&#123;d.fileName&#125;]`);</span><br/>
+      <span>のように関数として実行することで、画面に文字列を取得する。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/スクリプト実行中（モニター）.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      </div><h2 id="section-12" class="feature-heading">独自API「$fs」について</h2><div class="section-content">
+      <span>ファイルシステムへの読み書きを行う関数群を提供する。</span><br/>
+      <br/>
+      <span>$fs.exists(`$&#123;DIR&#125;\\targetFile.txt`)</span><br/>
+      <span>のように各APIを呼び出せる。</span><br/>
+      <br/>
+      <span>exists: (path: string) =&gt; Promise&lt;boolean&gt;;</span><br/>
+      <span>→パスの存在チェック</span><br/>
+      <span>glob: (pattern: string) =&gt; Promise&lt;string[]&gt;;</span><br/>
+      <span>→パターンのパス一覧を取得</span><br/>
+      <span>stat: (path: string) =&gt; Promise&lt;FileStat&gt;;</span><br/>
+      <span>→作成日、更新日、ファイルサイズを取得</span><br/>
+      <span>readDir: (dir: string) =&gt; Promise&lt;&#123; name: string; isDir: boolean; &#125;[]&gt;;</span><br/>
+      <span>→ディレクトリを読み込み、配下の要素一覧を返す</span><br/>
+      <span>readBinary: (filePath: string) =&gt; Promise&lt;ArrayBuffer&gt;;</span><br/>
+      <span>→バイナリを読み込む</span><br/>
+      <span>readText: (filePath: string, encoding: 'utf8' | 'sjis') =&gt; Promise&lt;string&gt;;</span><br/>
+      <span>→テキストを読み込む</span><br/>
+      <span>saveText: (filePath: string, content: string) =&gt; Promise&lt;void&gt;;</span><br/>
+      <span>→テキストを保存（書き込み）</span><br/>
+      <span>copyFile: (src: string, dest: string) =&gt; Promise&lt;void&gt;;</span><br/>
+      <span>→ファイルをバイナリコピーする</span><br/>
+      <span>makeDir: (dirPath: string) =&gt; Promise&lt;void&gt;;</span><br/>
+      <span>→ディレクトリを作成（存在することを保証）</span><br/>
+      <span>deleteFile: (filePath: string) =&gt; Promise&lt;void&gt;;</span><br/>
+      <span>→ファイルを削除</span><br/>
+      <span>deleteDir: (dirPath: string) =&gt; Promise&lt;void&gt;;</span><br/>
+      <span>→ディレクトリを削除（中身が空の場合のみ可能）</span><br/>
+      <span>renameFile: (targetFilePath: string, newFileName: string) =&gt; Promise&lt;void&gt;;</span><br/>
+      <span>→ファイル名変更（同ディレクトリ内のみ）</span><br/>
+      <span>renameDir: (targetDirPath: string, newDirName: string) =&gt; Promise&lt;void&gt;;</span><br/>
+      <span>→ディレクトリ名変更（同ディレクトリ内のみ）</span><br/>
+      <br/>
+      <br/>
+      <span>上記は非同期で即FSに読み書きをするのに対し、</span><br/>
+      <span><strong class="feature-kw">仮想FS</strong>上に論理操作を積み、<strong class="feature-kw">トランザクション</strong>で処理することを可能とする、</span><br/>
+      <br/>
+      <span>useTransaction: () =&gt; DclFSTransaction.TransactionAPI;</span><br/>
+      <span>が存在する。</span><br/>
+      <br/>
+      <span>実行すると、<strong class="feature-kw">トランザクション</strong>利用を宣言し、</span><br/>
+      <span><strong class="feature-kw">仮想FS</strong>に書き込むためのハンドル（API群）を取得する。</span><br/>
+      <br/>
+      <span>const tx = $fs.useTransaction();</span><br/>
+      <br/>
+      <span>tx.openText(`$&#123;DIR&#125;\\targetFile.txt`, 'utf8');</span><br/>
+      <span>のように使える。</span><br/>
+      <br/>
+      <span><strong class="feature-kw">トランザクション</strong>APIは以下が存在する。</span><br/>
+      <span>書き込み系は処理のオーダーを積むだけなので、</span><br/>
+      <span>同期処理で書けるのが特徴。</span><br/>
+      <br/>
+      <span>openText: (filePath: string, encorde: "utf8" | "sjis") =&gt; Promise&lt;&#123; token: RuntimeUtil.FileToken; content: string; &#125;&gt;;</span><br/>
+      <span>→</span><br/>
+      <span>テキストを読み込み、中身の文字列とファイルトークンを取得する。</span><br/>
+      <span>この関数を呼び出すと、指定したパスはチェックアウト状態となり、</span><br/>
+      <span>トークン経由でしか、変更操作（更新・削除・リネーム）できない。</span><br/>
+      <br/>
+      <span>saveText: (filePath: string, content: string) =&gt; void;</span><br/>
+      <span>→テキストファイルを新たに作成する。</span><br/>
+      <br/>
+      <span>updateText: (token: RuntimeUtil.FileToken, content: string) =&gt; void;</span><br/>
+      <span>→テキストを更新する。openTextとペアで利用する。</span><br/>
+      <br/>
+      <span>copyFile: (from: string, dest: string) =&gt; void;</span><br/>
+      <span>→ファイルをコピーする。</span><br/>
+      <br/>
+      <span>deleteFile: (filePath: string) =&gt; void;</span><br/>
+      <span>→ファイルを削除する。</span><br/>
+      <br/>
+      <span>deleteFileByToken: (token: RuntimeUtil.FileToken) =&gt; void;</span><br/>
+      <span>→トークン経由でファイルを削除する。</span><br/>
+      <br/>
+      <span>renameFile: (targetFilePath: string, newFileName: string) =&gt; void;</span><br/>
+      <span>→ファイル名を変更する。</span><br/>
+      <br/>
+      <span>renameFileByToken: (token: RuntimeUtil.FileToken, newName: string) =&gt; void;</span><br/>
+      <span>→トークン経由でファイル名を変更する。</span><br/>
+      <br/>
+      <br/>
+      <span><strong class="feature-kw">トランザクション</strong>APIはスクリプト実行時に、</span><br/>
+      <span><strong class="feature-kw">論理整合</strong>性を担保する設計になっている。</span><br/>
+      <br/>
+      <span>オープンしたパスに対して、</span><br/>
+      <span>直接ファイル操作（保存、削除、リネーム、再読み込み）を行った場合、</span><br/>
+      <span>ランタイムエラーとなる。</span><br/>
+      <br/>
+      <br/>
+      <span><strong class="feature-kw">トランザクション</strong>APIの重要なポイントとして、</span><br/>
+      <span>useTransactionは、<strong class="feature-kw">トランザクション</strong>の開始ではなく、</span><br/>
+      <span>利用することの宣言である。</span><br/>
+      <br/>
+      <span>useTransactionを呼び、ハンドル経由で<strong class="feature-kw">仮想FS</strong>に書き込みオーダーを積むと、</span><br/>
+      <span>プログラム実行終了時に、<strong class="feature-kw">トランザクションダイアログ</strong>を表示する。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/トランザクションダイアログ.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span><strong class="feature-kw">トランザクションダイアログ</strong>では、</span><br/>
+      <span>以下の状態を管理している。</span><br/>
+      <span>１．confirm：確認フェーズ</span><br/>
+      <span>２．verify：検証フェーズ（変更可否のチェック）</span><br/>
+      <span>３．commit：処理済み</span><br/>
+      <br/>
+      <span>１．confirmでは、</span><br/>
+      <span><strong class="feature-kw">仮想FS</strong>のオーダー内容に問題がないか確認できる。</span><br/>
+      <span>ファイル名を押下することで、変更内容を確認することができる。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/書き込み内容確認.JPG" alt="screenshot" loading="lazy" /></div>
+      <div class="feature-img-wrapper"><img src="/screen_shot/更新内容確認.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>問題ない場合、右下のコミットボタンを押下することで、</span><br/>
+      <span>２．verifyに進む。</span><br/>
+      <br/>
+      <span>検証フェーズでは、</span><br/>
+      <span>実FSをチェックし、変更可否のチェックを行う。</span><br/>
+      <span>・ファイル作成しようとしたディレクトリが存在しない</span><br/>
+      <span>・更新しようとしたファイルが存在しない</span><br/>
+      <span>・書き込み権限がない</span><br/>
+      <span>などの問題や不整合が発生した場合、</span><br/>
+      <span>ここでエラーとなり、実FSの変更処理は行わない。</span><br/>
+      <br/>
+      <span>1つもエラーが発生しなかった場合、</span><br/>
+      <span>実FSへの変更処理が実行される。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/書き込み完了.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>・ランタイム：<strong class="feature-kw">仮想FS</strong>にて<strong class="feature-kw">論理整合</strong>を検証</span><br/>
+      <span>・<strong class="feature-kw">トランザクション</strong>：目視での認識合わせと、実FS変更可否を検証</span><br/>
+      <br/>
+      <span>このワークフローにより、</span><br/>
+      <span>実装ミスにより意図していないFS変更や、</span><br/>
+      <span>途中までFS変更が実行されて、</span><br/>
+      <span>中途半端な状態で止まるといった問題を解消し、</span><br/>
+      <span>安全で間違いのないFS操作を実現する。</span><br/>
+      <br/>
+      <br/>
+      </div><h2 id="section-13" class="feature-heading">独自API「$channel」について</h2><div class="section-content">
+      <span><strong class="feature-kw">コンテキスト要素</strong>（work）の管理にて、</span><br/>
+      <span>output_methodで「plain」「channel」が選択できるが、</span><br/>
+      <span>ここでchannelを選択すると、</span><br/>
+      <span>通常の$print（$println）は注入されず、</span><br/>
+      <span>代わりに<strong class="feature-kw">チャンネルAPI</strong>を利用できるようになる。</span><br/>
+      <br/>
+      <span><strong class="feature-kw">チャンネルAPI</strong>は、出力対象の<strong class="feature-kw">ストリーム</strong>を任意で生成し、</span><br/>
+      <span><strong class="feature-kw">ストリーム</strong>生成時に取得するハンドルを経由して、</span><br/>
+      <span>任意の<strong class="feature-kw">ストリーム</strong>に対して出力を行うことができる。</span><br/>
+      <br/>
+      <span><strong class="feature-kw">ストリーム</strong>を複数生成した場合、</span><br/>
+      <span>実行結果画面で、<strong class="feature-kw">ストリーム</strong>を選択し、</span><br/>
+      <span><strong class="feature-kw">ストリーム</strong>ごとに出力結果を確認することができる。</span><br/>
+      <br/>
+      <span><strong class="feature-kw">ストリーム</strong>は以下のように生成する。</span><br/>
+      <span>const log = $channel.createTextStream('log');</span><br/>
+      <span>log.println('hello');</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/チャンネルストリーム出力.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/>
+      <span>また、<strong class="feature-kw">チャンネルAPI</strong>では純粋なテキストだけでなく、</span><br/>
+      <span><strong class="feature-kw">テーブル形式</strong>の<strong class="feature-kw">ストリーム</strong>を生成することも可能。</span><br/>
+      <span>以下のように、テーブルの列項目を定義を定義し、</span><br/>
+      <span>add関数で定義したオブジェクトを補完付きで挿入することができる。</span><br/>
+      <span>const report = $channel.createTableStream('report', [</span><br/>
+      <span>    &#123; name: 'id' &#125;,</span><br/>
+      <span>    &#123; name: 'name' &#125;,</span><br/>
+      <span>    &#123; name: 'age', type: 'number' &#125;,</span><br/>
+      <span>]);</span><br/>
+      <span>report.add(&#123; id: '001', name: 'taro', age: 22 &#125;);</span><br/>
+      <span>report.add(&#123; id: '002', name: 'jiro', age: 21 &#125;);</span><br/>
+      <span>report.add(&#123; id: '002', name: 'hana', age: 18 &#125;);</span><br/>
+      <br/>
+      <span>出力結果はテーブルで参照できる。</span><br/>
+      <div class="feature-img-wrapper"><img src="/screen_shot/テーブルストリーム出力.JPG" alt="screenshot" loading="lazy" /></div>
+      <br/></div>
+      </div>
+    </main>
+  </div>
+</Layout>
+
+<style>
+  html {
+    scroll-behavior: smooth;
+  }
+  .features-layout {
+    display: flex;
+    max-width: 1400px;
+    margin: 0 auto;
+    align-items: flex-start;
+  }
+  .sidebar {
+    position: sticky;
+    top: 64px;
+    width: 300px;
+    height: calc(100vh - 64px);
+    overflow-y: auto;
+    background-color: var(--bg-surface);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 2rem;
+  }
+  .sidebar-content h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+    color: var(--text-color);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .sidebar-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .sidebar-content li {
+    margin-bottom: 0.8rem;
+  }
+  .toc-link {
+    display: block;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    transition: color 0.2s;
+    position: relative;
+    padding-left: 14px;
+  }
+  .toc-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background-color: transparent;
+    transition: background-color 0.2s;
+    border-radius: 4px;
+  }
+  .toc-link:hover {
+    color: var(--text-color);
+  }
+  .toc-link.active {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-link.active::before {
+    background-color: var(--accent);
+  }
+
+  /* Custom scrollbar for sidebar */
+  .sidebar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .sidebar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .sidebar::-webkit-scrollbar-thumb {
+    background-color: rgba(255,255,255,0.1);
+    border-radius: 10px;
+  }
+
+  .main-content {
+    flex: 1;
+    padding: 3rem 4rem;
+    max-width: 1000px;
+  }
+  .content-wrapper {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: var(--text-muted);
+  }
+  .page-title {
+    font-size: 2.8rem;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+  }
+  .feature-heading {
+    font-size: 2rem;
+    margin-top: 5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+    scroll-margin-top: 100px; /* Header offset */
+  }
+  .section-content {
+    margin-bottom: 3rem;
+  }
+  .feature-img-wrapper {
+    margin: 2rem 0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px -10px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    background-color: #000;
+  }
+  .feature-img-wrapper img {
+    max-width: 100%;
+    display: block;
+  }
+  .feature-kw {
+    color: var(--accent);
+    font-weight: 600;
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const headings = document.querySelectorAll('h2.feature-heading');
+    const tocLinks = document.querySelectorAll('.toc-link');
+
+    const observer = new IntersectionObserver((entries) => {
+      // Find the most visible heading based on intersection
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const currentId = entry.target.getAttribute('id');
+          tocLinks.forEach(link => {
+            if (link.getAttribute('data-target') === currentId) {
+              link.classList.add('active');
+            } else {
+              link.classList.remove('active');
+            }
+          });
+        }
+      });
+    }, {
+      rootMargin: '-10% 0px -80% 0px' 
+      // トリガー判定：画面上部から10%〜20%の位置にh2が来た時をアクティブとする
+    });
+
+    headings.forEach(h => observer.observe(h));
+  });
+</script>

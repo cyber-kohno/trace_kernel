@@ -1,0 +1,105 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Philosophy - Trace Kernel">
+  <main class="philosophy-page">
+    <div class="container philosophy-container">
+      <h1>Philosophy — Programming as a Tool</h1>
+
+      <p>
+        多くのエンジニアにとって、<br/>
+        プログラムは「アプリを作るためのもの」です。
+      </p>
+
+      <p>
+        そのため、<br/>
+        ・ログを分析する<br/>
+        ・データを加工する<br/>
+        ・ファイルを整理する
+      </p>
+
+      <p>
+        そうした小さな問題に対して、<br/>
+        わざわざ「プログラムを書こう」という発想になりません。
+      </p>
+
+      <p>
+        書くことが難しいのではありません。<br/>
+        <strong>実行できる状態にするまでが重い</strong>のです。
+      </p>
+
+      <p>
+        ・環境構築<br/>
+        ・依存関係<br/>
+        ・設定
+      </p>
+
+      <p>
+        その準備が、<br/>
+        プログラミングを<strong>“特別な行為”</strong>にしてしまいました。
+      </p>
+
+      <p>
+        電卓を使うとき、環境構築はしません。<br/>
+        メモを書くとき、プロジェクトは作りません。
+      </p>
+
+      <p>
+        <strong>道具とは、本来そういうものです。</strong>
+      </p>
+
+      <p>
+        もし、TypeScriptが、<br/>
+        アプリ開いた瞬間に書いて、その場で実行できるとしたら。
+      </p>
+
+      <p>
+        必要なリソースが整理され、<br/>
+        すぐに参照することができるとしたら。
+      </p>
+
+      <p>
+        プログラミングは、<br/>
+        もっと<strong>身近な道具</strong>になるはずです。
+      </p>
+
+      <p>
+        プログラムは、開発のための手段にとどまらない。<br/>
+        それは本来、<strong>問題を解くための道具</strong>である。
+      </p>
+
+      <p>
+        Trace Kernelは、<br/>
+        その<strong>当たり前を取り戻す</strong>ために設計された<strong>実行基盤</strong>です。
+      </p>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .philosophy-page {
+    padding: 6rem 0;
+  }
+  .philosophy-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .philosophy-container h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 3rem;
+    color: var(--text-color);
+  }
+  .philosophy-container p {
+    font-size: 1.125rem;
+    line-height: 1.8;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+  /* MDの太字(**)をデザインに反映し、アクセントカラーで色付け */
+  .philosophy-container strong {
+    color: var(--accent);
+    font-weight: 700;
+  }
+</style>

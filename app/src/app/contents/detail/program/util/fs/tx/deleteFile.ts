@@ -6,7 +6,7 @@ namespace DeleteFile {
     // Public API
     // ==========================
 
-    export const executeByPath = (
+    export const byPath = (
         vfs: RuntimeUtil.VFSState,
         filePath: string
     ) => {
@@ -43,11 +43,11 @@ namespace DeleteFile {
             );
         }
 
-        deleteCore(state, filePath);
+        core(state, filePath);
     };
 
 
-    export const executeByToken = (
+    export const byToken = (
         vfs: RuntimeUtil.VFSState,
         token: RuntimeUtil.FileToken
     ) => {
@@ -62,7 +62,7 @@ namespace DeleteFile {
 
         const filePath = state.path;
 
-        deleteCore(state, filePath);
+        core(state, filePath);
     };
 
 
@@ -70,7 +70,7 @@ namespace DeleteFile {
     // Internal Shared Logic
     // ==========================
 
-    const deleteCore = (
+    const core = (
         state: RuntimeUtil.FileState,
         filePath: string
     ) => {

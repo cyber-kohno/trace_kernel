@@ -44,7 +44,7 @@ namespace RuntimeUtil {
         pathIndex: new Map(),
         fileTable: new Map(),
         reservedPaths: new Set(),
-        copyOps: new Array()
+        copyOps: new Array(),
     });
 
     export type FileToken = {

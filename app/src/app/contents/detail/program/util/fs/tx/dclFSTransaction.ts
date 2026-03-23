@@ -13,6 +13,7 @@ namespace DclFSTransaction {
         saveText: (filePath: string, content: string) => void;
         updateText: (token: RuntimeUtil.FileToken, content: string) => void;
         copyFile: (from: string, dest: string) => void;
+        copyFileByToken: (token: RuntimeUtil.FileToken, dest: string) => void;
         deleteFile: (filePath: string) => void;
         deleteFileByToken: (token: RuntimeUtil.FileToken) => void;
         renameFile: (targetFilePath: string, newFileName: string) => void;
@@ -32,20 +33,23 @@ namespace DclFSTransaction {
                 UpdateFile.execute(vfs, token, content);
             },
             copyFile: (from: string, dest: string) => {
-                CopyFile.execute(vfs, from, dest);
+                CopyFile.byPath(vfs, from, dest);
+            },
+            copyFileByToken: (token: RuntimeUtil.FileToken, dest: string) => {
+                CopyFile.byToken(vfs, token, dest);
             },
             deleteFile: (filePath: string) => {
-                DeleteFile.executeByPath(vfs, filePath);
+                DeleteFile.byPath(vfs, filePath);
             },
             deleteFileByToken: (token: RuntimeUtil.FileToken) => {
 
-                DeleteFile.executeByToken(vfs, token);
+                DeleteFile.byToken(vfs, token);
             },
             renameFile: (fileFilePath: string, newFileName: string) => {
-                RenameFile.executeByPath(vfs, fileFilePath, newFileName);
+                RenameFile.byPath(vfs, fileFilePath, newFileName);
             },
             renameFileByToken: (token: RuntimeUtil.FileToken, newName: string) => {
-                RenameFile.executeByToken(vfs, token, newName);
+                RenameFile.byToken(vfs, token, newName);
             },
         }
     };

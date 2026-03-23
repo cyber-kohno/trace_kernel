@@ -87,7 +87,7 @@
       </RecordDiv>
       <RecordDiv height={30} bgColor={"#555"} align="right">
         <OperationButton
-          name={$phase !== "commit" ? "Later" : "close"}
+          name={orders.length >= 1 && $phase !== "commit" ? "Later" : "close"}
           isLineup
           width={150}
           callback={close}
@@ -99,7 +99,7 @@
           callback={() => {
             commit();
           }}
-          isDisable={$phase === "commit"}
+          isDisable={orders.length === 0 || $phase === "commit"}
         />
       </RecordDiv>
     </div>
