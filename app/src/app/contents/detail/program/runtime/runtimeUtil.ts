@@ -25,12 +25,18 @@ namespace RuntimeUtil {
         current: number;
     }
 
+    export type DirState = {
+        path: string;
+        intent: "create" | "delete";
+    };
+
     /**
      * 仮想FSの状態を管理するプロパティ
      */
     export type VFSState = {
         pathIndex: Map<string, FileToken>;
         fileTable: Map<FileToken, FileState>;
+        dirTable: Map<string, DirState>;
         reservedPaths: Set<string>;
 
         copyOps: Array<CopyOps>;
@@ -38,11 +44,13 @@ namespace RuntimeUtil {
     export type CopyOps = {
         from: string;
         dest: string;
+        existVirtualDir: boolean;
     };
 
     export const getInitialVfsState = (): VFSState => ({
         pathIndex: new Map(),
         fileTable: new Map(),
+        dirTable: new Map(),
         reservedPaths: new Set(),
         copyOps: new Array(),
     });
@@ -75,6 +83,7 @@ namespace RuntimeUtil {
             original: string;
             current: string;
         };
+        existVirtualDir?: boolean;
     };
 
 };

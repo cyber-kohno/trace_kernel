@@ -1,6 +1,5 @@
 import type RuntimeUtil from "../../../runtime/runtimeUtil";
 import type TxExecuter from "./txExecuter";
-import type TxVerifyUtil from "./txVerifyUtil";
 
 namespace TxPlanUtil {
 

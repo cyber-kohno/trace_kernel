@@ -305,7 +305,7 @@
             isLineup
             width={120}
             isDisable={executeDisable}
-            tooltip={"Ctrl + Alt"}
+            tooltip={"Alt + Enter or F5"}
           />
         </Record>
       </div>

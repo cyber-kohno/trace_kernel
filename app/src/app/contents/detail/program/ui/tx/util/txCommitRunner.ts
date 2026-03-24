@@ -67,5 +67,19 @@ namespace TxCommitRunner {
             };
         }
     }
+
+    export const makeDir = async (
+        dirPath: string,
+    ): Promise<TxPlanUtil.CommitResult> => {
+        try {
+            await invoke<void>("make_dir", { dirPath });
+            return { kind: 'success' };
+        } catch (e: any) {
+            return {
+                kind: "error",
+                detail: String(e),
+            };
+        }
+    }
 }
 export default TxCommitRunner;

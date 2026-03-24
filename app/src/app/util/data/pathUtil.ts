@@ -150,6 +150,16 @@ namespace PathUtil {
         return na === nb;
     }
 
+    /**
+     * ancestorがdescendantの親階層かどうかを判定する
+     */
+    export const isAncestor = (ancestor: string, descendant: string): boolean => {
+        if (!descendant.startsWith(ancestor)) {
+            return false;
+        }
+        const nextChar = descendant.charAt(ancestor.length);
+        return nextChar === "/" || nextChar === "\\";
+    };
 }
 
 export default PathUtil;

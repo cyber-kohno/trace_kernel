@@ -7,7 +7,8 @@ namespace TxPlanNormalize {
         | ModifyFileOrder
         | DeleteFileOrder
         | RenameFileOrder
-        | CopyFileOrder;
+        | CopyFileOrder
+        | MakeDirOrder;
 
     type Snapshot = {
         mtimeMs: number;
@@ -18,14 +19,13 @@ namespace TxPlanNormalize {
         path: string;
         content: string;
         encoding: "utf8" | "sjis";
+        existVirtualDir: boolean;
     }
 
     export interface ModifyFileOrder {
         type: "modify_file";
         path: string;
-
         snapshot: Snapshot;
-
         original: string;
         current: string;
         encoding: "utf8" | "sjis";
@@ -44,13 +44,21 @@ namespace TxPlanNormalize {
         type: "copy_file";
         from: string;
         to: string;
+        existVirtualDir: boolean;
+    }
+    export interface MakeDirOrder {
+        type: "create_dir";
+        path: string;
     }
 
     export const convertVfsToOrder = (vfs: RuntimeUtil.VFSState): Order[] => {
         const orders: Order[] = [];
 
+        for (const [_, state] of vfs.dirTable.entries()) {
+            orders.push({ type: 'create_dir', path: state.path });
+        }
         vfs.copyOps.forEach(op => {
-            orders.push({ type: 'copy_file', from: op.from, to: op.dest });
+            orders.push({ type: 'copy_file', from: op.from, to: op.dest, existVirtualDir: op.existVirtualDir });
         });
 
         for (const [_, state] of vfs.fileTable.entries()) {
@@ -62,7 +70,9 @@ namespace TxPlanNormalize {
                     case 'create': {
                         if (!state.textCache) throw new Error();
                         const { current, encoding } = state.textCache;
-                        orders.push({ type: 'create_file', path: state.path, content: current, encoding });
+                        const existVirtualDir = state.existVirtualDir;
+                        if (existVirtualDir == undefined) throw new Error();
+                        orders.push({ type: 'create_file', path: state.path, content: current, encoding, existVirtualDir });
                     } break;
                     case 'modify': {
                         if (!state.textCache || !state.snapshot) throw new Error();

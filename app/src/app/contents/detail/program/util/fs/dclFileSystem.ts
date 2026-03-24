@@ -34,6 +34,7 @@ namespace DclFileSystem {
             modifiedAt?: number;
         }
         type TransactionAPI = {
+            makeDir: (dirPath: string) => void;
             openText: (filePath: string, encorde: "utf8" | "sjis") => Promise<{ token: FileToken; content: string; }>;
             saveText: (filePath: string, content: string) => void;
             updateText: (token: FileToken, content: string) => void;

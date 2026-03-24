@@ -35,22 +35,38 @@ namespace TxExecuter {
         setPhase("verify");
 
         const orderPriority: Record<string, number> = {
-            copy_file: 0,
-            delete_file: 1,
-            create_file: 2,
-            modify_file: 3,
-            rename_file: 4,
+            create_dir: 0,
+            copy_file: 1,
+            delete_file: 2,
+            create_file: 3,
+            modify_file: 4,
+            rename_file: 5,
         };
 
         const rows = props.rows.slice().sort((a, b) => {
             return orderPriority[a.order.type] - orderPriority[b.order.type];
         });
 
+        const reserveDirs: string[] = [];
         for (const row of rows) {
             const { order, status } = row;
             switch (order.type) {
+                case "create_dir":
+                    const result = await TxVerifyUtil.checkCreateDir(
+                        order.path
+                    );
+                    status.verify = result;
+                    if (result.kind === 'checked') reserveDirs.push(order.path);
+                    break;
+                case "copy_file":
+                    status.verify = await TxVerifyUtil.checkCopyFile(
+                        order.from,
+                        order.to,
+                        reserveDirs
+                    );
+                    break;
                 case "create_file":
-                    status.verify = await TxVerifyUtil.checkSaveFile(order.path);
+                    status.verify = await TxVerifyUtil.checkSaveFile(order.path, reserveDirs);
                     break;
                 case "modify_file":
                     status.verify = await TxVerifyUtil.checkExistsFile(order.path, false);
@@ -79,6 +95,11 @@ namespace TxExecuter {
         for (const row of rows) {
             const { order, status } = row;
             switch (order.type) {
+                case "create_dir": {
+                    status.commit = await TxCommitRunner.makeDir(
+                        order.path
+                    );
+                } break;
                 case "copy_file": {
                     status.commit = await TxCommitRunner.copyFile(
                         order.from, order.to

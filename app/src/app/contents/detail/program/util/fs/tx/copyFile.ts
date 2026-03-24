@@ -1,3 +1,4 @@
+import PathUtil from "../../../../../../util/data/pathUtil";
 import RuntimeUtil from "../../../runtime/runtimeUtil";
 
 namespace CopyFile {
@@ -61,7 +62,27 @@ namespace CopyFile {
         from: string,
         dest: string
     ): void => {
-        const { pathIndex, reservedPaths, copyOps } = vfs;
+        const { pathIndex, reservedPaths, copyOps, dirTable } = vfs;
+
+
+        let existVirtualDir = false;
+        const parent = PathUtil.normalize(PathUtil.dirname(dest));
+
+        for (const [path, entry] of dirTable.entries()) {
+
+            // 親ディレクトリに対する祖先判定
+            if (
+                PathUtil.samePath(path, parent) ||
+                PathUtil.isAncestor(path, parent)
+            ) {
+                if (entry.intent === "create") {
+                    existVirtualDir = true;
+                    break;
+                } else if (entry.intent === "delete") {
+                    throw new Error(`Ancestor directory is scheduled for deletion: ${path}`);
+                }
+            }
+        }
 
         if (reservedPaths.has(dest)) {
             throw new Error("Destination path is already reserved.");
@@ -74,8 +95,7 @@ namespace CopyFile {
         // 予約
         reservedPaths.add(dest);
 
-        copyOps.push({ from, dest });
+        copyOps.push({ from, dest, existVirtualDir });
     };
-
 }
 export default CopyFile;
