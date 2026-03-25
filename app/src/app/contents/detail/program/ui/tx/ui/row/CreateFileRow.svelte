@@ -7,14 +7,14 @@
     export let setDetail: (v: TxDetailUtil.Props | null) => void;
 </script>
 
-<div
+<button
     class="file"
     onclick={() => {
         setDetail(TxDetailUtil.createSingleProps(order.content));
     }}
 >
     {PathUtil.basename(order.path)}
-</div>
+</button>
 
 <style>
     .file {
@@ -23,7 +23,9 @@
         vertical-align: top;
         font-size: 20px;
         font-weight: 400;
-        width: calc(100% - 80px);
+        width: 100%;
+        height: 100%;
         color: yellow;
+        background-color: transparent;
     }
 </style>

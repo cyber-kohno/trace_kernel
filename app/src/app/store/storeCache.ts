@@ -22,7 +22,7 @@ namespace StoreCache {
         }
     }
 
-    export const addEachChoose = (index: number, root: StoreDataset.UsableNode) => {
+    export const addDatasetChoose = (index: number, root: StoreDataset.UsableNode) => {
         add({ type: 'dataset-choose', index, value: root });
     }
 
@@ -38,7 +38,7 @@ namespace StoreCache {
         const props = map.find(m => m.index === key.index && m.type === key.type);
         return props == null ? null : props.value;
     }
-    export const getEachChoose = (index: number): StoreDataset.UsableNode | null => {
+    export const getDatasetChoose = (index: number): StoreDataset.UsableNode | null => {
         const value = getValue({ type: 'dataset-choose', index });
         return value;
     }

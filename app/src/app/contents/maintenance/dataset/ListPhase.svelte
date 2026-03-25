@@ -2,12 +2,12 @@
   import type StoreDataset from "../../../store/storeDataset";
   import Wrap from "../../../util/layout/Wrap.svelte";
 
-  export let dataSet: StoreDataset.Props;
+  export let dataset: StoreDataset.Props;
 
   const targets = (() => {
-    if (dataSet.targets == null) throw new Error();
+    if (dataset.targets == null) throw new Error();
     // return dataSet.targets.join("\n");
-    return dataSet.targets;
+    return dataset.targets;
   })();
 </script>
 

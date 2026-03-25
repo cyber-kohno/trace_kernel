@@ -18,7 +18,7 @@
 
   let root = writable<StoreDataset.UsableNode>(
     (() => {
-      const ret = StoreCache.getEachChoose($store.target?.index ?? -1);
+      const ret = StoreCache.getDatasetChoose($store.target?.index ?? -1);
       if (ret == null) throw new Error();
       return ret;
     })(),

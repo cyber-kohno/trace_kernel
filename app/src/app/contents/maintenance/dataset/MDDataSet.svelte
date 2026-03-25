@@ -55,11 +55,11 @@
     StoreInvalidate.remove("dataset");
   });
 
-  $: hasTree = StoreCache.getEachChoose(itemIndex);
+  $: hasTree = StoreCache.getDatasetChoose(itemIndex);
 
   $: directoryTree = (() => {
     $store.cacheMap; // 値変更を検知するために記述
-    const value = StoreCache.getEachChoose(itemIndex);
+    const value = StoreCache.getDatasetChoose(itemIndex);
     return value;
   })();
 
@@ -164,7 +164,7 @@
         {:else if $choosePhase === "choose"}
           <ChoosePhase dataset={dataset} {setPhase} {validate} />
         {:else if $choosePhase === "list"}
-          <ListPhase dataSet={dataset} />
+          <ListPhase dataset={dataset} />
         {/if}
       </Record>
     </div>

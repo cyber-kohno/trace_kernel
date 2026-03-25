@@ -10,7 +10,7 @@ import StoreWorkspace from '../../store/storeWorkspace';
 
 namespace FileUtil {
     export const VERSION = 'v1.10';
-    export const APP_NAME = `Trace Kernel ${VERSION}.2`;
+    export const APP_NAME = `Trace Kernel ${VERSION}.3`;
     const FILE_EXTENSION: string = `${VERSION}.trk`;
 
     export const updateAppTitle = async () => {

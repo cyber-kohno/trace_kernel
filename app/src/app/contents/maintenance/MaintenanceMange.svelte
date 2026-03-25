@@ -4,7 +4,7 @@
   import MDResourece from "./MDResourece.svelte";
   import MDWork from "./work/MDWork.svelte";
   import type storeWorkspace from "../../store/storeWorkspace";
-  import MDDataset from "./dataset/MDDataSet.svelte";
+  import MDDataset from "./dataset/MDDataset.svelte";
 
   export let target: storeWorkspace.Target;
 </script>

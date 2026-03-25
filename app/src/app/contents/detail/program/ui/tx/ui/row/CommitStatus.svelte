@@ -1,6 +1,5 @@
 <script lang="ts">
-    import type TxExecuter from "../../util/txExecuter";
-
+  import type TxExecuter from "../../util/txExecuter";
 
   export let status: TxExecuter.Status;
 
@@ -17,11 +16,11 @@
 </script>
 
 {#if message}
-  <div class="error">{message}</div>
+  <div class="msg">{message}</div>
 {/if}
 
 <style>
-  .error {
+  .msg {
     display: inline-block;
     position: relative;
     width: 100%;

@@ -61,7 +61,7 @@
           ToastUtil.disp({ text: "No matching files found." });
           return;
         }
-        StoreCache.addEachChoose($store.target?.index ?? -1, res);
+        StoreCache.addDatasetChoose($store.target?.index ?? -1, res);
         setPhase("choose");
 
         $store = { ...$store };
