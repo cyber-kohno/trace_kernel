@@ -4,7 +4,7 @@ import ExcelParser from "./excelParser";
 
 namespace DclParser {
 
-    type ParseerAPI = {
+    type ParserAPI = {
         xml: (source: string) => Promise<DomParser.DomController>;
         excel: (buffer: ArrayBuffer) => Promise<ExcelParser.Book>;
     }
@@ -28,7 +28,7 @@ namespace DclParser {
             col: number;
             value: string;
         };
-        type ParseerAPI = {
+        type ParserAPI = {
             xml: (source: string) => Promise<DomController>;
             excel: (buffer: ArrayBuffer) => Promise<Book>;
         };
@@ -36,7 +36,7 @@ namespace DclParser {
 
     export const getValueDeclare = () => 'ParseerAPI';
 
-    export const getObject = (rustCache: RuntimeUtil.RustCache): ParseerAPI => {
+    export const getObject = (rustCache: RuntimeUtil.RustCache): ParserAPI => {
 
         return {
             xml: (source: string) => {

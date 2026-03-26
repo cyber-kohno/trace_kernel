@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Trace Kernel : Abstract Concepts</title>
+<style>
+  * { box-sizing: border-box; }
+  body { 
+    background-color: #f8fafc; /* 清潔感のある白・ライトグレー背景 */
+    color: #334155; 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    display: flex; flex-direction: column; align-items: center; padding: 40px; margin: 0;
+  }
+  .header { text-align: center; margin-bottom: 40px; max-width: 700px; }
+  .header h1 { color: #0f172a; letter-spacing: 1px; }
+  p { line-height: 1.6; }
+  
+  .grid { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; max-width: 1000px; }
+  
+  .card { 
+    background: #ffffff; 
+    padding: 35px 30px; border-radius: 20px; 
+    display: flex; flex-direction: column; align-items: center; 
+    width: 320px; 
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); 
+    border: 1px solid #e2e8f0;
+  }
+  .svg-container { 
+    width: 140px; height: 140px; 
+    display: flex; justify-content: center; align-items: center; margin-bottom: 24px; 
+    border-radius: 32px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08); /* アプリアイコンのような影 */
+  }
+  .title { font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; color: #0f172a; }
+  .desc { font-size: 0.95rem; color: #64748b; text-align: center; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>Trace Kernel</h1>
+    <p>Logo Concepts — "The Abstract & Clean"</p>
+    <p>頭文字や具体的なモノ（歯車など）を捨て、**「軽さと親しみやすさ」**に全振りした、CodexやFigmaのような「意味を持たないが印象に残るクリーンな形」のアプローチです。</p>
+  </div>
+
+  <div class="grid">
+    <!-- Variant A: The Sweeping Trace -->
+    <div class="card">
+      <div class="title">A: The Sweeping Trace</div>
+      <div class="svg-container">
+        <svg viewBox="0 0 100 100" width="100%" height="100%">
+          <!-- App Icon Base -->
+          <rect width="100" height="100" rx="24" fill="#ffffff" />
+          <!-- Core -->
+          <circle cx="45" cy="55" r="16" fill="#3b82f6" />
+          <!-- Trace Line -->
+          <path d="M 25 40 Q 50 10 75 35 T 60 80" fill="none" stroke="#10b981" stroke-width="12" stroke-linecap="round" />
+        </svg>
+      </div>
+      <div class="desc">ズッシリとした安定感のある「コア（青）」と、それを優しくなぞるような滑らかな「軌跡（緑）」のみの構成。非常に柔らかく、文房具のような親しみやすさがあります。</div>
+    </div>
+
+    <!-- Variant B: The Infinite Ribbon -->
+    <div class="card">
+      <div class="title">B: The Fluid Ribbon</div>
+      <div class="svg-container">
+        <svg viewBox="0 0 100 100" width="100%" height="100%">
+          <rect width="100" height="100" rx="24" fill="#ffffff" />
+          <!-- Ribbon Path -->
+          <path d="M 30 75 C 10 50, 30 25, 50 50 C 70 75, 90 50, 70 25" fill="none" stroke="#6366f1" stroke-width="14" stroke-linecap="round" />
+        </svg>
+      </div>
+      <div class="desc">VSCodeのアイコン等にも通じる「一筆書きの滑らかなリボン」。文字でも機械でもない、ただ純粋な「流れ」だけを抽出した、極めてクリーンでモダンなデザインです。</div>
+    </div>
+
+    <!-- Variant C: The Playful Blob -->
+    <div class="card">
+      <div class="title">C: Focus & Smile</div>
+      <div class="svg-container">
+        <svg viewBox="0 0 100 100" width="100%" height="100%">
+          <rect width="100" height="100" rx="24" fill="#ffffff" />
+          <!-- Primitives -->
+          <circle cx="35" cy="40" r="14" fill="#f43f5e" />
+          <rect x="55" y="26" width="28" height="28" rx="14" fill="#f59e0b" />
+          <!-- Smile/Trace line -->
+          <path d="M 25 70 Q 50 85 75 70" fill="none" stroke="#3b82f6" stroke-width="12" stroke-linecap="round" />
+        </svg>
+      </div>
+      <div class="desc">Figma等に見られる、幾何学図形の組み合わせ。一見すると「微笑み（スマイル）」のようにも見える柔らかい軌跡が、作業の敷居をグッと下げてくれるポップな案です。</div>
+    </div>
+  </div>
+</body>
+</html>

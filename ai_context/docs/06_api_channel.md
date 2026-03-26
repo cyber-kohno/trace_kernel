@@ -36,6 +36,8 @@ error.println('警告: 対象ファイルが見つかりません');
 log.println('処理を終了しました');
 ```
 
+![チャンネルストリーム出力](screen_shot/チャンネルストリーム出力.JPG)
+
 実行結果画面では、`log` ストリームと `error` ストリームをそれぞれ切り替えて確認できます。
 
 ---
@@ -84,6 +86,8 @@ for (const d of $dataset.files) {
   report.add({ id: d.fileName, fileName: d.relativePath, matchCount: count });
 }
 ```
+
+![テーブルストリーム出力](screen_shot/テーブルストリーム出力.JPG)
 
 実行結果画面では、テーブル形式でデータを確認できます。
 

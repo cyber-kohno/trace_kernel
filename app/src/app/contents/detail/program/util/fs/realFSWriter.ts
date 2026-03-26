@@ -4,8 +4,8 @@ import WorkerInvoke from "../workerInvoke";
 
 export namespace RealFSWriter {
 
-    const assertAbsolutePath = async (path: string, label: string) => {
-        if (!(await PathUtil.isAbsolute(path))) {
+    const assertAbsolutePath = (path: string, label: string) => {
+        if (!(PathUtil.isAbsolute(path))) {
             throw new Error(`${label} must be absolute path.`);
         }
     }
@@ -59,12 +59,13 @@ export namespace RealFSWriter {
         return WorkerInvoke.call<void>("make_dir", { dirPath });
     };
 
-    export const deletePath = async (path: string, target: 'directory' | 'file') => {
-        assertAbsolutePath(path, `${target} path`);
-        return WorkerInvoke.call<void>("delete_path", {
-            path,
-            target
-        });
+    export const deleteFile = async (path: string) => {
+        assertAbsolutePath(path, 'file path');
+        return WorkerInvoke.call<void>("delete_file", { path });
+    }
+    export const deleteDir = async (path: string) => {
+        assertAbsolutePath(path, 'file dir');
+        return WorkerInvoke.call<void>("delete_dir", { path });
     }
 
     export const renameWithinDirectory = async (

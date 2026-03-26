@@ -4,6 +4,8 @@
 
 処理の進捗状況や現在の状態をリアルタイムで確認できます。
 
+![スクリプト実行中](screen_shot/スクリプト実行中.JPG)
+
 ---
 
 ## プログレスバー — `useProgress`
@@ -33,6 +35,8 @@ const { tick } = $state.useProgress(totalCount);
 | `tick` | `() => void` | プログレスバーを1つ進める関数 |
 
 ### コード例
+
+![スクリプト実行中（プログレスバー）](screen_shot/スクリプト実行中（プログレスバー）.JPG)
 
 ```typescript
 const { tick } = $state.useProgress($dataset.files.length);
@@ -71,6 +75,8 @@ const [update1, update2] = $state.useMonitor(2);
 `((text: string) => void)[]` — スロット数と同じ長さの更新関数の配列
 
 ### コード例
+
+![スクリプト実行中（モニター）](screen_shot/スクリプト実行中（モニター）.JPG)
 
 ```typescript
 const [summary, current] = $state.useMonitor(2);

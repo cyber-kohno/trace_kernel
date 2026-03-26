@@ -6,11 +6,13 @@ import UpdateFile from "./updateFile";
 import OpenText from "./openText";
 import CopyFile from "./copyFile";
 import MakeDir from "./makeDir";
+import DeleteDir from "./deleteDir";
 
 namespace DclFSTransaction {
 
     export type TransactionAPI = {
         makeDir: (dirPath: string) => void;
+        deleteDir: (dirPath: string) => void;
         openText: (filePath: string, encorde: "utf8" | "sjis") => Promise<{ token: RuntimeUtil.FileToken; content: string; }>;
         saveText: (filePath: string, content: string) => void;
         updateText: (token: RuntimeUtil.FileToken, content: string) => void;
@@ -27,6 +29,9 @@ namespace DclFSTransaction {
         return {
             makeDir: (dirPath: string) => {
                 MakeDir.execute(vfs, dirPath);
+            },
+            deleteDir: (dirPath: string) => {
+                DeleteDir.execute(vfs, dirPath);
             },
             openText: (filePath: string, encoding?: "utf8" | "sjis") => {
                 return OpenText.execute(vfs, filePath, encoding ?? 'utf8');

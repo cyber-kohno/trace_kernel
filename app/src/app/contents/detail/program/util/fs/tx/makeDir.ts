@@ -52,8 +52,6 @@ namespace MakeDir {
             intent: "create"
         });
     };
-
-
 }
 
 export default MakeDir;

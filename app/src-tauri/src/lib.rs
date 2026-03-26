@@ -6,21 +6,23 @@ mod scan;
 mod stream;
 use std::collections::HashMap;
 use std::sync::Mutex;
+use tauri::WindowEvent;
 use tauri::{DragDropEvent, Emitter};
-use tauri::{WindowEvent};
 
+use file_system::copy_file;
+use file_system::delete_dir;
+use file_system::delete_dir_all;
+use file_system::delete_file;
 use file_system::exists_path;
 use file_system::glob_path;
+use file_system::make_dir;
 use file_system::read_binary;
 use file_system::read_dir;
 use file_system::read_file;
-use file_system::save_text;
-use file_system::save_binary;
-use file_system::copy_file;
-use file_system::stat;
-use file_system::delete_path;
-use file_system::make_dir;
 use file_system::rename;
+use file_system::save_binary;
+use file_system::save_text;
+use file_system::stat;
 use scan::scan_directory;
 
 use process::run_process;
@@ -77,7 +79,9 @@ pub fn run() {
             read_dir,
             copy_file,
             make_dir,
-            delete_path,
+            delete_file,
+            delete_dir,
+            delete_dir_all,
             stat,
             rename,
             get_cli_args,
