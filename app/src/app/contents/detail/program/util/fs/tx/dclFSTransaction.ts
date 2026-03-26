@@ -28,8 +28,8 @@ namespace DclFSTransaction {
             makeDir: (dirPath: string) => {
                 MakeDir.execute(vfs, dirPath);
             },
-            openText: (filePath: string, encoding: "utf8" | "sjis") => {
-                return OpenText.execute(vfs, filePath, encoding);
+            openText: (filePath: string, encoding?: "utf8" | "sjis") => {
+                return OpenText.execute(vfs, filePath, encoding ?? 'utf8');
             },
             saveText: (filePath: string, content: string) => {
                 return SaveFile.execute(vfs, filePath, content);

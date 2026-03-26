@@ -35,7 +35,7 @@ namespace DclFileSystem {
         }
         type TransactionAPI = {
             makeDir: (dirPath: string) => void;
-            openText: (filePath: string, encorde: "utf8" | "sjis") => Promise<{ token: FileToken; content: string; }>;
+            openText: (filePath: string, encorde?: "utf8" | "sjis") => Promise<{ token: FileToken; content: string; }>;
             saveText: (filePath: string, content: string) => void;
             updateText: (token: FileToken, content: string) => void;
             copyFile: (from: string, dest: string) => void;
@@ -51,7 +51,7 @@ namespace DclFileSystem {
             stat: (path: string) => Promise<FileStat>,
             readDir: (dir: string) => Promise<{ name: string; isDir: boolean; }[]>,
             readBinary: (filePath: string) => Promise<ArrayBuffer>,
-            readText: (filePath: string, encoding: 'utf8' | 'sjis') => Promise<string>;
+            readText: (filePath: string, encoding?: 'utf8' | 'sjis') => Promise<string>;
             saveText: (filePath: string, content: string) => Promise<void>;
             copyFile: (src: string, dest: string) => Promise<void>;
             makeDir: (dirPath: string) => Promise<void>;
@@ -83,8 +83,8 @@ namespace DclFileSystem {
                 const bytes = await RealFSWriter.readBinary(filePath);
                 return bytes.buffer;
             },
-            readText: async (filePath: string, encoding: 'utf8' | 'sjis') => {
-                const req: FileRequest = { filePath, encoding };
+            readText: async (filePath: string, encoding?: 'utf8' | 'sjis') => {
+                const req: FileRequest = { filePath, encoding: encoding ?? 'utf8' };
                 return WorkerInvoke.call<string>("read_file", { req });
             },
             saveText: async (filePath: string, content: string) => {
