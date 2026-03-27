@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 100" width="320" height="100">
+  <defs>
+    <linearGradient id="lineGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4fc3f7;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#4fc3f7;stop-opacity:0"/>
+    </linearGradient>
+    <filter id="glow1">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="320" height="100" rx="10" fill="#0d1117"/>
+
+  <!-- Play button triangle -->
+  <polygon points="12,26 12,54 36,40" fill="#4fc3f7" filter="url(#glow1)"/>
+
+  <!-- Connector line from play button -->
+  <line x1="36" y1="40" x2="52" y2="40" stroke="#4fc3f7" stroke-width="2.5" opacity="0.8"/>
+
+  <!-- Trace waveform path -->
+  <polyline
+    points="52,40 64,40 70,24 78,56 86,32 94,48 100,40 130,40 136,40 142,28 150,52 158,36 166,44 170,40 200,40"
+    fill="none"
+    stroke="url(#lineGrad1)"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    filter="url(#glow1)"
+  />
+
+  <!-- Text: Trace -->
+  <text x="12" y="78" font-family="'JetBrains Mono', 'Fira Code', 'Courier New', monospace" font-size="22" font-weight="700" fill="#ffffff" letter-spacing="1">Trace</text>
+
+  <!-- Text: Kernel -->
+  <text x="96" y="78" font-family="'JetBrains Mono', 'Fira Code', 'Courier New', monospace" font-size="22" font-weight="300" fill="#4fc3f7" letter-spacing="1">Kernel</text>
+</svg>

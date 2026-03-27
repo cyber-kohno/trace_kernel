@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#222222;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#111111;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background square with rounded corners -->
+  <rect width="256" height="256" rx="48" fill="url(#bgGrad)"/>
+
+  <!-- Subtle inner border -->
+  <rect x="6" y="6" width="244" height="244" rx="44" fill="none" stroke="#ffab40" stroke-width="1.5" opacity="0.2"/>
+
+  <!-- Terminal prompt ">" -->
+  <text
+    x="30"
+    y="138"
+    font-family="'JetBrains Mono', 'Fira Code', 'Courier New', monospace"
+    font-size="80"
+    font-weight="700"
+    fill="#ffab40"
+    filter="url(#glow)"
+  >&#62;</text>
+
+  <!-- Blinking cursor bar -->
+  <rect x="100" y="108" width="22" height="10" rx="3" fill="#ffab40" filter="url(#glow)">
+    <animate attributeName="opacity" values="1;0;1" dur="1.2s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Dot trail -->
+  <circle cx="142" cy="128" r="6" fill="#ffab40" opacity="0.9"/>
+  <circle cx="166" cy="128" r="6" fill="#ffab40" opacity="0.65"/>
+  <circle cx="190" cy="128" r="6" fill="#ffab40" opacity="0.35"/>
+
+  <!-- Result block (bottom right area) -->
+  <rect x="30" y="162" width="196" height="58" rx="10" fill="none" stroke="#ffab40" stroke-width="2" opacity="0.4"/>
+  <!-- Output lines inside block -->
+  <line x1="48" y1="181" x2="188" y2="181" stroke="#ffab40" stroke-width="5" stroke-linecap="round" opacity="0.85"/>
+  <line x1="48" y1="197" x2="168" y2="197" stroke="#ffab40" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+  <line x1="48" y1="213" x2="140" y2="213" stroke="#ffab40" stroke-width="5" stroke-linecap="round" opacity="0.35"/>
+</svg>

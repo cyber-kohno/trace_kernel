@@ -1,12 +1,25 @@
 import type RuntimeUtil from "../../runtime/runtimeUtil";
 import DomParser from "./domParser";
 import ExcelParser from "./excelParser";
+import type Inspector from "./inspector";
 
 namespace DclParser {
 
     type ParseerAPI = {
-        xml: (source: string) => Promise<DomParser.DomController>;
-        excel: (buffer: ArrayBuffer) => Promise<ExcelParser.Book>;
+        xml: {
+            inspector: (source: string) => Promise<DomParser.DomController>;
+        };
+        excel: {
+            object: (buffer: ArrayBuffer) => Promise<ExcelParser.Book>;
+        }
+        csv: {
+            object: <T = any>(text: string) => T[];
+            inspector: (text: string) => Inspector.TableInspector;
+        };
+        tsv: {
+            object: <T = any>(text: string) => T[];
+            inspector: (text: string) => Inspector.TableInspector;
+        };
     }
 
     export const getTypeDeclare = () => `
@@ -39,11 +52,23 @@ namespace DclParser {
     export const getObject = (rustCache: RuntimeUtil.RustCache): ParseerAPI => {
 
         return {
-            xml: (source: string) => {
-                return DomParser.parse(rustCache, source);
+            xml: {
+                inspector: (source: string) => {
+                    return DomParser.parse(rustCache, source);
+                }
             },
-            excel: (buffer: ArrayBuffer) => {
-                return ExcelParser.parse(buffer);
+            excel: {
+                object: (buffer: ArrayBuffer) => {
+                    return ExcelParser.parse(buffer);
+                }
+            },
+            csv: {
+                inspector: (text) => {
+
+                },
+                object: (text) => {
+
+                }
             }
         };
     }
