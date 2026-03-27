@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Trace Kernel : Hexagon Concepts</title>
+<style>
+  * { box-sizing: border-box; }
+  body { 
+    background-color: #0f172a; /* Slate 900 */
+    color: #f8fafc; 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    display: flex; flex-direction: column; align-items: center; padding: 40px; margin: 0;
+  }
+  .header { text-align: center; margin-bottom: 40px; }
+  .header h1 { color: #6366f1; letter-spacing: 1px; }
+  p { color: #94a3b8; }
+  
+  .grid { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; max-width: 1000px; }
+  
+  .card { 
+    background: #1e293b; 
+    padding: 30px; border-radius: 16px; 
+    display: flex; flex-direction: column; align-items: center; 
+    width: 300px; 
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); 
+    border: 1px solid #334155;
+  }
+  .svg-container { 
+    width: 180px; height: 180px; 
+    display: flex; justify-content: center; align-items: center; margin-bottom: 24px; 
+  }
+  .title { font-size: 1.25rem; font-weight: 600; margin-bottom: 12px; color: #f8fafc; letter-spacing: 0.5px;text-align:center; }
+  .desc { font-size: 0.9rem; color: #cbd5e1; text-align: center; line-height: 1.6; }
+  
+  /* Animations */
+  @keyframes trace {
+    0% { stroke-dashoffset: 100; }
+    50% { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: 0; }
+  }
+  .trace-anim {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: trace 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+  
+  @keyframes flow {
+    0% { stroke-dashoffset: 28; }
+    100% { stroke-dashoffset: 0; }
+  }
+  .flow-anim {
+    animation: flow 1s linear infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+  }
+  .pulse-anim {
+    transform-origin: 50px 50px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1 style="color: #6366f1;">Trace Kernel</h1>
+    <p>Logo Concepts — "The Hexagon Path"</p>
+    <p>開発者向けツールとしての【堅牢な基盤】と、中心（Kernel）に到達する【軌跡・経路】を表現したSVGロゴ案です。</p>
+  </div>
+
+  <div class="grid">
+    <!-- Variant A: The Circuit Node -->
+    <div class="card">
+      <div class="title">A: The Circuit Node</div>
+      <div class="svg-container">
+        <svg viewBox="0 0 100 100" width="100%" height="100%">
+          <path d="M 50 15 L 80 32.5 L 80 67.5 L 50 85 L 20 67.5 L 20 32.5 Z" fill="#0f172a" stroke="#334155" stroke-width="4" stroke-linejoin="round"/>
+          <!-- Trace Path -->
+          <path d="M 0 50 L 28 50 L 39 69 L 50 50" fill="none" stroke="#f43f5e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" class="trace-anim" />
+          <!-- Kernel Dot -->
+          <circle cx="50" cy="50" r="7" fill="#f43f5e" class="pulse-anim" />
+          <!-- Circuit dots -->
+          <circle cx="28" cy="50" r="3.5" fill="#f43f5e" />
+          <circle cx="39" cy="69" r="3.5" fill="#f43f5e" />
+        </svg>
+      </div>
+      <div class="desc">外部からの実行命令が、迷路のような複雑な設定をバイパスし、直線的かつカクカクとした電子回路のように中心のカーネル（核）へと直結するデザイン。</div>
+    </div>
+
+    <!-- Variant B: Hex-TK Monogram -->
+    <div class="card">
+      <div class="title">B: Hex-TK Outline</div>
+      <div class="svg-container">
+        <svg viewBox="0 0 100 100" width="100%" height="100%">
+          <!-- Hexagon Border -->
+          <path d="M 50 10 L 85 30 L 85 70 L 50 90 L 15 70 L 15 30 Z" fill="none" stroke="#38bdf8" stroke-width="5" stroke-linejoin="round" />
+          <!-- Inner TK Trace -->
+          <path d="M 35 30 L 65 30 M 50 30 L 50 70 M 50 50 L 68 70" fill="none" stroke="#f8fafc" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" class="trace-anim"/>
+        </svg>
+      </div>
+      <div class="desc">プログラマに馴染み深いヘキサゴンの枠内で、光る軌跡（Trace）がシュッと走って「T」と「K」のモノグラムを描き出す、幾何学的でクリーンなデザイン。</div>
+    </div>
+
+    <!-- Variant C: The Data Flow -->
+    <div class="card">
+      <div class="title">C: The Core Gateway</div>
+      <div class="svg-container">
+        <svg viewBox="0 0 100 100" width="100%" height="100%">
+          <!-- Open Hexagon (missing bottom-left edge) -->
+          <path d="M 20 32.5 L 50 15 L 80 32.5 L 80 67.5 L 50 85" fill="none" stroke="#475569" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+          <!-- Flowing Trace -->
+          <path d="M 0 85 L 20 67.5 L 35 67.5 L 50 50" fill="none" stroke="#10b981" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8,6" class="flow-anim" />
+          <!-- Center Kernel -->
+          <circle cx="50" cy="50" r="10" fill="#10b981" class="pulse-anim" />
+        </svg>
+      </div>
+      <div class="desc">強固な壁（ヘキサゴン）に設けられたゲートから、データの軌跡（点線ストリーム）が直接カーネルへ流れ込み、鼓動している様子を表現したテックデザイン。</div>
+    </div>
+  </div>
+</body>
+</html>

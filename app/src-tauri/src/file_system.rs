@@ -182,26 +182,57 @@ pub fn make_dir(dir_path: String) -> Result<(), String> {
     std::fs::create_dir_all(&dir_path).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
-pub fn delete_path(path: String, target: String) -> Result<(), String> {
-    let p = Path::new(&path);
+enum DeleteTarget {
+    File,
+    Dir,
+    DirAll,
+}
+
+fn delete_path_internal(path: &str, target: DeleteTarget) -> Result<(), String> {
+    let p = Path::new(path);
 
     if !p.exists() {
         return Err(format!("Path does not exist: {}", path));
     }
 
     let metadata = std::fs::metadata(p).map_err(|e| e.to_string())?;
-
     let is_dir = metadata.is_dir();
-    let expected_is_dir = target == "directory";
 
-    if is_dir != expected_is_dir {
-        return Err(format!("Target is not a {}", target));
-    }
+    match target {
+        DeleteTarget::File => {
+            if is_dir {
+                return Err(format!("Target is not a file: {}", path));
+            }
+            std::fs::remove_file(p).map_err(|e| e.to_string())
+        }
 
-    if is_dir {
-        std::fs::remove_dir(p).map_err(|e| e.to_string())
-    } else {
-        std::fs::remove_file(p).map_err(|e| e.to_string())
+        DeleteTarget::Dir => {
+            if !is_dir {
+                return Err(format!("Target is not a directory: {}", path));
+            }
+            std::fs::remove_dir(p).map_err(|e| e.to_string())
+        }
+
+        DeleteTarget::DirAll => {
+            if !is_dir {
+                return Err(format!("Target is not a directory: {}", path));
+            }
+            std::fs::remove_dir_all(p).map_err(|e| e.to_string())
+        }
     }
+}
+
+#[tauri::command]
+pub fn delete_file(path: String) -> Result<(), String> {
+    delete_path_internal(&path, DeleteTarget::File)
+}
+
+#[tauri::command]
+pub fn delete_dir(path: String) -> Result<(), String> {
+    delete_path_internal(&path, DeleteTarget::Dir)
+}
+
+#[tauri::command]
+pub fn delete_dir_all(path: String) -> Result<(), String> {
+    delete_path_internal(&path, DeleteTarget::DirAll)
 }

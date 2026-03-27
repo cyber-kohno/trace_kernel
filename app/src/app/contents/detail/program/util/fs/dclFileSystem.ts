@@ -35,6 +35,7 @@ namespace DclFileSystem {
         }
         type TransactionAPI = {
             makeDir: (dirPath: string) => void;
+            deleteDir: (dirPath: string) => void;
             openText: (filePath: string, encorde?: "utf8" | "sjis") => Promise<{ token: FileToken; content: string; }>;
             saveText: (filePath: string, content: string) => void;
             updateText: (token: FileToken, content: string) => void;
@@ -97,10 +98,10 @@ namespace DclFileSystem {
                 return RealFSWriter.makeDir(dirPath);
             },
             deleteFile: (filePath: string) => {
-                return RealFSWriter.deletePath(filePath, 'file');
+                return RealFSWriter.deleteFile(filePath);
             },
             deleteDir: (dirPath: string) => {
-                return RealFSWriter.deletePath(dirPath, 'directory');
+                return RealFSWriter.deleteDir(dirPath);
             },
             renameFile: (targetFilePath: string, newFileName: string) => {
                 return RealFSWriter.renameWithinDirectory(

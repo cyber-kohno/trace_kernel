@@ -5,6 +5,7 @@ import type Inspector from "./inspector";
 
 namespace DclParser {
 
+<<<<<<< HEAD
     type ParseerAPI = {
         xml: {
             inspector: (source: string) => Promise<DomParser.DomController>;
@@ -20,6 +21,11 @@ namespace DclParser {
             object: <T = any>(text: string) => T[];
             inspector: (text: string) => Inspector.TableInspector;
         };
+=======
+    type ParserAPI = {
+        xml: (source: string) => Promise<DomParser.DomController>;
+        excel: (buffer: ArrayBuffer) => Promise<ExcelParser.Book>;
+>>>>>>> 45b58faa9b0da2e34e6cc17f76bc9b8993579d5a
     }
 
     export const getTypeDeclare = () => `
@@ -41,7 +47,7 @@ namespace DclParser {
             col: number;
             value: string;
         };
-        type ParseerAPI = {
+        type ParserAPI = {
             xml: (source: string) => Promise<DomController>;
             excel: (buffer: ArrayBuffer) => Promise<Book>;
         };
@@ -49,7 +55,7 @@ namespace DclParser {
 
     export const getValueDeclare = () => 'ParseerAPI';
 
-    export const getObject = (rustCache: RuntimeUtil.RustCache): ParseerAPI => {
+    export const getObject = (rustCache: RuntimeUtil.RustCache): ParserAPI => {
 
         return {
             xml: {

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Trace Kernel : Logo Concepts</title>
+<style>
+  * { box-sizing: border-box; }
+  body { 
+    background-color: #0f172a; /* Slate 900 */
+    color: #f8fafc; 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    display: flex; flex-direction: column; align-items: center; padding: 40px; margin: 0;
+  }
+  .header { text-align: center; margin-bottom: 40px; }
+  .header h1 { color: #38bdf8; letter-spacing: 1px; }
+  p { color: #94a3b8; }
+  
+  .grid { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; max-width: 1000px; }
+  
+  .card { 
+    background: #1e293b; 
+    padding: 30px; border-radius: 16px; 
+    display: flex; flex-direction: column; align-items: center; 
+    width: 300px; 
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); 
+    border: 1px solid #334155;
+  }
+  .svg-container { 
+    width: 180px; height: 180px; 
+    display: flex; justify-content: center; align-items: center; margin-bottom: 24px; 
+  }
+  .title { font-size: 1.25rem; font-weight: 600; margin-bottom: 12px; color: #f8fafc; letter-spacing: 0.5px;text-align:center; }
+  .desc { font-size: 0.9rem; color: #cbd5e1; text-align: center; line-height: 1.6; }
+  
+  @keyframes blink { 
+    0%, 100% { opacity: 1; } 
+    50% { opacity: 0; } 
+  }
+  .cursor { animation: blink 1s step-end infinite; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>Trace Kernel</h1>
+    <p>Logo Concepts — "Terminal Block Cursor"</p>
+    <p>SVGベクトルデータなので、そのままHTML（LP）等で採用可能です。</p>
+  </div>
+
+  <div class="grid">
+    <!-- Variant 1: TK & Cursor -->
+    <div class="card">
+      <div class="title">A: TK & Under Cursor</div>
+      <div class="svg-container">
+        <svg viewBox="0 0 100 100" width="100%" height="100%">
+          <rect width="100" height="100" rx="20" fill="#020617" /> <!-- Darker Base -->
+          
+          <!-- T shape -->
+          <rect x="18" y="25" width="28" height="11" fill="#38bdf8" />
+          <rect x="25" y="36" width="14" height="28" fill="#38bdf8" />
+          
+          <!-- K shape -->
+          <rect x="52" y="25" width="12" height="39" fill="#f8fafc" />
+          <path d="M 64 45 L 80 25 L 94 25 L 73 49 Z" fill="#f8fafc" />
+          <path d="M 68 46 L 94 66 L 80 66 L 64 54 Z" fill="#f8fafc" />
+          
+          <!-- Blinking Cursor -->
+          <rect x="25" y="70" width="39" height="7" fill="#10b981" class="cursor" />
+        </svg>
+      </div>
+      <div class="desc">直線的なブロックのみで「T」「K」を構成し、コードエディタのように末尾で明滅するカーソルを配置。「プログラムを書く道具」であることを強調。</div>
+    </div>
+
+    <!-- Variant 2: The Mono-Block (Negative Space) -->
+    <div class="card">
+      <div class="title">B: The Mono-Block</div>
+      <div class="svg-container">
+        <svg viewBox="0 0 100 100" width="100%" height="100%">
+          <rect x="10" y="10" width="80" height="80" rx="16" fill="#38bdf8" />
+          
+          <!-- Cutout T (using background color #1e293b) -->
+          <path d="M 28 25 L 72 25 L 72 40 L 58 40 L 58 60 L 42 60 L 42 40 L 28 40 Z" fill="#1e293b" />
+          
+          <!-- Blinking Terminal Cursor inside -->
+          <rect x="42" y="65" width="16" height="12" fill="#1e293b" class="cursor" />
+        </svg>
+      </div>
+      <div class="desc">アプリアイコン自体を巨大なターミナルブロックに見立て、ネガティブスペース（くり抜き）で「T」を描くデザイン。極限のシンプルさとモダンさが特徴。</div>
+    </div>
+
+    <!-- Variant 3: The Trace Route -->
+    <div class="card">
+      <div class="title">C: Route & Block</div>
+      <div class="svg-container">
+        <svg viewBox="0 0 100 100" width="100%" height="100%">
+          <rect width="100" height="100" rx="20" fill="#0f172a" />
+          
+          <!-- Trace line forming abstract path -->
+          <path d="M 25 35 L 45 35 L 45 70 L 60 70 L 60 50 L 78 50" fill="none" stroke="#38bdf8" stroke-width="10" stroke-linecap="square" stroke-linejoin="miter" />
+          
+          <!-- Terminal Block Cursor -->
+          <rect x="73" y="45" width="10" height="10" fill="#10b981" class="cursor" />
+        </svg>
+      </div>
+      <div class="desc">一筆書きの直角の「Trace（軌跡）」が最後に行き着く先で、緑のブロックカーソルが稼働しているテック感の強いデザイン。処理のスピード感と軌跡を表現。</div>
+    </div>
+  </div>
+</body>
+</html>
