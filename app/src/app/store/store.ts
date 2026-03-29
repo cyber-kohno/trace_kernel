@@ -2,9 +2,9 @@ import { writable } from "svelte/store";
 import StoreWorkspace from "./storeWorkspace";
 import StoreInvalidate from "./storeInvalidate";
 import type StoreCache from "./storeCache";
-import FileUtil from "../util/data/fileUtil";
 import type StoreLicense from "./storeLIcense";
 import StoreSetting from "./StoreSetting";
+import type { SnapshotLog } from "./dirty";
 
 const store = writable<Store>({
   handlePath: null,
@@ -17,12 +17,10 @@ const store = writable<Store>({
 
   disables: [],
 
-  snapshot: '',
+  snapshot: { env: '', resource: '', dataset: '', process: '', declare: '', work: '' },
   license: null,
   setting: StoreSetting.getInitial(),
 });
-
-export const dirty = writable(true);
 
 export type Store = {
   handlePath: null | string;
@@ -38,39 +36,10 @@ export type Store = {
   /** 再描画関数のユニット */
   invUnits: StoreInvalidate.Props[];
 
-  snapshot: string;
+  snapshot: SnapshotLog;
   license: StoreLicense.Props | null;
 
   setting: StoreSetting.Props;
 }
-
-export async function getSnapshot(project: StoreWorkspace.Props) {
-  const buf = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(JSON.stringify(project))
-  );
-  return Array.from(new Uint8Array(buf))
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-// let lastProjectRef: StoreProject.Props | null = null;
-store.subscribe(async (s) => {
-  if (!s.workspace) return;
-
-  //   // project が同一参照なら無視
-  //   if (s.project === lastProjectRef) return;
-  //   lastProjectRef = s.project;
-
-  const hash = await getSnapshot(s.workspace);
-
-  dirty.update(prev => {
-    const nextDirty = s.snapshot !== hash;
-    if (prev === nextDirty) return prev;
-    return nextDirty;
-  });
-
-  FileUtil.updateAppTitle();
-});
 
 export default store;

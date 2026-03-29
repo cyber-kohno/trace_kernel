@@ -1,16 +1,17 @@
 import Pako from 'pako';
 import { get } from 'svelte/store';
-import store, { dirty, getSnapshot } from '../../store/store';
+import store from '../../store/store';
 import { open, save } from "@tauri-apps/plugin-dialog";
 import type { FileRequest } from '../../store/types';
 import { invoke } from '@tauri-apps/api/core';
 import { Window } from "@tauri-apps/api/window";
 import ToastUtil from '../item/toastUtit';
 import StoreWorkspace from '../../store/storeWorkspace';
+import { dirty, getSnapshot } from '../../store/dirty';
 
 namespace FileUtil {
     export const VERSION = 'v1.10';
-    export const APP_NAME = `Trace Kernel ${VERSION}.3`;
+    export const APP_NAME = `Trace Kernel ${VERSION}.4`;
     const FILE_EXTENSION: string = `${VERSION}.trk`;
 
     export const updateAppTitle = async () => {

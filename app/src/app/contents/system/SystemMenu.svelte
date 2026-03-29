@@ -1,5 +1,6 @@
 <script lang="ts">
-  import store, { dirty } from "../../store/store";
+  import { dirty } from "../../store/dirty";
+  import store from "../../store/store";
   import OperationButton from "../../util/button/OperationButton.svelte";
   import FileUtil from "../../util/data/fileUtil";
   import Record from "../../util/layout/RecordDiv.svelte";

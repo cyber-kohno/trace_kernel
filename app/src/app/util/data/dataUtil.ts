@@ -13,49 +13,182 @@ namespace DataUtil {
     /**
      * CSV/TSVテキストから型推定付きオブジェクト配列を生成
      */
+    // export const convertTableToJson = (
+    //     source: string,
+    //     parseMethod: StoreResource.ParseMethod
+    // ): Record<string, any>[] => {
+    //     if (!source) return [];
+
+    //     const rows = source.split('\n').filter(r => r.trim() !== '');
+    //     if (rows.length === 0) return [];
+
+    //     const header = parseMethod === 'csv'
+    //         ? rows[0].split(',').map(c => c.trim().replaceAll('"', ''))
+    //         : rows[0].split('\t').map(c => c.trim());
+
+    //     const dataRows = rows.slice(1);
+    //     const columns = inferColumnTypes(header, dataRows, parseMethod);
+
+    //     // データを型に従って変換
+    //     return dataRows.map(row => {
+    //         const cols = parseMethod === 'csv'
+    //             ? row.split(',').map(c => c.trim())
+    //             : row.split('\t');
+
+    //         const obj: Record<string, any> = {};
+    //         columns.forEach((col, i) => {
+    //             let val = cols[i]?.trim() ?? '';
+
+    //             if (parseMethod === 'csv') {
+    //                 if (val.startsWith('"') && val.endsWith('"')) {
+    //                     val = val.slice(1, -1).replace(/""/g, '"');
+    //                     obj[col.name] = val;
+    //                 } else if (col.type === 'number') {
+    //                     obj[col.name] = Number(val);
+    //                 } else {
+    //                     obj[col.name] = val;
+    //                 }
+    //             } else {
+    //                 obj[col.name] = val;
+    //             }
+    //         });
+
+    //         return obj;
+    //     });
+    // };
     export const convertTableToJson = (
         source: string,
         parseMethod: StoreResource.ParseMethod
     ): Record<string, any>[] => {
         if (!source) return [];
 
-        const rows = source.split('\n').filter(r => r.trim() !== '');
+        const rows =
+            parseMethod === 'csv'
+                ? splitCsvRows(source)
+                : splitTsvRows(source);
+
         if (rows.length === 0) return [];
 
-        const header = parseMethod === 'csv'
-            ? rows[0].split(',').map(c => c.trim().replaceAll('"', ''))
-            : rows[0].split('\t').map(c => c.trim());
+        const header = parseRow(rows[0], parseMethod);
+
+        if (header.length === 0) {
+            throw new Error('Header is empty');
+        }
 
         const dataRows = rows.slice(1);
+
         const columns = inferColumnTypes(header, dataRows, parseMethod);
 
-        // データを型に従って変換
-        return dataRows.map(row => {
-            const cols = parseMethod === 'csv'
-                ? row.split(',').map(c => c.trim())
-                : row.split('\t');
+        return dataRows.map((row, rowIndex) => {
+            const cols = parseRow(row, parseMethod);
+
+            if (cols.length !== header.length) {
+                throw new Error(
+                    `Column mismatch at row ${rowIndex + 1}: expected ${header.length}, got ${cols.length}`
+                );
+            }
 
             const obj: Record<string, any> = {};
-            columns.forEach((col, i) => {
-                let val = cols[i]?.trim() ?? '';
 
-                if (parseMethod === 'csv') {
-                    if (val.startsWith('"') && val.endsWith('"')) {
-                        val = val.slice(1, -1).replace(/""/g, '"');
-                        obj[col.name] = val;
-                    } else if (col.type === 'number') {
-                        obj[col.name] = Number(val);
-                    } else {
-                        obj[col.name] = val;
+            columns.forEach((col, i) => {
+                const raw = cols[i];
+
+                if (raw === '') {
+                    obj[col.name] = null;
+                    return;
+                }
+
+                if (col.type === 'number') {
+                    const n = Number(raw);
+                    if (isNaN(n)) {
+                        throw new Error(
+                            `Invalid number at row ${rowIndex + 1}, column "${col.name}": "${raw}"`
+                        );
                     }
+                    obj[col.name] = n;
                 } else {
-                    obj[col.name] = val;
+                    obj[col.name] = raw;
                 }
             });
 
             return obj;
         });
     };
+
+    function splitCsvRows(text: string): string[] {
+        const rows: string[] = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < text.length; i++) {
+            const c = text[i];
+
+            if (c === '"') {
+                if (inQuotes && text[i + 1] === '"') {
+                    current += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                    current += c;
+                }
+            } else if ((c === '\n' || c === '\r') && !inQuotes) {
+                if (current.trim() !== '') rows.push(current);
+                current = '';
+
+                // CRLF対応
+                if (c === '\r' && text[i + 1] === '\n') i++;
+            } else {
+                current += c;
+            }
+        }
+
+        if (current.trim() !== '') rows.push(current);
+
+        return rows;
+    }
+
+    function parseCsvRow(row: string): string[] {
+        const result: string[] = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < row.length; i++) {
+            const c = row[i];
+
+            if (c === '"') {
+                if (inQuotes && row[i + 1] === '"') {
+                    current += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (c === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += c;
+            }
+        }
+
+        result.push(current);
+
+        return result.map(v => v.trim());
+    }
+
+    function splitTsvRows(text: string): string[] {
+        return text
+            .split(/\r?\n/)
+            .filter(r => r.trim() !== '');
+    }
+
+    function parseTsvRow(row: string): string[] {
+        return row.split('\t');
+    }
+    function parseRow(row: string, method: StoreResource.ParseMethod): string[] {
+        return method === 'csv'
+            ? parseCsvRow(row)
+            : parseTsvRow(row);
+    }
 
     /**
      * CSV/TSVテキストから列型定義を生成

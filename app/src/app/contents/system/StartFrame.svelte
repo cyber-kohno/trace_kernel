@@ -1,5 +1,6 @@
 <script lang="ts">
-  import store, { getSnapshot } from "../../store/store";
+  import { getSnapshot } from "../../store/dirty";
+  import store, {  } from "../../store/store";
   import StoreWorkspace from "../../store/storeWorkspace";
   import FileUtil from "../../util/data/fileUtil";
   import RecordDiv from "../../util/layout/RecordDiv.svelte";

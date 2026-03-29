@@ -12,10 +12,12 @@
   import { global } from "./global";
   import StartFrame from "./contents/system/StartFrame.svelte";
   import Record from "./util/layout/RecordDiv.svelte";
+  import { updateDirty } from "./store/dirty";
 
   let toastFrameRef: ToastFrame;
 
   let args: string[] | null = null;
+
   onMount(async () => {
     await listen<string[]>("file-drop", async (event) => {
       const files: string[] = event.payload;
@@ -67,6 +69,8 @@
 
     // グローバルに注入
     $global.toastDisp = toastFrameRef.disp;
+    
+    updateDirty();
     // alert(args);
     // // クリーンアップ（コンポーネントが破棄されるとき）
     // return () => {
