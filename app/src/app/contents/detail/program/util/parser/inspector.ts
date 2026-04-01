@@ -25,6 +25,8 @@ namespace Inspector {
         columns(): string[];
 
         row(index: number): TableRow;
+
+        toObject<T = any>(): T[]
     };
 
     export type TableRow = {
@@ -59,7 +61,8 @@ namespace Inspector {
                 }
 
                 return createRow(data[index], columns, index);
-            }
+            },
+            toObject: <T = any>() => data as T[]
         };
 
         return inspector;

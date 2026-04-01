@@ -7,20 +7,10 @@ import Inspector from "./inspector";
 namespace DclParser {
 
     type ParserAPI = {
-        xml: {
-            inspector: (source: string) => Promise<DomParser.DomController>;
-        };
-        excel: {
-            object: (buffer: ArrayBuffer) => Promise<ExcelParser.Book>;
-        }
-        csv: {
-            object: <T = any>(text: string) => T[];
-            inspector: (text: string) => Inspector.TableInspector;
-        };
-        tsv: {
-            object: <T = any>(text: string) => T[];
-            inspector: (text: string) => Inspector.TableInspector;
-        };
+        xml: (source: string) => Promise<DomParser.DomController>;
+        excel: (buffer: ArrayBuffer) => Promise<ExcelParser.Book>
+        csv: (source: string) => Inspector.TableInspector;
+        tsv: (source: string) => Inspector.TableInspector;
     }
 
     export const getTypeDeclare = () => `
@@ -43,44 +33,28 @@ namespace DclParser {
             value: string;
         };
         type ParserAPI = {
-            xml: (source: string) => Promise<DomController>;
-            excel: (buffer: ArrayBuffer) => Promise<Book>;
+            xml: (source: string) => Promise<DomParser.DomController>;
+            excel: (buffer: ArrayBuffer) => Promise<ExcelParser.Book>
+            csv: (source: string) => Inspector.TableInspector;
+            tsv: (source: string) => Inspector.TableInspector;
         };
     `;
 
-    export const getValueDeclare = () => 'ParseerAPI';
+    export const getValueDeclare = () => 'ParserAPI';
 
     export const getObject = (rustCache: RuntimeUtil.RustCache): ParserAPI => {
 
         return {
-            xml: {
-                inspector: (source: string) => {
-                    return DomParser.parse(rustCache, source);
-                }
+            xml: (source: string) => DomParser.parse(rustCache, source),
+            excel: (buffer: ArrayBuffer) => ExcelParser.parse(buffer),
+            csv: (source: string) => {
+                const data = DataUtil.convertTableToJson(source, 'csv');
+                return Inspector.createTableInspector(data);
             },
-            excel: {
-                object: (buffer: ArrayBuffer) => {
-                    return ExcelParser.parse(buffer);
-                }
+            tsv: (source: string) => {
+                const data = DataUtil.convertTableToJson(source, 'tsv');
+                return Inspector.createTableInspector(data);
             },
-            csv: {
-                object: <T = any>(text: string) => {
-                    return DataUtil.convertTableToJson(text, 'csv') as T[];
-                },
-                inspector: (text: string) => {
-                    const data = DataUtil.convertTableToJson(text, 'csv');
-                    return Inspector.createTableInspector(data);
-                }
-            },
-            tsv: {
-                object: <T = any>(text: string) => {
-                    return DataUtil.convertTableToJson(text, 'tsv') as T[];
-                },
-                inspector: (text: string) => {
-                    const data = DataUtil.convertTableToJson(text, 'tsv');
-                    return Inspector.createTableInspector(data);
-                }
-            }
         };
     }
 };
