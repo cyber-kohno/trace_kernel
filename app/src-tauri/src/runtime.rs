@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use crate::parser::dom::{DomStore};
-use crate::stream::channel::{ChannelStore};
+use crate::parser::dom::DomStore;
+use crate::stream::channel::ChannelStore;
 
 pub struct WorkerContext {
     pub dom_store: DomStore,

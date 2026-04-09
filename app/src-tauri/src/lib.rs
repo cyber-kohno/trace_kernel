@@ -30,7 +30,15 @@ use process::run_process;
 mod scraper;
 use crate::parser::dom::dom_dispose;
 use crate::parser::dom::dom_info;
+use crate::parser::dom::dom_node_attr;
+use crate::parser::dom::dom_node_children;
+use crate::parser::dom::dom_node_name;
+use crate::parser::dom::dom_node_parent;
+use crate::parser::dom::dom_node_text;
 use crate::parser::dom::dom_parse;
+use crate::parser::dom::dom_query;
+use crate::parser::dom::dom_query_from_node;
+use crate::parser::dom::dom_root;
 use crate::parser::excel::excel_parse;
 use crate::runtime::worker_dispose;
 use crate::runtime::worker_init;
@@ -95,6 +103,14 @@ pub fn run() {
             get_range_lines,
             get_line_len,
             dom_parse,
+            dom_root,
+            dom_query,
+            dom_query_from_node,
+            dom_node_name,
+            dom_node_text,
+            dom_node_attr,
+            dom_node_children,
+            dom_node_parent,
             dom_info,
             dom_dispose,
             excel_parse,

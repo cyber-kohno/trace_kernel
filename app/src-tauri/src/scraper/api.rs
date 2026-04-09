@@ -42,7 +42,7 @@ pub async fn load_html_from_url(url: String) -> Result<HtmlSource, LoadError> {
             .wait_if_needed(
                 host,
                 Duration::from_secs(3), // ★ 安全デフォルト
-                30,                      // ★ 最大30回
+                30,                     // ★ 最大30回
             )
             .await?;
     } // <- ロックはここで解放される

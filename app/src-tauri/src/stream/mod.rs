@@ -1,2 +1,2 @@
-pub mod line_buffer;
 pub mod channel;
+pub mod line_buffer;

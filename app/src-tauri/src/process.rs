@@ -34,9 +34,9 @@ fn is_binary(bytes: &[u8]) -> bool {
 
 #[tauri::command]
 pub async fn run_process(req: RunProcessRequest) -> Result<RunProcessResult, String> {
+    use std::path::Path;
     use tokio::process::Command;
     use tokio::time::{timeout, Duration};
-    use std::path::Path;
 
     // --- 1. パス存在チェック ---
     if !Path::new(&req.program).exists() {

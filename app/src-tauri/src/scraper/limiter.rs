@@ -27,12 +27,13 @@ impl DomainLimiter {
     ) -> Result<(), super::types::LoadError> {
         let now = Instant::now();
 
-        let state = self.domains.entry(domain.to_string()).or_insert(
-            DomainState {
+        let state = self
+            .domains
+            .entry(domain.to_string())
+            .or_insert(DomainState {
                 last_access: Instant::now() - min_interval,
                 request_count: 0,
-            },
-        );
+            });
 
         if state.request_count >= max_requests {
             return Err(super::types::LoadError::TooManyRequests);
