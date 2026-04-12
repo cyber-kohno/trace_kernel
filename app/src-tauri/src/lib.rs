@@ -36,6 +36,7 @@ use crate::parser::dom::dom_node_name;
 use crate::parser::dom::dom_node_parent;
 use crate::parser::dom::dom_node_text;
 use crate::parser::dom::dom_parse;
+use crate::parser::dom::dom_parse_html;
 use crate::parser::dom::dom_query;
 use crate::parser::dom::dom_query_from_node;
 use crate::parser::dom::dom_root;
@@ -103,6 +104,7 @@ pub fn run() {
             get_range_lines,
             get_line_len,
             dom_parse,
+            dom_parse_html,
             dom_root,
             dom_query,
             dom_query_from_node,

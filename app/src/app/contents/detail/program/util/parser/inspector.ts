@@ -147,5 +147,138 @@ namespace Inspector {
 
         has(path: string): boolean;
     };
+
+    export type JsonInspector = Base & {
+        kind: "json";
+
+        root(): unknown;
+        query(path: string): unknown;
+        queryString(path: string): string;
+        queryNumber(path: string): number;
+        queryBoolean(path: string): boolean;
+        exists(path: string): boolean;
+        keys(path?: string): string[];
+        length(path?: string): number;
+        toObject<T = any>(): T;
+    };
+
+    export const createJsonInspector = (data: unknown): JsonInspector => {
+        const read = (path: string) => {
+            const hit = getByPath(data, path);
+            if (!hit.found) {
+                throw new Error(`Path not found: "${path}"`);
+            }
+            return hit.value;
+        };
+
+        return {
+            kind: "json",
+            root: () => data,
+            query: (path: string) => read(path),
+            queryString: (path: string) => {
+                const v = read(path);
+                if (typeof v !== "string") {
+                    throw new Error(`Path "${path}" is not string (actual: ${typeof v})`);
+                }
+                return v;
+            },
+            queryNumber: (path: string) => {
+                const v = read(path);
+                if (typeof v !== "number") {
+                    throw new Error(`Path "${path}" is not number (actual: ${typeof v})`);
+                }
+                return v;
+            },
+            queryBoolean: (path: string) => {
+                const v = read(path);
+                if (typeof v !== "boolean") {
+                    throw new Error(`Path "${path}" is not boolean (actual: ${typeof v})`);
+                }
+                return v;
+            },
+            exists: (path: string) => getByPath(data, path).found,
+            keys: (path?: string) => {
+                const target = path == undefined || path === "" ? data : read(path);
+                if (target == null || Array.isArray(target) || typeof target !== "object") {
+                    return [];
+                }
+                return Object.keys(target as Record<string, unknown>);
+            },
+            length: (path?: string) => {
+                const target = path == undefined || path === "" ? data : read(path);
+                if (Array.isArray(target)) return target.length;
+                if (target == null || typeof target !== "object") return 0;
+                return Object.keys(target as Record<string, unknown>).length;
+            },
+            toObject: <T = any>() => data as T,
+        };
+    };
+
+    type PathToken = string | number;
+
+    function getByPath(source: unknown, path: string): { found: boolean; value: unknown } {
+        const tokens = parsePath(path);
+        let cur: unknown = source;
+
+        for (const token of tokens) {
+            if (typeof token === "number") {
+                if (!Array.isArray(cur)) return { found: false, value: undefined };
+                if (token < 0 || token >= cur.length) return { found: false, value: undefined };
+                cur = cur[token];
+                continue;
+            }
+
+            if (cur == null || typeof cur !== "object" || Array.isArray(cur)) {
+                return { found: false, value: undefined };
+            }
+            const rec = cur as Record<string, unknown>;
+            if (!(token in rec)) return { found: false, value: undefined };
+            cur = rec[token];
+        }
+        return { found: true, value: cur };
+    }
+
+    function parsePath(path: string): PathToken[] {
+        const src = path.trim();
+        if (src === "") return [];
+
+        const tokens: PathToken[] = [];
+        let i = 0;
+        let key = "";
+
+        const pushKey = () => {
+            if (key.length > 0) {
+                tokens.push(key);
+                key = "";
+            }
+        };
+
+        while (i < src.length) {
+            const ch = src[i];
+            if (ch === ".") {
+                pushKey();
+                i++;
+                continue;
+            }
+            if (ch === "[") {
+                pushKey();
+                const close = src.indexOf("]", i + 1);
+                if (close === -1) {
+                    throw new Error(`Invalid JSON path (missing "]"): "${path}"`);
+                }
+                const idxText = src.slice(i + 1, close).trim();
+                if (!/^\d+$/.test(idxText)) {
+                    throw new Error(`Invalid array index in JSON path: "${path}"`);
+                }
+                tokens.push(Number(idxText));
+                i = close + 1;
+                continue;
+            }
+            key += ch;
+            i++;
+        }
+        pushKey();
+        return tokens;
+    }
 }
 export default Inspector;

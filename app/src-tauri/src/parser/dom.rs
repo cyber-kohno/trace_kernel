@@ -1,6 +1,8 @@
 use crate::parser::types::{DomId, NodeId};
 use crate::runtime::AppState;
 use roxmltree::{Document as XmlDocument, Node as XmlNode, NodeType};
+use scraper::node::Node as ScraperNode;
+use scraper::Html as ScraperHtml;
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -88,6 +90,37 @@ impl DomStore {
         let root_id = doc.root;
         for child in xml.root().children() {
             append_xml_node(&mut doc, child, root_id);
+        }
+
+        doc.root_element = doc.nodes[doc.root]
+            .children
+            .iter()
+            .copied()
+            .find(|id| matches!(doc.nodes[*id].kind, NodeKind::Element { .. }));
+
+        self.doms.insert(dom_id, doc);
+        Ok(dom_id)
+    }
+
+    pub fn parse_html(&mut self, source: String) -> Result<DomId, String> {
+        let html = ScraperHtml::parse_document(&source);
+        let dom_id = self.next_id;
+        self.next_id += 1;
+
+        let mut doc = DomDocument {
+            nodes: vec![Node {
+                parent: None,
+                children: Vec::new(),
+                kind: NodeKind::Document,
+            }],
+            root: 0,
+            root_element: None,
+        };
+
+        let root_id = doc.root;
+        let html_root = html.tree.root();
+        for child in html_root.children() {
+            append_html_node(&mut doc, child, root_id);
         }
 
         doc.root_element = doc.nodes[doc.root]
@@ -213,6 +246,53 @@ fn append_xml_node(doc: &mut DomDocument, xml_node: XmlNode<'_, '_>, parent_id: 
                     kind: NodeKind::Text(text.to_string()),
                 });
                 doc.nodes[parent_id].children.push(node_id);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn append_html_node(
+    doc: &mut DomDocument,
+    html_node: ego_tree::NodeRef<'_, ScraperNode>,
+    parent_id: NodeId,
+) {
+    match html_node.value() {
+        ScraperNode::Element(element) => {
+            let node_id = doc.nodes.len();
+
+            let attrs = element
+                .attrs
+                .iter()
+                .map(|(k, v)| (k.local.to_string(), v.to_string()))
+                .collect::<HashMap<_, _>>();
+
+            doc.nodes.push(Node {
+                parent: Some(parent_id),
+                children: Vec::new(),
+                kind: NodeKind::Element {
+                    name: element.name.local.to_string(),
+                    attrs,
+                },
+            });
+            doc.nodes[parent_id].children.push(node_id);
+
+            for child in html_node.children() {
+                append_html_node(doc, child, node_id);
+            }
+        }
+        ScraperNode::Text(text) => {
+            let node_id = doc.nodes.len();
+            doc.nodes.push(Node {
+                parent: Some(parent_id),
+                children: Vec::new(),
+                kind: NodeKind::Text(text.to_string()),
+            });
+            doc.nodes[parent_id].children.push(node_id);
+        }
+        ScraperNode::Document => {
+            for child in html_node.children() {
+                append_html_node(doc, child, parent_id);
             }
         }
         _ => {}
@@ -403,6 +483,19 @@ pub fn dom_parse(
         .get_mut(&worker_id)
         .ok_or("worker not initialized")?;
     worker.dom_store.parse(source)
+}
+
+#[tauri::command]
+pub fn dom_parse_html(
+    state: tauri::State<AppState>,
+    worker_id: String,
+    source: String,
+) -> Result<DomId, String> {
+    let mut workers = state.workers.lock().unwrap();
+    let worker = workers
+        .get_mut(&worker_id)
+        .ok_or("worker not initialized")?;
+    worker.dom_store.parse_html(source)
 }
 
 #[tauri::command]

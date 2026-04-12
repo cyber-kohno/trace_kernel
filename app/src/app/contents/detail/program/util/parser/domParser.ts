@@ -124,6 +124,53 @@ namespace DomParser {
             },
         };
     };
+
+    export const parseHtml = async (
+        rustCache: RuntimeUtil.RustCache,
+        source: string
+    ): Promise<DomController> => {
+        const workerId = rustCache.workerId;
+        const domId = await WorkerInvoke.call<number>("dom_parse_html", {
+            workerId,
+            source,
+        });
+        const ctx: DomContext = { workerId, domId };
+
+        return {
+            async root() {
+                const rootId = await WorkerInvoke.call<number | null>("dom_root", {
+                    workerId,
+                    domId,
+                });
+                return rootId == null ? null : createNode(ctx, rootId);
+            },
+            async query(xpath: string) {
+                const nodeIds = await WorkerInvoke.call<number[]>("dom_query", {
+                    workerId,
+                    domId,
+                    xpath,
+                });
+                return nodeIds.map(id => createNode(ctx, id));
+            },
+            async debug() {
+                const [id, nodeCount] = await WorkerInvoke.call<[number, number]>(
+                    "dom_info",
+                    {
+                        workerId,
+                        domId,
+                    }
+                );
+
+                return { domId: id, nodeCount };
+            },
+            async dispose() {
+                await WorkerInvoke.call<void>("dom_dispose", {
+                    workerId,
+                    domId,
+                });
+            },
+        };
+    };
 }
 
 export default DomParser;
