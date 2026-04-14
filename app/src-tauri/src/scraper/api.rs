@@ -8,9 +8,8 @@ use tokio::sync::Mutex;
 use url::Url;
 
 use super::limiter::DomainLimiter;
-use super::types::{HtmlSource, LoadError};
+use super::types::{HtmlSource, HttpRequest, HttpResponse, LoadError};
 
-/// グローバルの非同期 Mutex に変更
 static LIMITER: Lazy<Mutex<DomainLimiter>> = Lazy::new(|| Mutex::new(DomainLimiter::new()));
 
 static CLIENT: Lazy<Client> = Lazy::new(|| {
@@ -22,39 +21,34 @@ static CLIENT: Lazy<Client> = Lazy::new(|| {
         .unwrap()
 });
 
+fn validate_http_url(url: &str) -> Result<Url, LoadError> {
+    let parsed = Url::parse(url).map_err(|_| LoadError::InvalidUrl)?;
+    match parsed.scheme() {
+        "http" | "https" => Ok(parsed),
+        _ => Err(LoadError::UnsupportedScheme),
+    }
+}
+
+async fn wait_for_domain(url: &Url) -> Result<(), LoadError> {
+    let host = url.host_str().ok_or(LoadError::InvalidUrl)?;
+    let mut limiter = LIMITER.lock().await;
+    limiter
+        .wait_if_needed(host, Duration::from_secs(3), 30)
+        .await?;
+    Ok(())
+}
+
 #[command]
 pub async fn load_html_from_url(url: String) -> Result<HtmlSource, LoadError> {
-    // URL 構文チェック
-    let parsed = Url::parse(&url).map_err(|_| LoadError::InvalidUrl)?;
+    let parsed = validate_http_url(&url)?;
+    wait_for_domain(&parsed).await?;
 
-    // スキーム制限
-    match parsed.scheme() {
-        "http" | "https" => {}
-        _ => return Err(LoadError::UnsupportedScheme),
-    }
-
-    let host = parsed.host_str().ok_or(LoadError::InvalidUrl)?;
-
-    // 非同期 Mutex でロック
-    {
-        let mut limiter = LIMITER.lock().await; // <- ここが async lock
-        limiter
-            .wait_if_needed(
-                host,
-                Duration::from_secs(3), // ★ 安全デフォルト
-                30,                     // ★ 最大30回
-            )
-            .await?;
-    } // <- ロックはここで解放される
-
-    // HTTP GET
     let resp = CLIENT
         .get(parsed.as_str())
         .send()
         .await
         .map_err(|_| LoadError::NetworkError)?;
 
-    // Content-Type チェック
     let content_type = resp
         .headers()
         .get(reqwest::header::CONTENT_TYPE)
@@ -65,7 +59,6 @@ pub async fn load_html_from_url(url: String) -> Result<HtmlSource, LoadError> {
         return Err(LoadError::NotHtml);
     }
 
-    // サイズ制限（2MB）
     let bytes = resp.bytes().await.map_err(|_| LoadError::NetworkError)?;
     if bytes.len() > 2 * 1024 * 1024 {
         return Err(LoadError::ResponseTooLarge);
@@ -74,8 +67,80 @@ pub async fn load_html_from_url(url: String) -> Result<HtmlSource, LoadError> {
     let html = String::from_utf8_lossy(&bytes).to_string();
 
     Ok(HtmlSource {
-        url: parsed.into_string(),
+        url: parsed.to_string(),
         html,
+        fetched_at: Utc::now().timestamp(),
+    })
+}
+
+#[command]
+pub async fn load_http(req: HttpRequest) -> Result<HttpResponse, LoadError> {
+    let mut parsed = validate_http_url(&req.url)?;
+    if let Some(query) = &req.query {
+        let mut pairs = parsed.query_pairs_mut();
+        for (key, value) in query {
+            pairs.append_pair(key, value);
+        }
+    }
+    wait_for_domain(&parsed).await?;
+
+    let method = req
+        .method
+        .unwrap_or_else(|| "GET".to_string())
+        .parse()
+        .map_err(|_| LoadError::InvalidMethod)?;
+
+    let mut builder = CLIENT.request(method, parsed.clone());
+
+    if let Some(timeout_ms) = req.timeout_ms {
+        builder = builder.timeout(Duration::from_millis(timeout_ms));
+    }
+
+    if let Some(headers) = req.headers {
+        for (key, value) in headers {
+            builder = builder.header(key, value);
+        }
+    }
+
+    if let Some(body) = req.body {
+        builder = builder.body(body);
+    }
+
+    let resp = builder
+        .send()
+        .await
+        .map_err(|_| LoadError::NetworkError)?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .map(|v| v.to_string());
+
+    let headers = resp
+        .headers()
+        .iter()
+        .filter_map(|(key, value)| {
+            value
+                .to_str()
+                .ok()
+                .map(|v| (key.as_str().to_string(), v.to_string()))
+        })
+        .collect();
+
+    let bytes = resp.bytes().await.map_err(|_| LoadError::NetworkError)?;
+    if bytes.len() > 2 * 1024 * 1024 {
+        return Err(LoadError::ResponseTooLarge);
+    }
+
+    Ok(HttpResponse {
+        url: parsed.to_string(),
+        status: status.as_u16(),
+        ok: status.is_success(),
+        content_type,
+        headers,
+        body: String::from_utf8_lossy(&bytes).to_string(),
         fetched_at: Utc::now().timestamp(),
     })
 }

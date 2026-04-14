@@ -5,6 +5,7 @@
   import { get, writable } from "svelte/store";
   import store from "../../store/store";
   import MonacoFactory from "./monacoFactory";
+  import { restrictedGlobals } from "./restrictedGlobals";
 
   let editorDiv: HTMLDivElement | null = null;
   let editor: Monaco.editor.IStandaloneCodeEditor;
@@ -32,6 +33,47 @@
   let userModel: any;
   let analysisModel: any;
   let runtimeDecorations: string[] = [];
+
+  const getRestrictedGlobalMarkers = (code: string) => {
+    if (!monaco) return [];
+
+    return monaco.editor
+      .tokenize(code, LANGUAGE)
+      .flatMap((lineTokens: any[], lineIndex: number) => {
+        const lineNumber = lineIndex + 1;
+        const lineText = userModel.getLineContent(lineNumber);
+
+        return lineTokens.flatMap((token: any, tokenIndex: number) => {
+          const startColumn = token.offset + 1;
+          const endColumn =
+            tokenIndex + 1 < lineTokens.length
+              ? lineTokens[tokenIndex + 1].offset + 1
+              : lineText.length + 1;
+          const tokenText = lineText.slice(startColumn - 1, endColumn - 1).trim();
+          const prevChar = lineText[startColumn - 2] ?? "";
+
+          const restricted = restrictedGlobals.find((entry) => entry.name === tokenText);
+          if (!restricted) return [];
+
+          const isIdentifierToken =
+            typeof token.type === "string" && token.type.includes("identifier");
+          if (!isIdentifierToken) return [];
+
+          if (prevChar === ".") return [];
+
+          return [
+            {
+              severity: monaco.MarkerSeverity.Error,
+              message: restricted.message,
+              startLineNumber: lineNumber,
+              startColumn,
+              endLineNumber: lineNumber,
+              endColumn,
+            },
+          ];
+        });
+      });
+  };
 
   export const setRuntimeErrorMarker = (
     pos: { line: number; column: number },
@@ -90,10 +132,7 @@
     monaco = await MonacoFactory.createMonaco();
 
     typescript = monaco.languages.typescript as any;
-
-    typescript.typescriptDefaults.setCompilerOptions({
-      ...typescript.typescriptDefaults.getCompilerOptions(),
-    });
+    MonacoFactory.configureTypeScriptDefaults(monaco);
 
     // typescript.typescriptDefaults.setCompilerOptions({
     //   target: monaco.languages.typescript.ScriptTarget.ES2020,
@@ -105,8 +144,6 @@
     //   strict: true,
     //   noEmit: true,
     // });
-
-    typescript.typescriptDefaults.setEagerModelSync(true);
 
     const userUri = monaco.Uri.parse(`inmemory://user-${uid}.ts`);
     const analysisUri = monaco.Uri.parse(`inmemory://analysis-${uid}.ts`);
@@ -176,6 +213,7 @@
     const service = await MonacoFactory.getService(monaco, analysisModel.uri);
 
     const runDiagnostics = async () => {
+      const code = userModel.getValue();
       const diagnostics = [
         ...(await service.getSyntacticDiagnostics(
           analysisModel.uri.toString(),
@@ -205,6 +243,7 @@
           };
         });
 
+      markers.push(...getRestrictedGlobalMarkers(code));
       monaco.editor.setModelMarkers(userModel, "user", markers);
 
       const hasErr = markers.length > 0;

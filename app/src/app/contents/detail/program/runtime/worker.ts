@@ -5,6 +5,7 @@ import DataUtil from "../../../../util/data/dataUtil";
 import WorkerAdapter from "../ui/workerAdapter";
 import DeclareUtil from "../util/declareUtil";
 import ContextDataUtil from "../util/contextDataUtil";
+import DclRuntime from "../util/dclRuntime";
 import WorkerInvoke from "../util/workerInvoke";
 import RuntimeUtil from "./runtimeUtil";
 import { createFlushScheduler } from "./streamFlush";
@@ -155,6 +156,10 @@ self.onmessage = async (e: MessageEvent<MessageProps>) => {
                     .concat($done)
             ));
         } catch (err: any) {
+            if (DclRuntime.isExitSignal(err)) {
+                $done();
+                return;
+            }
             console.log();
             WorkerAdapter.post({
                 type: "runtime-error",

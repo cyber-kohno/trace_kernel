@@ -1,6 +1,18 @@
 import loader from "@monaco-editor/loader";
 
 namespace MonacoFactory {
+    export const configureTypeScriptDefaults = (monaco: any) => {
+        const defaults = monaco.languages.typescript.typescriptDefaults;
+        defaults.setCompilerOptions({
+            ...defaults.getCompilerOptions(),
+            target: monaco.languages.typescript.ScriptTarget.ES2020,
+            module: monaco.languages.typescript.ModuleKind.ESNext,
+            lib: ["es2020", "webworker"],
+            strictNullChecks: true,
+        });
+        defaults.setEagerModelSync(true);
+    };
+
     let worker: any = null;
     const getWorker = async (monaco: any) => {
         if (worker == null) {

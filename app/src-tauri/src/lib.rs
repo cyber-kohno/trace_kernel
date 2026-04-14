@@ -45,6 +45,7 @@ use crate::runtime::worker_dispose;
 use crate::runtime::worker_init;
 use crate::runtime::AppState;
 use scraper::api::load_html_from_url;
+use scraper::api::load_http;
 use stream::channel::add_channel;
 use stream::channel::append_lines;
 use stream::channel::get_line_len;
@@ -97,6 +98,7 @@ pub fn run() {
             save_text,
             save_binary,
             load_html_from_url,
+            load_http,
             worker_init,
             worker_dispose,
             add_channel,

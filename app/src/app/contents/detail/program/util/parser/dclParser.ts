@@ -40,6 +40,7 @@ namespace DclParser {
             maxCol: number;
             rows: Row[];
             row(index: number): Row | null;
+            cell(row: number, col: number): Cell | null;
             toTable(headerRow?: number): Record<string, string>[];
         };
         type Row = {

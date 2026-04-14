@@ -30,6 +30,7 @@ namespace ExcelParser {
         maxCol: number;
         rows: Row[];
         row(index: number): Row | null;
+        cell(row: number, col: number): Cell | null;
         toTable(headerRow?: number): Record<string, string>[];
     };
     export type Row = {
@@ -69,6 +70,9 @@ namespace ExcelParser {
             rows,
             row(index: number) {
                 return rows.find(r => r.index === index) ?? null;
+            },
+            cell(row: number, col: number) {
+                return this.row(row)?.cell(col) ?? null;
             },
             toTable(headerRow = 0) {
                 const header = rows.find(r => r.index === headerRow);

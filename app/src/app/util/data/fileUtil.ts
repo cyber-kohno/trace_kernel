@@ -11,7 +11,7 @@ import { dirty, getSnapshot } from '../../store/dirty';
 
 namespace FileUtil {
     export const VERSION = 'v1.10';
-    export const APP_NAME = `Trace Kernel ${VERSION}.5`;
+    export const APP_NAME = `Trace Kernel ${VERSION}.8`;
     const FILE_EXTENSION: string = `${VERSION}.trk`;
 
     export const updateAppTitle = async () => {

@@ -37,12 +37,7 @@
     monaco = await MonacoFactory.createMonaco();
 
     typescript = monaco.languages.typescript as any;
-
-    typescript.typescriptDefaults.setCompilerOptions({
-      ...typescript.typescriptDefaults.getCompilerOptions(),
-    });
-
-    typescript.typescriptDefaults.setEagerModelSync(true);
+    MonacoFactory.configureTypeScriptDefaults(monaco);
 
     const userUri = monaco.Uri.parse(`inmemory://user-${uid}.ts`);
     const analysisUri = monaco.Uri.parse(`inmemory://analysis-${uid}.ts`);
