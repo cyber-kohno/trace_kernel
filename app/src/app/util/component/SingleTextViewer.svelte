@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
     import type * as Monaco from "monaco-editor";
-    import MonacoFactory from "../monaco/monacoFactory";
+  import MonacoFactory from "../monaco/monaco-factory";
 
     export let content: string;
     export let language: string = "plaintext";

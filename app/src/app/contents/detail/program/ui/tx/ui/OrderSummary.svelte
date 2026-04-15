@@ -1,6 +1,6 @@
 <script lang="ts">
-    import type TxExecuter from "../util/txExecuter";
-    import TxPlanUtil from "../util/txPlanUtil";
+  import type TxExecuter from "../util/tx-executer";
+  import TxPlanUtil from "../util/tx-plan-util";
 
 
   export let rows: TxExecuter.OrderRow[];

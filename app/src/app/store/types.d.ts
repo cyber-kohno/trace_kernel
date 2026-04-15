@@ -1,4 +1,4 @@
-import type StoreDataset from "./storeDataset";
+import type StoreDataset from "./store-dataset";
 
 export type FileStat = {
   size: number;

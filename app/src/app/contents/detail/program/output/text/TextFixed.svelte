@@ -1,7 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import OperationButton from "../../../../../util/button/OperationButton.svelte";
-  import ToastUtil from "../../../../../util/item/toastUtit";
+  import ToastUtil from "../../../../../util/item/toast-util";
 
   export let channelId: string;
   export let total: number;

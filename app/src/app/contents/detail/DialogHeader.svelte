@@ -1,5 +1,5 @@
 <script lang="ts">
-  import store from "../../store/store";
+  import uiStore from "../../store/ui-store";
   import OperationButton from "../../util/button/OperationButton.svelte";
   import Column from "../../util/layout/Column.svelte";
   import Record from "../../util/layout/RecordDiv.svelte";
@@ -7,7 +7,7 @@
   export let title: string = "";
 
   $: close = () => {
-    $store.dialog = null;
+    $uiStore.dialog = null;
   };
 
   const CloseButtonAreaWidth = 40;

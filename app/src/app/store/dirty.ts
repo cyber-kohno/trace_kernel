@@ -1,7 +1,8 @@
-import { writable } from "svelte/store";
-import FileUtil from "../util/data/fileUtil";
-import store from "./store";
-import type StoreWorkspace from "./storeWorkspace";
+import { get, writable } from "svelte/store";
+import FileUtil from "../util/data/file-util";
+import workspaceStore, { type SnapshotLog } from "./workspace-store";
+import uiStore from "./ui-store";
+import type StoreWorkspace from "./store-workspace";
 
 export async function getHash(source: string) {
     const buf = await crypto.subtle.digest(
@@ -12,15 +13,6 @@ export async function getHash(source: string) {
         .map(b => b.toString(16).padStart(2, "0"))
         .join("");
 }
-
-export type SnapshotLog = {
-    env: string;
-    resource: string;
-    dataset: string;
-    process: string;
-    declare: string;
-    work: string;
-};
 
 const isMatch = (a: SnapshotLog, b: SnapshotLog) => {
     return a.env === b.env && a.resource === b.resource && a.dataset === b.dataset && a.process === b.process
@@ -43,16 +35,17 @@ export const dirty = writable(true);
 
 export const updateDirty = () => {
 
-    store.subscribe(async (s) => {
+    workspaceStore.subscribe(async (s) => {
         if (!s.workspace) return;
+        const target = get(uiStore).target;
 
         let newSnapshot = { ...s.snapshot };
 
         const { envs, resources, datasets, processes, works, declare } = s.workspace;
-        if (s.target == null) {
+        if (target == null) {
             newSnapshot = await getSnapshot(s.workspace);
         } else {
-            switch (s.target.cat) {
+            switch (target.cat) {
                 case 'env': newSnapshot.env = await getHash(JSON.stringify(envs)); break;
                 case 'resource': newSnapshot.env = await getHash(JSON.stringify(resources)); break;
                 case 'dataset': newSnapshot.env = await getHash(JSON.stringify(datasets)); break;

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
-  import type StoreDataset from "../../../../store/storeDataset";
+  import type StoreDataset from "../../../../store/store-dataset";
 
   export let item: StoreDataset.NodeDispProps;
   export let dir: string | null = null;
@@ -89,14 +89,15 @@
       {dir}
     </div>
   {/if}
-  <a
+  <button
     class="str"
     data--file={child == null}
     data--dirmode={dir == null}
     oncontextmenu={dispFile}
+    type="button"
   >
     {item.node.name}
-  </a>
+  </button>
   {#if child != undefined}
     <div class="filecnt">{`[${child.selectCnt}/${child.fileCnt}]`}</div>
   {/if}
@@ -205,10 +206,18 @@
     position: relative;
     height: 100%;
     /*margin: 0 0 0 4px;*/
+    margin: 0;
     font-size: 14px;
+    font: inherit;
+    line-height: inherit;
+    text-align: left;
     padding: 0 2px;
     box-sizing: border-box;
     color: #333333;
+    background-color: transparent;
+    border: none;
+    appearance: none;
+    cursor: pointer;
   }
   .str[data--file="true"] {
     /*background-color: #ff999933;*/

@@ -1,77 +1,83 @@
 <script lang="ts">
-  import store from "../../store/store";
-  import StoreProcess from "../../store/StoreProcess";
-  import StoreDataset from "../../store/storeDataset";
-  import StoreWorkspace from "../../store/storeWorkspace";
-  import StoreResource from "../../store/StoreResource";
-  import StoreWork from "../../store/StoreWork";
-  import LabelRecord from "../../util/item/LabelRecord.svelte";
-  import Record from "../../util/layout/RecordDiv.svelte";
-  import AddDelButton from "./AddDelButton.svelte";
-  import PRProcess from "./params/PRProcess.svelte";
-  import PREnv from "./params/PREnv.svelte";
-  import PRResource from "./params/PRResource.svelte";
-  import PRWork from "./params/PRWork.svelte";
-  import storeLIcense from "../../store/storeLIcense";
-  import PRDataset from "./params/PRDataset.svelte";
+  import workspaceStore from "../../store/workspace-store";
+  import uiStore from "../../store/ui-store";
+  import StoreProcess from "../../store/store-process";
+  import StoreDataset from "../../store/store-dataset";
+  import StoreWorkspace from "../../store/store-workspace";
+  import StoreResource from "../../store/store-resource";
+  import StoreWork from "../../store/store-work";
+  import EntrySection from "./EntrySection.svelte";
+  import ProcessEntry from "./entries/ProcessEntry.svelte";
+  import EnvEntry from "./entries/EnvEntry.svelte";
+  import ResourceEntry from "./entries/ResourceEntry.svelte";
+  import WorkEntry from "./entries/WorkEntry.svelte";
+  import storeLIcense from "../../store/store-license";
+  import DatasetEntry from "./entries/DatasetEntry.svelte";
 
-  $: workspace = StoreWorkspace.getWorkspace($store);
+  $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
   $: validate = (target: StoreWorkspace.Target) => {
     StoreWorkspace.validate(target);
   };
 
-  const addEnv = () => {
-    workspace.envs.push({
+  const commitAddedEntry = (target: StoreWorkspace.Target) => {
+    validate(target);
+    $workspaceStore.workspace = { ...workspace };
+    $uiStore.target = target;
+  };
+
+  const addEntry = <T>(cat: StoreWorkspace.Category, items: T[], entry: T) => {
+    items.push(entry);
+    const nextItems = items.slice();
+    const target: StoreWorkspace.Target = {
+      cat,
+      index: nextItems.length - 1,
+    };
+
+    switch (cat) {
+      case "env":
+        workspace.envs = nextItems as typeof workspace.envs;
+        break;
+      case "resource":
+        workspace.resources = nextItems as typeof workspace.resources;
+        break;
+      case "dataset":
+        workspace.datasets = nextItems as typeof workspace.datasets;
+        break;
+      case "process":
+        workspace.processes = nextItems as typeof workspace.processes;
+        break;
+      case "work":
+        workspace.works = nextItems as typeof workspace.works;
+        break;
+    }
+
+    commitAddedEntry(target);
+  };
+
+  const addEnv = () =>
+    addEntry("env", workspace.envs, {
       varName: "",
       value: "",
     });
-    const target: StoreWorkspace.Target = {
-      cat: "env",
-      index: workspace.envs.length - 1,
-    };
-    validate(target);
-    $store.target = target;
-  };
-  const addResource = () => {
-    workspace.resources.push(StoreResource.getInitial(""));
-    const target: StoreWorkspace.Target = {
-      cat: "resource",
-      index: workspace.resources.length - 1,
-    };
-    validate(target);
-    $store.target = target;
-  };
-  const addDataset = () => {
-    workspace.datasets.push(StoreDataset.getInitial(""));
-    const target: StoreWorkspace.Target = {
-      cat: "dataset",
-      index: workspace.datasets.length - 1,
-    };
-    validate(target);
-    $store.target = target;
-  };
-  const addProcess = () => {
-    workspace.processes.push(StoreProcess.getInitial());
-    const target: StoreWorkspace.Target = {
-      cat: "process",
-      index: workspace.processes.length - 1,
-    };
-    validate(target);
-    $store.target = target;
-  };
-  const addWork = () => {
-    const name = `work${workspace.works.length}`;
-    workspace.works.push(StoreWork.getInitial(name));
-    const target: StoreWorkspace.Target = {
-      cat: "work",
-      index: workspace.works.length - 1,
-    };
-    validate(target);
-    $store.target = target;
-  };
+
+  const addResource = () =>
+    addEntry("resource", workspace.resources, StoreResource.getInitial(""));
+
+  const addDataset = () =>
+    addEntry("dataset", workspace.datasets, StoreDataset.getInitial(""));
+
+  const addProcess = () =>
+    addEntry("process", workspace.processes, StoreProcess.getInitial());
+
+  const addWork = () =>
+    addEntry(
+      "work",
+      workspace.works,
+      StoreWork.getInitial(`work${workspace.works.length}`),
+    );
 
   $: openDeclare = () => {
-    $store.dialog = "declare";
+    $uiStore.dialog = "declare";
   };
 </script>
 
@@ -81,33 +87,37 @@
 
 <div class="indent">
   <!-- 環境変数 -->
-  <LabelRecord name={"-env"} />
-  {#each workspace.envs as _, index}
-    <PREnv {index} />
-  {/each}
-  <Record><AddDelButton callback={addEnv} /></Record>
+  <EntrySection
+    label={"-env"}
+    items={workspace.envs}
+    entryComponent={EnvEntry}
+    add={addEnv}
+  />
 
   <!-- リソース -->
-  <LabelRecord name={"-resource"} />
-  {#each workspace.resources as _, index}
-    <PRResource {index} />
-  {/each}
-  <Record><AddDelButton callback={addResource} /></Record>
+  <EntrySection
+    label={"-resource"}
+    items={workspace.resources}
+    entryComponent={ResourceEntry}
+    add={addResource}
+  />
 
   <!-- データセット -->
-  <LabelRecord name={"-dataset"} />
-  {#each workspace.datasets as _, index}
-    <PRDataset {index} />
-  {/each}
-  <Record><AddDelButton callback={addDataset} /></Record>
+  <EntrySection
+    label={"-dataset"}
+    items={workspace.datasets}
+    entryComponent={DatasetEntry}
+    add={addDataset}
+  />
 
   <!-- プロセス -->
   {#if storeLIcense.isPro()}
-    <LabelRecord name={"-process"} />
-    {#each workspace.processes as _, index}
-      <PRProcess {index} />
-    {/each}
-    <Record><AddDelButton callback={addProcess} /></Record>
+    <EntrySection
+      label={"-process"}
+      items={workspace.processes}
+      entryComponent={ProcessEntry}
+      add={addProcess}
+    />
   {/if}
 </div>
 
@@ -120,11 +130,12 @@
 
 <div class="indent">
   <!-- ワーク -->
-  <LabelRecord name={"-work"} />
-  {#each workspace.works as _, index}
-    <PRWork {index} />
-  {/each}
-  <Record><AddDelButton callback={addWork} /></Record>
+  <EntrySection
+    label={"-work"}
+    items={workspace.works}
+    entryComponent={WorkEntry}
+    add={addWork}
+  />
 </div>
 
 <style>

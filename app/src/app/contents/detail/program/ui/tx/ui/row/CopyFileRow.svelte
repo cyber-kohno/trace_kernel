@@ -1,6 +1,6 @@
 <script lang="ts">
-  import PathUtil from "../../../../../../../util/data/pathUtil";
-  import type TxPlanNormalize from "../../util/txPlanNormalize";
+  import PathUtil from "../../../../../../../util/data/path-util";
+  import type TxPlanNormalize from "../../util/tx-plan-normalize";
 
   export let order: TxPlanNormalize.CopyFileOrder;
 </script>

@@ -1,7 +1,7 @@
 <script lang="ts">
   import OperationButton from "../../../../util/button/OperationButton.svelte";
   import Record from "../../../../util/layout/RecordDiv.svelte";
-  import type DclChannel from "../util/channel/dclChannel";
+  import type DclChannel from "../util/channel/dcl-channel";
 
   export let channels: { id: string; view: DclChannel.View }[];
   export let active: number;

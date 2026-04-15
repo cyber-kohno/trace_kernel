@@ -1,9 +1,9 @@
 <script lang="ts">
   import { writable } from "svelte/store";
   import OrderRow from "./row/OrderRow.svelte";
-  import TxPlanNormalize from "../util/txPlanNormalize";
-  import TxExecuter from "../util/txExecuter";
-  import type RuntimeUtil from "../../../runtime/runtimeUtil";
+  import TxPlanNormalize from "../util/tx-plan-normalize";
+  import TxExecuter from "../util/tx-executer";
+  import type RuntimeUtil from "../../../runtime/runtime-util";
   import Blind from "../../../../../../util/layout/Blind.svelte";
   import Wrap from "../../../../../../util/layout/Wrap.svelte";
   import RecordDiv from "../../../../../../util/layout/RecordDiv.svelte";
@@ -13,7 +13,7 @@
   import BusyIndicator from "../../../../../../util/item/BusyIndicator.svelte";
   import ProgressBar from "../../ProgressBar.svelte";
   import OperationButton from "../../../../../../util/button/OperationButton.svelte";
-  import TxDetailUtil from "../util/txDetailUtil";
+  import TxDetailUtil from "../util/tx-detail-util";
   import TxDetail from "./detail/TxDetail.svelte";
 
   export let vfs: RuntimeUtil.VFSState;

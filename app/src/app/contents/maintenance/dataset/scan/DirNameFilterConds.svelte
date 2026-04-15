@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type StoreDataset from "../../../../store/storeDataset";
-  import StoreInvalidate from "../../../../store/storeInvalidate";
+  import type StoreDataset from "../../../../store/store-dataset";
+  import StoreInvalidate from "../../../../store/store-invalidate";
   import NumberInput from "../../../../util/form/NumberInput.svelte";
   import TextInput from "../../../../util/form/TextInput.svelte";
 

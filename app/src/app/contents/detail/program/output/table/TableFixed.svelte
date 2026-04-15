@@ -1,10 +1,10 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import OperationButton from "../../../../../util/button/OperationButton.svelte";
-  import ToastUtil from "../../../../../util/item/toastUtit";
-  import type DclChannel from "../../util/channel/dclChannel";
+  import ToastUtil from "../../../../../util/item/toast-util";
+  import type DclChannel from "../../util/channel/dcl-channel";
   import Record from "../../../../../util/layout/RecordDiv.svelte";
-  import DataUtil from "../../../../../util/data/dataUtil";
+  import DataUtil from "../../../../../util/data/data-util";
 
   export let channelId: string;
   export let total: number;

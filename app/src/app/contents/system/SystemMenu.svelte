@@ -1,18 +1,19 @@
 <script lang="ts">
   import { dirty } from "../../store/dirty";
-  import store from "../../store/store";
+  import uiStore from "../../store/ui-store";
+  import workspaceStore from "../../store/workspace-store";
   import OperationButton from "../../util/button/OperationButton.svelte";
-  import FileUtil from "../../util/data/fileUtil";
+  import FileUtil from "../../util/data/file-util";
   import Record from "../../util/layout/RecordDiv.svelte";
   import { ask } from "@tauri-apps/plugin-dialog";
   import { relaunch } from "@tauri-apps/plugin-process";
 
   const closeWorkspace = () => {
     const exec = () => {
-      $store.workspace = null;
-      $store.handlePath = null;
-      $store.target = null;
-      $store.dialog = null;
+      $workspaceStore.workspace = null;
+      $workspaceStore.handlePath = null;
+      $uiStore.target = null;
+      $uiStore.dialog = null;
       FileUtil.updateAppTitle();
     };
     if (!$dirty) {
@@ -27,7 +28,7 @@
   };
 
   const openSettingDialog = () => {
-    $store.dialog = "setting";
+    $uiStore.dialog = "setting";
   };
 
   const restart = async () => {
@@ -47,7 +48,7 @@
     });
   };
 
-  $: isOpenProject = $store.workspace != null;
+  $: isOpenProject = $workspaceStore.workspace != null;
   $: saveProject = () => {
     FileUtil.saveWorkspace();
   };

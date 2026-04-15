@@ -1,6 +1,6 @@
 <script lang="ts">
   import { writable } from "svelte/store";
-  import type ToastUtil from "./toastUtit";
+  import type ToastUtil from "./toast-util";
   import { fade } from "svelte/transition";
 
   let toast = writable<ToastUtil.Props | null>(null);

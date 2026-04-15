@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type TxExecuter from "../util/txExecuter";
+  import type TxExecuter from "../util/tx-executer";
 
 
   export let phase: TxExecuter.Phase;

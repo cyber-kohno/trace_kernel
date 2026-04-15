@@ -1,11 +1,11 @@
 <script lang="ts">
-  import store from "../../store/store";
+  import uiStore from "../../store/ui-store";
   import Record from "../../util/layout/RecordDiv.svelte";
     import DeclareDialog from "./declare/DeclareDialog.svelte";
   import ProgramDialog from "./program/ui/ProgramDialog.svelte";
   import SettingDialog from "./setting/SettingDialog.svelte";
 
-  $: dialog = $store.dialog;
+  $: dialog = $uiStore.dialog;
 </script>
 
 {#if dialog != undefined}

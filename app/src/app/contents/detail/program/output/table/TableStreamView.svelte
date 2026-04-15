@@ -1,5 +1,5 @@
 <script lang="ts">
-  import DclChannel from "../../util/channel/dclChannel";
+  import DclChannel from "../../util/channel/dcl-channel";
   import StreamReceiver from "../StreamReceiver.svelte";
   import TableFixed from "./TableFixed.svelte";
   import TableRecord from "./TableRecord.svelte";

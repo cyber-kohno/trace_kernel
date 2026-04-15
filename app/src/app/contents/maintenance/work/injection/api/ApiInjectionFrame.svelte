@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type StoreWork from "../../../../../store/StoreWork";
+  import type StoreWork from "../../../../../store/store-work";
   import Record from "../../../../../util/layout/RecordDiv.svelte";
   import Wrap from "../../../../../util/layout/Wrap.svelte";
-  import DeclareUtil from "../../../../detail/program/util/declareUtil";
+  import DeclareUtil from "../../../../detail/program/util/declare-util";
   import ApiInjectionItem from "./ApiInjectionItem.svelte";
 
   export let method: StoreWork.OutputMethod;

@@ -3,9 +3,9 @@
   import loader from "@monaco-editor/loader";
   import * as Monaco from "monaco-editor";
   import { get, writable } from "svelte/store";
-  import store from "../../store/store";
-  import MonacoFactory from "./monacoFactory";
-  import { restrictedGlobals } from "./restrictedGlobals";
+  import appStore from "../../store/app-store";
+  import MonacoFactory from "./monaco-factory";
+import { restrictedGlobals } from "./restricted-globals";
 
   let editorDiv: HTMLDivElement | null = null;
   let editor: Monaco.editor.IStandaloneCodeEditor;
@@ -186,7 +186,7 @@
       colors: {},
     });
 
-    const fontSize = get(store).setting.monacoFontSize;
+    const fontSize = get(appStore).setting.monacoFontSize;
     editor = monaco.editor.create(editorDiv, {
       // value,
       model: userModel,

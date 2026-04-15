@@ -1,7 +1,6 @@
 <script lang="ts">
-  import store from "../../../../store/store";
-  import type StoreDataset from "../../../../store/storeDataset";
-  import StoreInvalidate from "../../../../store/storeInvalidate";
+  import type StoreDataset from "../../../../store/store-dataset";
+  import StoreInvalidate from "../../../../store/store-invalidate";
   import TextInput from "../../../../util/form/TextInput.svelte";
 
   export let req: StoreDataset.ScanOption;

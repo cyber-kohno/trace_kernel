@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type DclChannel from "../../util/channel/dclChannel";
+  import type DclChannel from "../../util/channel/dcl-channel";
 
   export let recordStr: string;
   export let index: number;

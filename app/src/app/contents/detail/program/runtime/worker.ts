@@ -1,14 +1,14 @@
-import type StoreDataset from "../../../../store/storeDataset";
-import type StoreWork from "../../../../store/StoreWork";
+import type StoreDataset from "../../../../store/store-dataset";
+import type StoreWork from "../../../../store/store-work";
 import type { ScanRequest } from "../../../../store/types";
-import DataUtil from "../../../../util/data/dataUtil";
-import WorkerAdapter from "../ui/workerAdapter";
-import DeclareUtil from "../util/declareUtil";
-import ContextDataUtil from "../util/contextDataUtil";
-import DclRuntime from "../util/dclRuntime";
-import WorkerInvoke from "../util/workerInvoke";
-import RuntimeUtil from "./runtimeUtil";
-import { createFlushScheduler } from "./streamFlush";
+import DataUtil from "../../../../util/data/data-util";
+import WorkerAdapter from "../ui/worker-adapter";
+import DeclareUtil from "../util/declare-util";
+import ContextDataUtil from "../util/context-data-util";
+import DclRuntime from "../util/dcl-runtime";
+import WorkerInvoke from "../util/worker-invoke";
+import RuntimeUtil from "./runtime-util";
+import { createFlushScheduler } from "./stream-flush";
 
 export interface MessageProps {
     type: "execute" | 'invoke-result';

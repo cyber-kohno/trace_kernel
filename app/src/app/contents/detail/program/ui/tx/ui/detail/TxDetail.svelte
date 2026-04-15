@@ -2,7 +2,7 @@
     import OperationButton from "../../../../../../../util/button/OperationButton.svelte";
     import RecordDiv from "../../../../../../../util/layout/RecordDiv.svelte";
     import Wrap from "../../../../../../../util/layout/Wrap.svelte";
-    import type TxDetailUtil from "../../util/txDetailUtil";
+  import type TxDetailUtil from "../../util/tx-detail-util";
     import DiffViewer from "../../../../../../../util/component/DiffViewer.svelte";
     import SingleTextViewer from "../../../../../../../util/component/SingleTextViewer.svelte";
 

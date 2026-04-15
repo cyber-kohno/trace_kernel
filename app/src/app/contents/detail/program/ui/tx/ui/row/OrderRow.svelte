@@ -1,10 +1,10 @@
 <script lang="ts">
-  import PathUtil from "../../../../../../../util/data/pathUtil";
+  import PathUtil from "../../../../../../../util/data/path-util";
   import Column from "../../../../../../../util/layout/Column.svelte";
   import RecordDiv from "../../../../../../../util/layout/RecordDiv.svelte";
-  import type TxDetailUtil from "../../util/txDetailUtil";
-  import type TxExecuter from "../../util/txExecuter";
-  import TxPlanUtil from "../../util/txPlanUtil";
+  import type TxDetailUtil from "../../util/tx-detail-util";
+  import type TxExecuter from "../../util/tx-executer";
+  import TxPlanUtil from "../../util/tx-plan-util";
   import CommitStatus from "./CommitStatus.svelte";
   import CopyFileRow from "./CopyFileRow.svelte";
   import CreateFileRow from "./CreateFileRow.svelte";
@@ -163,14 +163,5 @@
   }
   .kind[data--kind="delete_file"] {
     color: rgb(255, 0, 0);
-  }
-  .file {
-    font-weight: 400;
-    width: calc(100% - 80px);
-    color: yellow;
-  }
-  span {
-    color: white;
-    font-size: 16px;
   }
 </style>

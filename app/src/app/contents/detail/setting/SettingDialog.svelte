@@ -6,9 +6,9 @@
   import LicensePanel from "./license/LicensePanel.svelte";
   import Record from "../../../util/layout/RecordDiv.svelte";
   import NumberInput from "../../../util/form/NumberInput.svelte";
-  import store from "../../../store/store";
+  import appStore from "../../../store/app-store";
 
-  $: setting = $store.setting;
+  $: setting = $appStore.setting;
 </script>
 
 <div class="frame">

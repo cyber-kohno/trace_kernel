@@ -1,13 +1,13 @@
 <script lang="ts">
   import { getSnapshot } from "../../store/dirty";
-  import store, {  } from "../../store/store";
-  import StoreWorkspace from "../../store/storeWorkspace";
-  import FileUtil from "../../util/data/fileUtil";
+  import workspaceStore from "../../store/workspace-store";
+  import StoreWorkspace from "../../store/store-workspace";
+  import FileUtil from "../../util/data/file-util";
   import RecordDiv from "../../util/layout/RecordDiv.svelte";
 
   const createBlank = async () => {
-    $store.workspace = StoreWorkspace.getInitial();
-    $store.snapshot = await getSnapshot($store.workspace);
+    $workspaceStore.workspace = StoreWorkspace.getInitial();
+    $workspaceStore.snapshot = await getSnapshot($workspaceStore.workspace);
     FileUtil.updateAppTitle();
   };
   $: loadFile = () => {

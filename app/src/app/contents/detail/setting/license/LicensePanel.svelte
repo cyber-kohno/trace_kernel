@@ -4,17 +4,17 @@
   import LabelRecord from "../../../../util/item/LabelRecord.svelte";
   import Wrap from "../../../../util/layout/Wrap.svelte";
   import OperationButton from "../../../../util/button/OperationButton.svelte";
-  import LicenseUtil from "./licenseUtil";
+  import LicenseUtil from "./license-util";
   import Record from "../../../../util/layout/RecordDiv.svelte";
-  import store from "../../../../store/store";
-  import FileUtil from "../../../../util/data/fileUtil";
+  import appStore from "../../../../store/app-store";
+  import FileUtil from "../../../../util/data/file-util";
 
   let productKey = writable<string | null>(null);
   let error = writable<string>("");
 
-  $: isLicensed = $store.license != null;
+  $: isLicensed = $appStore.license != null;
 
-  $: license = $store.license;
+  $: license = $appStore.license;
 
   $: toggle = () => {
     $error = "";
@@ -29,7 +29,7 @@
       console.log(payload);
       LicenseUtil.saveLicense($productKey);
 
-      $store.license = LicenseUtil.getConvertedLicenseFromPayload(payload);
+      $appStore.license = LicenseUtil.getConvertedLicenseFromPayload(payload);
       FileUtil.updateAppTitle();
       toggle();
     } catch {

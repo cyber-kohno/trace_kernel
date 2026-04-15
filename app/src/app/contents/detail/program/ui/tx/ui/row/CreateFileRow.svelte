@@ -1,7 +1,7 @@
 <script lang="ts">
-    import PathUtil from "../../../../../../../util/data/pathUtil";
-    import TxDetailUtil from "../../util/txDetailUtil";
-    import type TxPlanNormalize from "../../util/txPlanNormalize";
+  import PathUtil from "../../../../../../../util/data/path-util";
+  import TxDetailUtil from "../../util/tx-detail-util";
+  import type TxPlanNormalize from "../../util/tx-plan-normalize";
 
     export let order: TxPlanNormalize.CreateFileOrder;
     export let setDetail: (v: TxDetailUtil.Props | null) => void;

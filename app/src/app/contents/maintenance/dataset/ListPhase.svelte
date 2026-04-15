@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type StoreDataset from "../../../store/storeDataset";
+  import type StoreDataset from "../../../store/store-dataset";
   import Wrap from "../../../util/layout/Wrap.svelte";
 
   export let dataset: StoreDataset.Props;

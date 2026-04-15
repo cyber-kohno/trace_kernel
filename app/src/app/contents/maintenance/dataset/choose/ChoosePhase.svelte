@@ -1,14 +1,15 @@
 <script lang="ts">
   import ChooseRecord from "./ChooseRecord.svelte";
   import { writable } from "svelte/store";
-  import ChooseUtil from "./chooseUtil";
+  import ChooseUtil from "./choose-util";
   import OperationButton from "../../../../util/button/OperationButton.svelte";
-  import store from "../../../../store/store";
-  import StoreDataset from "../../../../store/storeDataset";
-  import StoreCache from "../../../../store/storeCache";
+  import workspaceStore from "../../../../store/workspace-store";
+  import uiStore from "../../../../store/ui-store";
+  import StoreDataset from "../../../../store/store-dataset";
+  import StoreCache from "../../../../store/store-cache";
   import Record from "../../../../util/layout/RecordDiv.svelte";
-  import StoreWorkspace from "../../../../store/storeWorkspace";
-  import ToastUtil from "../../../../util/item/toastUtit";
+  import StoreWorkspace from "../../../../store/store-workspace";
+  import ToastUtil from "../../../../util/item/toast-util";
 
   let ref: HTMLDivElement | undefined = undefined;
 
@@ -18,7 +19,7 @@
 
   let root = writable<StoreDataset.UsableNode>(
     (() => {
-      const ret = StoreCache.getDatasetChoose($store.target?.index ?? -1);
+      const ret = StoreCache.getDatasetChoose($uiStore.target?.index ?? -1);
       if (ret == null) throw new Error();
       return ret;
     })(),
@@ -50,8 +51,8 @@
 
   $: cancel = () => {
     setPhase("scan");
-    StoreCache.remove({ type: "dataset-choose", index: $store.target?.index ?? -1 });
-    $store = { ...$store };
+    StoreCache.remove({ type: "dataset-choose", index: $uiStore.target?.index ?? -1 });
+    $workspaceStore = { ...$workspaceStore };
     validate();
   };
   $: toggleView = () => {
@@ -66,7 +67,7 @@
       // 選択中の要素でフィルター
       .filter((r) => r.node.isSelected);
 
-    const workspace = StoreWorkspace.getWorkspace($store);
+  const workspace = StoreWorkspace.getWorkspace($workspaceStore);
     // 環境件数を加味した正式なルートパスを取得
     const rootPath = workspace.envs.reduce(
       (ret, cur) => ret.replaceAll(`%${cur.varName}%`, cur.value),
@@ -88,7 +89,7 @@
       .map((r) => r.node.path.replace(rootPath, ""));
     setPhase("list");
     validate();
-    $store = { ...$store };
+    $workspaceStore = { ...$workspaceStore };
   };
 
   $: getDir = (item: StoreDataset.NodeDispProps) => {

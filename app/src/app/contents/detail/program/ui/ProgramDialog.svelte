@@ -1,27 +1,29 @@
 <script lang="ts">
-  import store from "../../../../store/store";
+  import workspaceStore from "../../../../store/workspace-store";
+  import workspaceValidationStore from "../../../../store/workspace-validation-store";
+  import uiStore from "../../../../store/ui-store";
   import Wrap from "../../../../util/layout/Wrap.svelte";
   import ScriptEditor from "../../../../util/monaco/ScriptEditor.svelte";
   import OperationButton from "../../../../util/button/OperationButton.svelte";
-  import TypescriptUtil from "../../../../util/TypescriptUtil";
+  import TypescriptUtil from "../../../../util/typescript-util";
   import { onDestroy, onMount } from "svelte";
   import { writable } from "svelte/store";
   import Record from "../../../../util/layout/RecordDiv.svelte";
-  import StoreWorkspace from "../../../../store/storeWorkspace";
-  import DeclareUtil from "../util/declareUtil";
+  import StoreWorkspace from "../../../../store/store-workspace";
+  import DeclareUtil from "../util/declare-util";
   import DialogHeader from "../../DialogHeader.svelte";
   import ProgressBar from "./ProgressBar.svelte";
-  import ContextDataUtil from "../util/contextDataUtil";
+  import ContextDataUtil from "../util/context-data-util";
   import RuntimeErrorFrame from "./RuntimeErrorFrame.svelte";
-  import WorkerAdapter from "./workerAdapter";
-  import RuntimeUtil from "../runtime/runtimeUtil";
-  import StorePermission from "../../../../store/storeLIcense";
-  import type StoreProcess from "../../../../store/StoreProcess";
+  import WorkerAdapter from "./worker-adapter";
+  import RuntimeUtil from "../runtime/runtime-util";
+  import StorePermission from "../../../../store/store-license";
+  import type StoreProcess from "../../../../store/store-process";
   import TextStreamView from "../output/text/TextStreamView.svelte";
   import ChannelSwitchFrame from "../output/ChannelSwitchFrame.svelte";
-  import type DclChannel from "../util/channel/dclChannel";
+  import type DclChannel from "../util/channel/dcl-channel";
   import TableStreamView from "../output/table/TableStreamView.svelte";
-  import type { StreamAPI } from "../output/streamAPI";
+  import type { StreamAPI } from "../output/stream-api";
   import BusyIndicator from "../../../../util/item/BusyIndicator.svelte";
   import TxDialog from "./tx/ui/TxDialog.svelte";
 
@@ -52,10 +54,12 @@
   let monacoRef: ScriptEditor;
 
   $: [workspace, injectionalData] = (() => {
-    const workspace = StoreWorkspace.getWorkspace($store);
+    const workspace = StoreWorkspace.getWorkspace($workspaceStore);
 
     const isDisable = (cat: StoreWorkspace.Category, i: number) =>
-      $store.disables.find((d) => d.cat === cat && d.index === i) != undefined;
+      $workspaceValidationStore.disables.find(
+        (d) => d.cat === cat && d.index === i,
+      ) != undefined;
 
     let processes: StoreProcess.Props[] = [];
     if (StorePermission.isPro()) {
@@ -75,7 +79,7 @@
   })();
 
   $: work = (() => {
-    const target = $store.target;
+    const target = $uiStore.target;
     if (target && target.cat === "work") return workspace.works[target.index];
     throw new Error();
   })();
@@ -83,7 +87,7 @@
   $: usableUtils = DeclareUtil.getUsableReserveList({ method: work.method });
 
   onDestroy(() => {
-    $store.shortcutEvent = null;
+    $uiStore.shortcutEvent = null;
   });
 
   const { init, terminate, start, postInvoke } = WorkerAdapter.use(
@@ -175,11 +179,11 @@
   onMount(async () => {
     init();
 
-    $store.shortcutEvent = (e) => {
+    $uiStore.shortcutEvent = (e) => {
       if (e.altKey && e.key === "ArrowLeft") {
         cancel();
       } else if (e.key === "Escape") {
-        $store.dialog = null;
+        $uiStore.dialog = null;
       } else if (e.key === "F5" || (e.altKey && e.key === "Enter")) {
         runScript();
       }
@@ -241,7 +245,7 @@
               value={work.source}
               onChange={(v) => {
                 work.source = v;
-                $store = { ...$store };
+                $workspaceStore = { ...$workspaceStore };
               }}
               injectionDefs={usableUtils
                 .map((r) => {

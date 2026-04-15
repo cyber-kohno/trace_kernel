@@ -4,15 +4,16 @@
   import FileNameFilterConds from "./FileNameFilterConds.svelte";
   import NumberInput from "../../../../util/form/NumberInput.svelte";
   import OperationButton from "../../../../util/button/OperationButton.svelte";
-  import store from "../../../../store/store";
+  import workspaceStore from "../../../../store/workspace-store";
+  import uiStore from "../../../../store/ui-store";
   import LabelRecord from "../../../../util/item/LabelRecord.svelte";
-  import type StoreDataset from "../../../../store/storeDataset";
+  import type StoreDataset from "../../../../store/store-dataset";
   import Record from "../../../../util/layout/RecordDiv.svelte";
-  import StoreCache from "../../../../store/storeCache";
-  import ScanUtil from "./ScanUtil";
-  import StoreWorkspace from "../../../../store/storeWorkspace";
-  import ToastUtil from "../../../../util/item/toastUtit";
-  import ChooseUtil from "../choose/chooseUtil";
+  import StoreCache from "../../../../store/store-cache";
+  import ScanUtil from "./scan-util";
+  import StoreWorkspace from "../../../../store/store-workspace";
+  import ToastUtil from "../../../../util/item/toast-util";
+  import ChooseUtil from "../choose/choose-util";
 
   let count = writable<number>(-1);
   let isSearch = writable(false);
@@ -44,7 +45,7 @@
   const scan = () => {
     $isSearch = true;
 
-    const workspace = StoreWorkspace.getWorkspace($store);
+  const workspace = StoreWorkspace.getWorkspace($workspaceStore);
     const newFilePath = workspace.envs.reduce(
       (ret, cur) => ret.replaceAll(`%${cur.varName}%`, cur.value),
       dataSet.rootPath,
@@ -61,10 +62,8 @@
           ToastUtil.disp({ text: "No matching files found." });
           return;
         }
-        StoreCache.addDatasetChoose($store.target?.index ?? -1, res);
+        StoreCache.addDatasetChoose($uiStore.target?.index ?? -1, res);
         setPhase("choose");
-
-        $store = { ...$store };
       },
     });
   };

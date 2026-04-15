@@ -1,13 +1,15 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import store from "./store/store";
-  import FileUtil from "./util/data/fileUtil";
+  import appStore from "./store/app-store";
+  import uiStore from "./store/ui-store";
+  import workspaceStore from "./store/workspace-store";
+  import FileUtil from "./util/data/file-util";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
   import SystemMenu from "./contents/system/SystemMenu.svelte";
   import MainFrame from "./contents/system/MainFrame.svelte";
   import DialogManager from "./contents/detail/DialogManager.svelte";
-  import LicenseUtil from "./contents/detail/setting/license/licenseUtil";
+  import LicenseUtil from "./contents/detail/setting/license/license-util";
   import ToastFrame from "./util/item/ToastFrame.svelte";
   import { global } from "./global";
   import StartFrame from "./contents/system/StartFrame.svelte";
@@ -21,7 +23,7 @@
   onMount(async () => {
     await listen<string[]>("file-drop", async (event) => {
       const files: string[] = event.payload;
-      if (files.length === 1 && $store.workspace == null) {
+      if (files.length === 1 && $workspaceStore.workspace == null) {
         const filePath = files[0];
         await FileUtil.loadWorkspaceFile(filePath);
       }
@@ -34,7 +36,7 @@
         e.preventDefault(); // ブラウザの「ページを保存」ダイアログをブロック
         e.stopPropagation(); // 必要なら他のハンドラへも流れない
 
-        if ($store.workspace != null) {
+        if ($workspaceStore.workspace != null) {
           FileUtil.saveWorkspace();
         }
       }
@@ -47,7 +49,7 @@
         e.preventDefault();
         e.stopPropagation();
       }
-      if ($store.shortcutEvent != null) $store.shortcutEvent(e);
+      if ($uiStore.shortcutEvent != null) $uiStore.shortcutEvent(e);
     });
     window.addEventListener("contextmenu", (e) => {
       e.preventDefault();
@@ -63,7 +65,7 @@
     const payload = await LicenseUtil.loadLicenseOnStartup();
     // console.log(payload);
     if (payload != null) {
-      $store.license = LicenseUtil.getConvertedLicenseFromPayload(payload);
+      $appStore.license = LicenseUtil.getConvertedLicenseFromPayload(payload);
       FileUtil.updateAppTitle();
     }
 
@@ -82,7 +84,7 @@
 {#if args != null}
   <SystemMenu />
   <Record surplus={30}>
-    {#if $store.workspace != null}
+    {#if $workspaceStore.workspace != null}
       <MainFrame />
     {:else}
       <StartFrame />
