@@ -1,35 +1,35 @@
 <script lang="ts">
-  import DirNameFilterConds from "./DirNameFilterConds.svelte";
-  import { writable } from "svelte/store";
-  import FileNameFilterConds from "./FileNameFilterConds.svelte";
-  import NumberInput from "../../../../util/form/NumberInput.svelte";
-  import OperationButton from "../../../../util/button/OperationButton.svelte";
-  import workspaceStore from "../../../../store/workspace-store";
-  import uiStore from "../../../../store/ui-store";
-  import LabelRecord from "../../../../util/item/LabelRecord.svelte";
-  import type StoreDataset from "../../../../store/store-dataset";
-  import Record from "../../../../util/layout/RecordDiv.svelte";
-  import StoreCache from "../../../../store/store-cache";
-  import ScanUtil from "./scan-util";
-  import StoreWorkspace from "../../../../store/store-workspace";
-  import ToastUtil from "../../../../util/item/toast-util";
-  import ChooseUtil from "../choose/choose-util";
+  import DirectoryFilterConditions from './DirectoryFilterConditions.svelte';
+  import { writable } from 'svelte/store';
+  import FileFilterConditions from './FileFilterConditions.svelte';
+  import NumberInput from '../../../../util/form/NumberInput.svelte';
+  import OperationButton from '../../../../util/button/OperationButton.svelte';
+  import workspaceStore from '../../../../store/workspace-store';
+  import uiStore from '../../../../store/ui-store';
+  import LabelRecord from '../../../../util/item/LabelRecord.svelte';
+  import type StoreDataset from '../../../../store/store-dataset';
+  import Record from '../../../../util/layout/RecordDiv.svelte';
+  import StoreCache from '../../../../store/store-cache';
+  import DatasetScanUtil from './dataset-scan-util';
+  import StoreWorkspace from '../../../../store/store-workspace';
+  import ToastUtil from '../../../../util/item/toast-util';
+  import DatasetChooseUtil from '../choose/dataset-choose-util';
 
   let count = writable<number>(-1);
   let isSearch = writable(false);
   let scanningDispDir = writable<string[]>([]);
 
-  export let dataSet: StoreDataset.Props;
-  export let setPhase: (phase: StoreDataset.ChoosePhase) => void;
+  export let dataset: StoreDataset.Props;
+  export let setPhase: (phase: StoreDataset.DatasetPhase) => void;
 
   $: scanOption = (() => {
-    if (dataSet.scanOption == null) throw new Error();
-    return dataSet.scanOption;
+    if (dataset.scanOption == null) throw new Error();
+    return dataset.scanOption;
   })();
 
   $: isRequestOk = () => {
     return (
-      dataSet.rootPath.length >= 1 &&
+      dataset.rootPath.length >= 1 &&
       !scanOption.dirConds.some((c) => c.pattern.length === 0) &&
       !scanOption.fileConds.some((c) => c.pattern.length === 0)
     );
@@ -39,31 +39,31 @@
     scanOption.dirConds.length = 0;
     scanOption.fileConds.length = 0;
     delete scanOption.limitDepth;
-    // dataSet.scanOption = { ...scanOption };
+    // dataset.scanOption = { ...scanOption };
   };
 
   const scan = () => {
     $isSearch = true;
 
-  const workspace = StoreWorkspace.getWorkspace($workspaceStore);
+    const workspace = StoreWorkspace.getWorkspace($workspaceStore);
     const newFilePath = workspace.envs.reduce(
       (ret, cur) => ret.replaceAll(`%${cur.varName}%`, cur.value),
-      dataSet.rootPath,
+      dataset.rootPath,
     );
 
-    ScanUtil.buildDirectoryTree({
+    DatasetScanUtil.buildDirectoryTree({
       setCouner: (n) => ($count = n),
       setScanningDispDir: (s) => ($scanningDispDir = s),
       setSearch: (b) => ($isSearch = b),
       scanRequest: { rootPath: newFilePath, ...scanOption },
       endProc: (res) => {
-        const fileCnt = ChooseUtil.getDispRecords(res, true).length;
+        const fileCnt = DatasetChooseUtil.getDispRecords(res, true).length;
         if (fileCnt === 0) {
-          ToastUtil.disp({ text: "No matching files found." });
+          ToastUtil.disp({ text: 'No matching files found.' });
           return;
         }
         StoreCache.addDatasetChoose($uiStore.target?.index ?? -1, res);
-        setPhase("choose");
+        setPhase('choose');
       },
     });
   };
@@ -79,28 +79,28 @@
     value={scanOption.limitDepth}
     set={(v) => {
       scanOption.limitDepth = v;
-      dataSet.scanOption = { ...scanOption };
+      dataset.scanOption = { ...scanOption };
     }}
     optional
   />
   <!-- ディレクトリ名の抽出条件 -->
-  <LabelRecord name="directory_filter_conditions" sub={"depth and pattern"} />
-  <DirNameFilterConds req={scanOption} />
+  <LabelRecord name="directory_filter_conditions" sub={'depth and pattern'} />
+  <DirectoryFilterConditions {scanOption} />
   <!-- ファイル名の抽出条件 -->
   <LabelRecord name="file_filter_conditions" />
-  <FileNameFilterConds req={scanOption} />
+  <FileFilterConditions {scanOption} />
 </div>
 <Record bgColor="#8888aa44" align="right">
   <OperationButton
-    name={"Clear condition"}
+    name={'Clear condition'}
     width={190}
     callback={reset}
     isLineup
   />
 
-  {#if dataSet.targets != null}
+  {#if dataset.targets != null}
     <OperationButton
-      name={"Scan"}
+      name={'Scan'}
       width={160}
       isDisable={!isRequestOk()}
       callback={scan}

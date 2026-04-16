@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let bgColor: string = "#transparent";
+  export let bgColor: string = '#transparent';
   export let margin: number = 4;
 </script>
 

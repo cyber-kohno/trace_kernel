@@ -1,23 +1,23 @@
 <script lang="ts">
-  import LabelRecord from "../../../util/item/LabelRecord.svelte";
-  import Wrap from "../../../util/layout/Wrap.svelte";
-  import DialogHeader from "../DialogHeader.svelte";
-  import HalfPanel from "../../../util/layout/HalfPanel.svelte";
-  import LicensePanel from "./license/LicensePanel.svelte";
-  import Record from "../../../util/layout/RecordDiv.svelte";
-  import NumberInput from "../../../util/form/NumberInput.svelte";
-  import appStore from "../../../store/app-store";
+  import LabelRecord from '../../../util/item/LabelRecord.svelte';
+  import Wrap from '../../../util/layout/Wrap.svelte';
+  import DialogHeader from '../DialogHeader.svelte';
+  import HalfPanel from '../../../util/layout/HalfPanel.svelte';
+  import LicensePanel from './license/LicensePanel.svelte';
+  import Record from '../../../util/layout/RecordDiv.svelte';
+  import NumberInput from '../../../util/form/NumberInput.svelte';
+  import appStore from '../../../store/app-store';
 
   $: setting = $appStore.setting;
 </script>
 
 <div class="frame">
-  <DialogHeader title={"Setting"} />
+  <DialogHeader title={'Setting'} />
   <Record surplus={30}>
-    <Wrap margin={2} bgColor={"#000"}>
+    <Wrap margin={2} bgColor={'#000'}>
       <HalfPanel>
-        <Wrap margin={4} bgColor={"#556"}>
-          <LabelRecord name={"monaco_font_size"} />
+        <Wrap margin={4} bgColor={'#556'}>
+          <LabelRecord name={'monaco_font_size'} />
           <NumberInput
             min={10}
             max={30}

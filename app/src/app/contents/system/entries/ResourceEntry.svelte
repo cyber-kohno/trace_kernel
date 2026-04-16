@@ -1,8 +1,8 @@
 <script lang="ts">
-  import workspaceStore from "../../../store/workspace-store";
-  import uiStore from "../../../store/ui-store";
-  import StoreProject from "../../../store/store-workspace";
-  import EntryRecord from "./EntryRecord.svelte";
+  import workspaceStore from '../../../store/workspace-store';
+  import uiStore from '../../../store/ui-store';
+  import StoreProject from '../../../store/store-workspace';
+  import EntryRecord from './EntryRecord.svelte';
 
   export let index: number;
 
@@ -15,12 +15,12 @@
   $: isFocus = (() => {
     const target = $uiStore.target;
     return (
-      target != null && target.cat === "resource" && target.index === index
+      target != null && target.cat === 'resource' && target.index === index
     );
   })();
 
   $: focus = () => {
-    $uiStore.target = { cat: "resource", index };
+    $uiStore.target = { cat: 'resource', index };
   };
 
   $: del = () => {
@@ -34,9 +34,9 @@
   $: resource = workspace.resources[index];
 </script>
 
-<EntryRecord {focus} {isFocus} {del} target={{ cat: "resource", index }}>
+<EntryRecord {focus} {isFocus} {del} target={{ cat: 'resource', index }}>
   <span class="wrap">
-    <span>{"$"}</span>
+    <span>{'$'}</span>
     <span class="name">{resource.varName}</span>
   </span>
 </EntryRecord>

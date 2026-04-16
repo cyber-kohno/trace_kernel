@@ -1,16 +1,15 @@
 <script lang="ts">
-  import type TxExecuter from "../util/tx-executer";
-
+  import type TxExecuter from '../util/tx-executer';
 
   export let phase: TxExecuter.Phase;
 </script>
 
 <div class="wrap">
-  <div data--active={phase === "confirm"}>{"confirm"}</div>
-  <div>{">"}</div>
-  <div data--active={phase === "verify"}>{"verify"}</div>
-  <div>{">"}</div>
-  <div data--active={phase === "commit"}>{"commit"}</div>
+  <div data--active={phase === 'confirm'}>{'confirm'}</div>
+  <div>{'>'}</div>
+  <div data--active={phase === 'verify'}>{'verify'}</div>
+  <div>{'>'}</div>
+  <div data--active={phase === 'commit'}>{'commit'}</div>
 </div>
 
 <style>
@@ -33,7 +32,7 @@
       margin-left: 8px;
       color: rgba(255, 128, 50, 0.561);
     }
-    *[data--active="true"] {
+    *[data--active='true'] {
       color: rgb(255, 128, 50);
     }
   }

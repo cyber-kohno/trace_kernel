@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type TxExecuter from "../../util/tx-executer";
+  import type TxExecuter from '../../util/tx-executer';
 
   export let status: TxExecuter.Status;
 
   $: message = (() => {
     const { verify, commit } = status;
     if (verify) {
-      if (verify.kind !== "checked") return verify.message;
+      if (verify.kind !== 'checked') return verify.message;
     }
     if (commit) {
-      if (commit.kind !== "success") return commit.detail;
+      if (commit.kind !== 'success') return commit.detail;
     }
     return null;
   })();

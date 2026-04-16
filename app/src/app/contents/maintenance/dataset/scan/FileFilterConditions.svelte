@@ -1,21 +1,20 @@
 <script lang="ts">
-  import type StoreDataset from "../../../../store/store-dataset";
-  import StoreInvalidate from "../../../../store/store-invalidate";
-  import NumberInput from "../../../../util/form/NumberInput.svelte";
-  import TextInput from "../../../../util/form/TextInput.svelte";
+  import type StoreDataset from '../../../../store/store-dataset';
+  import StoreInvalidate from '../../../../store/store-invalidate';
+  import TextInput from '../../../../util/form/TextInput.svelte';
 
-  export let req: StoreDataset.ScanOption;
-  $: dirConds = req.dirConds;
+  export let scanOption: StoreDataset.ScanOption;
+  $: fileConds = scanOption.fileConds;
   $: invalidate = () => {
-    StoreInvalidate.invalidate("dataset");
+    StoreInvalidate.invalidate('dataset');
   };
 
   /**
    * 終端に条件追加
    */
   const add = () => {
-    dirConds.push({
-      pattern: "",
+    fileConds.push({
+      pattern: '',
       isExclude: false,
     });
     invalidate();
@@ -25,29 +24,21 @@
    * 指定行の条件削除
    */
   const del = (index: number) => {
-    dirConds.splice(index, 1);
+    fileConds.splice(index, 1);
     invalidate();
   };
 </script>
 
-{#each dirConds as con, i}
+{#each fileConds as con, i}
   <div class="record">
-    <button class="adddel" onclick={() => del(i)}>{"-"}</button>
-    <!-- 階層 -->
-    <NumberInput
-      min={0}
-      max={50}
-      value={con.depth}
-      set={(v) => (con.depth = v)}
-      optional
-      requied={!con.isExclude}
-    />
+    <button class="adddel" onclick={() => del(i)}>{'-'}</button>
+
     <!-- 含む・含まない（除外） -->
     <button
       class="toggle"
       data--flg={con.isExclude}
       onclick={() => (con.isExclude = !con.isExclude)}
-      >{con.isExclude ? "-exclude" : "+include"}</button
+      >{con.isExclude ? '-exclude' : '+include'}</button
     >
     <!-- 正規表現パターン -->
     <TextInput
@@ -61,7 +52,7 @@
     />
   </div>
 {/each}
-<div class="record"><button class="adddel" onclick={add}>{"+"}</button></div>
+<div class="record"><button class="adddel" onclick={add}>{'+'}</button></div>
 
 <style>
   .record {
@@ -102,7 +93,7 @@
   button.toggle {
     width: 80px;
   }
-  button.toggle[data--flg="true"] {
+  button.toggle[data--flg='true'] {
     background-color: #ccf;
   }
 </style>

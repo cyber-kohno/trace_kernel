@@ -1,5 +1,5 @@
-import { writable } from "svelte/store";
-import type StoreWorkspace from "./store-workspace";
+import { writable } from 'svelte/store';
+import type StoreWorkspace from './store-workspace';
 
 export type SnapshotLog = {
   env: string;
@@ -17,12 +17,12 @@ export type WorkspaceState = {
 };
 
 export const createInitialSnapshot = (): SnapshotLog => ({
-  env: "",
-  resource: "",
-  dataset: "",
-  process: "",
-  declare: "",
-  work: "",
+  env: '',
+  resource: '',
+  dataset: '',
+  process: '',
+  declare: '',
+  work: '',
 });
 
 const workspaceStore = writable<WorkspaceState>({

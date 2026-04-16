@@ -1,7 +1,7 @@
 <script lang="ts">
   export let requied = false;
   export let readonly = false;
-  export let width: string = "100px";
+  export let width: string = '100px';
   export let value: string;
   export let set: (value: string) => void = () => {};
 
@@ -30,7 +30,7 @@
   {readonly}
   data--readonly={readonly}
   data--error={error}
-  data--blank={requied && value === ""}
+  data--blank={requied && value === ''}
 />
 
 <style>
@@ -46,13 +46,13 @@
     font-size: 14px;
     outline: none;
   }
-  input[data--error="true"] {
+  input[data--error='true'] {
     background-color: rgb(255, 130, 130);
   }
-  input[data--blank="true"] {
+  input[data--blank='true'] {
     background-color: #ff0;
   }
-  input[data--readonly="true"] {
+  input[data--readonly='true'] {
     color: rgb(0, 0, 184);
     background-color: #d2d2d2;
   }

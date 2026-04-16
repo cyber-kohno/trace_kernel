@@ -5,48 +5,48 @@ export type RestrictedGlobal = {
 
 export const restrictedGlobals: RestrictedGlobal[] = [
   {
-    name: "fetch",
+    name: 'fetch',
     message:
-      "TraceKernel script runtime does not provide fetch. Use the provided network utilities instead.",
+      'TraceKernel script runtime does not provide fetch. Use the provided network utilities instead.',
   },
   {
-    name: "console",
+    name: 'console',
     message:
-      "TraceKernel script runtime does not support console. Use $println or other TraceKernel output utilities instead.",
+      'TraceKernel script runtime does not support console. Use $println or other TraceKernel output utilities instead.',
   },
   {
-    name: "window",
+    name: 'window',
     message:
-      "TraceKernel script runtime does not provide window because scripts run in a restricted worker environment.",
+      'TraceKernel script runtime does not provide window because scripts run in a restricted worker environment.',
   },
   {
-    name: "document",
+    name: 'document',
     message:
-      "TraceKernel script runtime does not provide document because scripts run outside the browser DOM.",
+      'TraceKernel script runtime does not provide document because scripts run outside the browser DOM.',
   },
   {
-    name: "alert",
+    name: 'alert',
     message:
-      "TraceKernel script runtime does not provide alert. Use TraceKernel output utilities instead.",
+      'TraceKernel script runtime does not provide alert. Use TraceKernel output utilities instead.',
   },
   {
-    name: "localStorage",
+    name: 'localStorage',
     message:
-      "TraceKernel script runtime does not provide localStorage because scripts run in a restricted worker environment.",
+      'TraceKernel script runtime does not provide localStorage because scripts run in a restricted worker environment.',
   },
   {
-    name: "sessionStorage",
+    name: 'sessionStorage',
     message:
-      "TraceKernel script runtime does not provide sessionStorage because scripts run in a restricted worker environment.",
+      'TraceKernel script runtime does not provide sessionStorage because scripts run in a restricted worker environment.',
   },
   {
-    name: "navigator",
+    name: 'navigator',
     message:
-      "TraceKernel script runtime does not provide navigator because scripts run in a restricted worker environment.",
+      'TraceKernel script runtime does not provide navigator because scripts run in a restricted worker environment.',
   },
   {
-    name: "location",
+    name: 'location',
     message:
-      "TraceKernel script runtime does not provide location because scripts run in a restricted worker environment.",
+      'TraceKernel script runtime does not provide location because scripts run in a restricted worker environment.',
   },
 ];

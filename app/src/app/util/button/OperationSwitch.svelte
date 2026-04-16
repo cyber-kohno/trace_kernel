@@ -10,7 +10,7 @@
   data--active={isActive}
   data--disable={isDisable}
   onclick={callback}
-  style:width={width === 0 ? "none" : `${width}px`}>{name}</button
+  style:width={width === 0 ? 'none' : `${width}px`}>{name}</button
 >
 
 <style>
@@ -33,10 +33,10 @@
       background-color: rgb(218, 241, 212);
     } */
   }
-  button[data--active="true"] {
+  button[data--active='true'] {
     background-color: rgb(76, 134, 163);
   }
-  button[data--disable="true"] {
+  button[data--disable='true'] {
     opacity: 0.4;
     pointer-events: none;
   }

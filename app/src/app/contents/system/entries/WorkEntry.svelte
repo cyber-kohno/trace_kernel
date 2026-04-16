@@ -1,9 +1,9 @@
 <script lang="ts">
-  import workspaceStore from "../../../store/workspace-store";
-  import uiStore from "../../../store/ui-store";
-  import StoreProject from "../../../store/store-workspace";
-  import ToastUtil from "../../../util/item/toast-util";
-  import EntryRecord from "./EntryRecord.svelte";
+  import workspaceStore from '../../../store/workspace-store';
+  import uiStore from '../../../store/ui-store';
+  import StoreProject from '../../../store/store-workspace';
+  import ToastUtil from '../../../util/item/toast-util';
+  import EntryRecord from './EntryRecord.svelte';
 
   export let index: number;
 
@@ -16,11 +16,11 @@
 
   $: isFocus = (() => {
     const target = $uiStore.target;
-    return target != null && target.cat === "work" && target.index === index;
+    return target != null && target.cat === 'work' && target.index === index;
   })();
 
   $: focus = () => {
-    $uiStore.target = { cat: "work", index };
+    $uiStore.target = { cat: 'work', index };
   };
 
   $: del = () => {
@@ -37,8 +37,8 @@
     const target = StoreProject.getTarget();
     const hasDisable = StoreProject.hasDisable(target);
     if (hasDisable)
-      ToastUtil.disp({ text: "This work has an error and cannot be opened." });
-    else $uiStore.dialog = "program";
+      ToastUtil.disp({ text: 'This work has an error and cannot be opened.' });
+    else $uiStore.dialog = 'program';
   };
 </script>
 
@@ -47,7 +47,7 @@
   {isFocus}
   {del}
   contextmenu={openProgram}
-  target={{ cat: "work", index }}
+  target={{ cat: 'work', index }}
 >
   <span>
     <span class="key">{works.name}</span>

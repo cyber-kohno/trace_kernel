@@ -1,36 +1,33 @@
-import RuntimeUtil from "../../../runtime/runtime-util";
+import RuntimeUtil from '../../../runtime/runtime-util';
 
 namespace UpdateFile {
+  export const execute = (
+    vfs: RuntimeUtil.VFSState,
+    token: RuntimeUtil.FileToken,
+    content: string,
+  ): void => {
+    const { fileTable } = vfs;
 
-    export const execute = (
-        vfs: RuntimeUtil.VFSState,
-        token: RuntimeUtil.FileToken,
-        content: string
-    ): void => {
+    const state = fileTable.get(token);
+    if (!state) {
+      throw new Error('invalid file token');
+    }
 
-        const { fileTable } = vfs;
+    if (!state.textCache) {
+      throw new Error('file not materialized');
+    }
 
-        const state = fileTable.get(token);
-        if (!state) {
-            throw new Error("invalid file token");
-        }
+    if (state.intent === 'delete') {
+      throw new Error('cannot update deleted file');
+    }
 
-        if (!state.textCache) {
-            throw new Error("file not materialized");
-        }
+    // 内容更新
+    state.textCache.current = content;
 
-        if (state.intent === "delete") {
-            throw new Error("cannot update deleted file");
-        }
-
-        // 内容更新
-        state.textCache.current = content;
-
-        // create 以外は modify に昇格
-        if (state.intent !== "create") {
-            state.intent = "modify";
-        }
-    };
-
+    // create 以外は modify に昇格
+    if (state.intent !== 'create') {
+      state.intent = 'modify';
+    }
+  };
 }
 export default UpdateFile;

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
-  import Record from "../../../../util/layout/RecordDiv.svelte";
+  import { invoke } from '@tauri-apps/api/core';
+  import Record from '../../../../util/layout/RecordDiv.svelte';
 
   let ref: HTMLDivElement;
 
@@ -31,7 +31,7 @@
       return;
     }
     hasNewLine = false;
-    total = await invoke<number>("get_line_len", { workerId: "a", channelId });
+    total = await invoke<number>('get_line_len', { workerId: 'a', channelId });
     if (ref == undefined) throw new Error();
     ref.scrollTop = ref.scrollHeight;
     fetchLines();
@@ -60,8 +60,8 @@
     // });
 
     // console.log(`from: ${from} - to: ${to}`);
-    invoke<string[]>("get_range_lines", {
-      workerId: "a",
+    invoke<string[]>('get_range_lines', {
+      workerId: 'a',
       channelId,
       from,
       to,
@@ -97,7 +97,7 @@
     tabindex="0"
     onscroll={fetchLines}
     onclick={resumeTracking}
-    onkeydown={(e) => e.key === "Enter" && resumeTracking()}
+    onkeydown={(e) => e.key === 'Enter' && resumeTracking()}
     data--end={isEnd}
   >
     <div class="frame" style:height="{total * recordHeight}px">
@@ -117,10 +117,10 @@
       class="newlen"
       role="button"
       tabindex="0"
-      onkeydown={(e) => e.key === "Enter" && activeTracking()}
+      onkeydown={(e) => e.key === 'Enter' && activeTracking()}
       onclick={activeTracking}
     >
-      {"New record available."}
+      {'New record available.'}
     </div>
   {/if}
 </Record>
@@ -136,7 +136,7 @@
     border: 1px solid rgb(72, 127, 178);
     box-sizing: border-box;
   }
-  .wrap[data--end="true"] {
+  .wrap[data--end='true'] {
     background-color: rgba(0, 45, 90, 0.771);
   }
   .frame {

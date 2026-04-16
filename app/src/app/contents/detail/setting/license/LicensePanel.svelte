@@ -1,24 +1,24 @@
 <script lang="ts">
-  import { writable } from "svelte/store";
-  import TextInput from "../../../../util/form/TextInput.svelte";
-  import LabelRecord from "../../../../util/item/LabelRecord.svelte";
-  import Wrap from "../../../../util/layout/Wrap.svelte";
-  import OperationButton from "../../../../util/button/OperationButton.svelte";
-  import LicenseUtil from "./license-util";
-  import Record from "../../../../util/layout/RecordDiv.svelte";
-  import appStore from "../../../../store/app-store";
-  import FileUtil from "../../../../util/data/file-util";
+  import { writable } from 'svelte/store';
+  import TextInput from '../../../../util/form/TextInput.svelte';
+  import LabelRecord from '../../../../util/item/LabelRecord.svelte';
+  import Wrap from '../../../../util/layout/Wrap.svelte';
+  import OperationButton from '../../../../util/button/OperationButton.svelte';
+  import LicenseUtil from './license-util';
+  import Record from '../../../../util/layout/RecordDiv.svelte';
+  import appStore from '../../../../store/app-store';
+  import FileUtil from '../../../../util/data/file-util';
 
   let productKey = writable<string | null>(null);
-  let error = writable<string>("");
+  let error = writable<string>('');
 
   $: isLicensed = $appStore.license != null;
 
   $: license = $appStore.license;
 
   $: toggle = () => {
-    $error = "";
-    $productKey = $productKey == null ? "" : null;
+    $error = '';
+    $productKey = $productKey == null ? '' : null;
   };
 
   const activate = async () => {
@@ -33,16 +33,16 @@
       FileUtil.updateAppTitle();
       toggle();
     } catch {
-      $error = "Invalid license key.";
+      $error = 'Invalid license key.';
     }
   };
 </script>
 
-<Wrap margin={4} bgColor={"#556"}>
-  <LabelRecord name={"license"} />
+<Wrap margin={4} bgColor={'#556'}>
+  <LabelRecord name={'license'} />
   {#if $productKey != null}
     <TextInput
-      width={"calc(100% - 4px)"}
+      width={'calc(100% - 4px)'}
       set={(v) => {
         $productKey = v;
       }}
@@ -50,15 +50,15 @@
       requied
     />
     <Record align="right">
-      {#if $error !== ""}
+      {#if $error !== ''}
         <Record height={24}>
           <div class="error">{$error}</div>
         </Record>
       {/if}
-      <OperationButton name={"Cancel"} callback={toggle} isLineup width={110} />
+      <OperationButton name={'Cancel'} callback={toggle} isLineup width={110} />
       <OperationButton
-        name={"Verify"}
-        isDisable={$productKey === ""}
+        name={'Verify'}
+        isDisable={$productKey === ''}
         callback={activate}
         isLineup
         width={140}
@@ -69,24 +69,23 @@
       <Wrap margin={2}>
         <div class="msg">
           <span
-            >Status: <span class="high">{isLicensed ? "Pro" : "Free"}</span> Version</span
+            >Status: <span class="high">{isLicensed ? 'Pro' : 'Free'}</span> Version</span
           ><br />
           <span
             >Features are <span class="high"
-              >{isLicensed ? "[core, io, net]" : "[core]"}</span
+              >{isLicensed ? '[core, io, net]' : '[core]'}</span
             >.</span
           ><br />
           {#if license != null}
             <!-- <br /> -->
-            <span
-              >Issued to: <span class="high">{license.displayId}</span></span
+            <span>Issued to: <span class="high">{license.displayId}</span></span
             ><br />
             <span>Issued on: <span class="high">{license.date}</span></span>
           {/if}
         </div>
       </Wrap>
     </Record>
-    <OperationButton name={"Activate"} callback={toggle} />
+    <OperationButton name={'Activate'} callback={toggle} />
   {/if}
 </Wrap>
 

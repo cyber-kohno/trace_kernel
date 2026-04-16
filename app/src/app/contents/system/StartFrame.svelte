@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { getSnapshot } from "../../store/dirty";
-  import workspaceStore from "../../store/workspace-store";
-  import StoreWorkspace from "../../store/store-workspace";
-  import FileUtil from "../../util/data/file-util";
-  import RecordDiv from "../../util/layout/RecordDiv.svelte";
+  import { getSnapshot } from '../../store/dirty';
+  import workspaceStore from '../../store/workspace-store';
+  import StoreWorkspace from '../../store/store-workspace';
+  import FileUtil from '../../util/data/file-util';
+  import RecordDiv from '../../util/layout/RecordDiv.svelte';
 
   const createBlank = async () => {
     $workspaceStore.workspace = StoreWorkspace.getInitial();
@@ -18,13 +18,13 @@
 <RecordDiv surplus={24}>
   <div class="wrap">
     <div class="record">
-      <RecordDiv align={"center"} height={65}>
-        <span class="emphasis">{"Start a workspace or open a .trk file."}</span>
+      <RecordDiv align={'center'} height={65}>
+        <span class="emphasis">{'Start a workspace or open a .trk file.'}</span>
       </RecordDiv>
-      <RecordDiv align={"center"} height={55}>
-        <button class="link" onclick={createBlank}>{"Start Empty"}</button>
+      <RecordDiv align={'center'} height={55}>
+        <button class="link" onclick={createBlank}>{'Start Empty'}</button>
         <span>&nbsp;</span>
-        <button class="link" onclick={loadFile}>{"Open File"}</button>
+        <button class="link" onclick={loadFile}>{'Open File'}</button>
       </RecordDiv>
     </div>
   </div>

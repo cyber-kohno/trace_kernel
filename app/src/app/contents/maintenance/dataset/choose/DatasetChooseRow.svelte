@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
-  import type StoreDataset from "../../../../store/store-dataset";
+  import { invoke } from '@tauri-apps/api/core';
+  import type StoreDataset from '../../../../store/store-dataset';
 
   export let item: StoreDataset.NodeDispProps;
   export let dir: string | null = null;
 
-  export let invalidate: ()=>void;
+  export let invalidate: () => void;
 
   $: toggleOpen = () => {
     const child = item.node.child;
@@ -34,14 +34,14 @@
   $: dispFile = () => {
     if (item.node.child != undefined) return;
     // alert(item.node.path);
-    invoke("read_file", { req: { filePath: item.node.path } }).then((str) => {
-      let language = "";
+    invoke('read_file', { req: { filePath: item.node.path } }).then((str) => {
+      let language = '';
       const fileName = item.node.name;
-      const dot = fileName.lastIndexOf(".");
-      const extention = dot !== -1 ? fileName.slice(dot + 1) : "";
+      const dot = fileName.lastIndexOf('.');
+      const extention = dot !== -1 ? fileName.slice(dot + 1) : '';
       switch (extention) {
-        case "java":
-          language = "java";
+        case 'java':
+          language = 'java';
           break;
       }
       // $store.preview = {
@@ -57,7 +57,7 @@
 <div class="wrap" style:top="{item.seq * 25}px">
   {#each item.indents as indent, i}
     <div class="indent">
-      {#if indent !== "none"}
+      {#if indent !== 'none'}
         <div class="inner" data--indent={indent}></div>
         {#if i === item.indents.length - 1}
           <div class="branch"></div>
@@ -71,17 +71,17 @@
     data--file={child == null}
     data--select={item.node.isSelected}
     data--use={(() => {
-      if (child == null) return "";
-      else if (child.selectCnt == child.fileCnt) return "all";
-      else if (child.selectCnt > 0) return "some";
-      else if (child.selectCnt === 0) return "none";
+      if (child == null) return '';
+      else if (child.selectCnt == child.fileCnt) return 'all';
+      else if (child.selectCnt > 0) return 'some';
+      else if (child.selectCnt === 0) return 'none';
     })()}
     onclick={child == null ? toggleSelect : toggleUse}
   >
-    {child == null ? "FILE" : "DIR"}
+    {child == null ? 'FILE' : 'DIR'}
   </button>
   {#if child != undefined && child.nodes.length > 0}
-    <button class="open" onclick={toggleOpen}>{child.isOpen ? "-" : "+"}</button
+    <button class="open" onclick={toggleOpen}>{child.isOpen ? '-' : '+'}</button
     >
   {/if}
   {#if dir != null}
@@ -136,10 +136,10 @@
     background-color: #aaffaa;
     width: 5px;
   }
-  .inner[data--indent="middle"] {
+  .inner[data--indent='middle'] {
     height: 24px;
   }
-  .inner[data--indent="last"] {
+  .inner[data--indent='last'] {
     height: 12px;
   }
   .branch {
@@ -186,19 +186,19 @@
     cursor: default;
     border: 1px solid rgb(55, 55, 55);
   }
-  .type[data--file="true"] {
+  .type[data--file='true'] {
     background-color: #ff666633;
   }
-  .type[data--file="true"][data--select="true"] {
+  .type[data--file='true'][data--select='true'] {
     background-color: #ff6666ff;
   }
-  .type[data--file="false"][data--use="all"] {
+  .type[data--file='false'][data--use='all'] {
     background-color: #191;
   }
-  .type[data--file="false"][data--use="none"] {
+  .type[data--file='false'][data--use='none'] {
     background-color: #11991133;
   }
-  .type[data--file="false"][data--use="some"] {
+  .type[data--file='false'][data--use='some'] {
     background-color: #99991188;
   }
   .str {
@@ -208,8 +208,10 @@
     /*margin: 0 0 0 4px;*/
     margin: 0;
     font-size: 14px;
-    font: inherit;
-    line-height: inherit;
+    line-height: 24px;
+    font-family: inherit;
+    font-weight: 400;
+    font-style: normal;
     text-align: left;
     padding: 0 2px;
     box-sizing: border-box;
@@ -219,20 +221,20 @@
     appearance: none;
     cursor: pointer;
   }
-  .str[data--file="true"] {
+  .str[data--file='true'] {
     /*background-color: #ff999933;*/
     &:hover {
       color: #33aa33;
       /*user-select: contain;*/
     }
   }
-  .str[data--file="false"] {
+  .str[data--file='false'] {
     border: 1px solid #00000044;
     background-color: #ffffff33;
     border-radius: 2px;
     margin-left: 2px;
   }
-  .str[data--dirmode="true"] {
+  .str[data--dirmode='true'] {
     margin-left: 2px;
   }
   .dir {

@@ -1,21 +1,20 @@
-import DataUtil from "../../../../../util/data/data-util";
-import type RuntimeUtil from "../../runtime/runtime-util";
-import DomParser from "./dom-parser";
-import ExcelParser from "./excel-parser";
-import Inspector from "./inspector";
+import DataUtil from '../../../../../util/data/data-util';
+import type RuntimeUtil from '../../runtime/runtime-util';
+import DomParser from './dom-parser';
+import ExcelParser from './excel-parser';
+import Inspector from './inspector';
 
 namespace DclParser {
+  type ParserAPI = {
+    xml: (source: string) => Promise<DomParser.DomController>;
+    html: (source: string) => Promise<DomParser.DomController>;
+    excel: (buffer: ArrayBuffer) => Promise<ExcelParser.Book>;
+    csv: (source: string) => Inspector.TableInspector;
+    tsv: (source: string) => Inspector.TableInspector;
+    json: (source: string) => Inspector.JsonInspector;
+  };
 
-    type ParserAPI = {
-        xml: (source: string) => Promise<DomParser.DomController>;
-        html: (source: string) => Promise<DomParser.DomController>;
-        excel: (buffer: ArrayBuffer) => Promise<ExcelParser.Book>
-        csv: (source: string) => Inspector.TableInspector;
-        tsv: (source: string) => Inspector.TableInspector;
-        json: (source: string) => Inspector.JsonInspector;
-    }
-
-    export const getTypeDeclare = () => `
+  export const getTypeDeclare = () => `
         type XmlNode = {
             name(): Promise<string | null>;
             text(): Promise<string>;
@@ -75,27 +74,26 @@ namespace DclParser {
         };
     `;
 
-    export const getValueDeclare = () => 'ParserAPI';
+  export const getValueDeclare = () => 'ParserAPI';
 
-    export const getObject = (rustCache: RuntimeUtil.RustCache): ParserAPI => {
-
-        return {
-            xml: (source: string) => DomParser.parse(rustCache, source),
-            html: (source: string) => DomParser.parseHtml(rustCache, source),
-            excel: (buffer: ArrayBuffer) => ExcelParser.parse(buffer),
-            csv: (source: string) => {
-                const data = DataUtil.convertTableToJson(source, 'csv');
-                return Inspector.createTableInspector(data);
-            },
-            tsv: (source: string) => {
-                const data = DataUtil.convertTableToJson(source, 'tsv');
-                return Inspector.createTableInspector(data);
-            },
-            json: (source: string) => {
-                const data = JSON.parse(source);
-                return Inspector.createJsonInspector(data);
-            },
-        };
-    }
-};
+  export const getObject = (rustCache: RuntimeUtil.RustCache): ParserAPI => {
+    return {
+      xml: (source: string) => DomParser.parse(rustCache, source),
+      html: (source: string) => DomParser.parseHtml(rustCache, source),
+      excel: (buffer: ArrayBuffer) => ExcelParser.parse(buffer),
+      csv: (source: string) => {
+        const data = DataUtil.convertTableToJson(source, 'csv');
+        return Inspector.createTableInspector(data);
+      },
+      tsv: (source: string) => {
+        const data = DataUtil.convertTableToJson(source, 'tsv');
+        return Inspector.createTableInspector(data);
+      },
+      json: (source: string) => {
+        const data = JSON.parse(source);
+        return Inspector.createJsonInspector(data);
+      },
+    };
+  };
+}
 export default DclParser;

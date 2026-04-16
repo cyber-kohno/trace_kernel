@@ -2,9 +2,9 @@
   export let height = 30;
   export let rate: number | null = null;
   export let surplus: number | null = null;
-  export let align: "left" | "center" | "right" = "left";
-  export let bgColor: string = "transparent";
-  export let padding: string = "none";
+  export let align: 'left' | 'center' | 'right' = 'left';
+  export let bgColor: string = 'transparent';
+  export let padding: string = 'none';
   export let nowrap: boolean = false;
 
   $: heightValue = (() => {
@@ -32,7 +32,7 @@
     width: 100%;
     box-sizing: border-box;
   }
-  div[data--nowrap="true"] {
+  div[data--nowrap='true'] {
     overflow-x: hidden;
     white-space: nowrap;
   }

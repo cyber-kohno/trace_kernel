@@ -1,6 +1,5 @@
-
 export type StreamAPI = {
-    receiveStream: () => Promise<void>;
-    init: () => void;
-    end: () => void;
-}
+  receiveStream: () => Promise<void>;
+  init: () => void;
+  end: () => void;
+};

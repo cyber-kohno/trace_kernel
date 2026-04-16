@@ -1,26 +1,26 @@
 <script>
-    import { onMount } from "svelte";
-  import workspaceStore from "../../../store/workspace-store";
-  import uiStore from "../../../store/ui-store";
-  import StoreWorkspace from "../../../store/store-workspace";
-  import RecordDiv from "../../../util/layout/RecordDiv.svelte";
-  import Wrap from "../../../util/layout/Wrap.svelte";
-  import DeclareEditor from "../../../util/monaco/DeclareEditor.svelte";
-  import DialogHeader from "../DialogHeader.svelte";
+  import { onMount } from 'svelte';
+  import workspaceStore from '../../../store/workspace-store';
+  import uiStore from '../../../store/ui-store';
+  import StoreWorkspace from '../../../store/store-workspace';
+  import RecordDiv from '../../../util/layout/RecordDiv.svelte';
+  import Wrap from '../../../util/layout/Wrap.svelte';
+  import DeclareEditor from '../../../util/monaco/DeclareEditor.svelte';
+  import DialogHeader from '../DialogHeader.svelte';
 
   $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
 
   onMount(async () => {
     $uiStore.shortcutEvent = (e) => {
-      if (e.key === "Escape") {
+      if (e.key === 'Escape') {
         $uiStore.dialog = null;
-      } 
+      }
     };
   });
 </script>
 
 <div class="frame">
-  <DialogHeader title={"#declare"} />
+  <DialogHeader title={'#declare'} />
   <RecordDiv surplus={30}>
     <Wrap>
       <DeclareEditor

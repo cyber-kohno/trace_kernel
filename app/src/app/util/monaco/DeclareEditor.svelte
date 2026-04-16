@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
-  import loader from "@monaco-editor/loader";
-  import * as Monaco from "monaco-editor";
-  import { get, writable } from "svelte/store";
-  import appStore from "../../store/app-store";
-  import MonacoFactory from "./monaco-factory";
+  import { onMount, onDestroy } from 'svelte';
+  import loader from '@monaco-editor/loader';
+  import * as Monaco from 'monaco-editor';
+  import { get, writable } from 'svelte/store';
+  import appStore from '../../store/app-store';
+  import MonacoFactory from './monaco-factory';
 
   let editorDiv: HTMLDivElement | null = null;
   let editor: Monaco.editor.IStandaloneCodeEditor;
@@ -12,10 +12,10 @@
   export let value;
   export let onChange: (value: string) => void;
 
-  const LANGUAGE = "typescript";
+  const LANGUAGE = 'typescript';
   let hasError = writable(false);
 
-  const uid = ""; //crypto.randomUUID();
+  const uid = ''; //crypto.randomUUID();
   const themeName = `theme-${uid}`;
 
   let typescript: any | null = null;
@@ -30,7 +30,7 @@
     (loader as any).__reset?.();
     loader.config({
       paths: {
-        vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs",
+        vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs',
       },
     });
 
@@ -75,7 +75,6 @@
     });
 
     editor.onDidChangeModelContent(() => {
-
       const code = userModel.getValue();
       onChange(code);
 
@@ -121,7 +120,7 @@
     border: 3px solid rgb(0, 0, 0);
     box-sizing: border-box;
   }
-  div[data--error="true"] {
+  div[data--error='true'] {
     border: 3px solid red;
   }
   :global(.runtime-error-line) {

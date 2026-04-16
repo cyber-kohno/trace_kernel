@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { dirty } from "../../store/dirty";
-  import uiStore from "../../store/ui-store";
-  import workspaceStore from "../../store/workspace-store";
-  import OperationButton from "../../util/button/OperationButton.svelte";
-  import FileUtil from "../../util/data/file-util";
-  import Record from "../../util/layout/RecordDiv.svelte";
-  import { ask } from "@tauri-apps/plugin-dialog";
-  import { relaunch } from "@tauri-apps/plugin-process";
+  import { dirty } from '../../store/dirty';
+  import uiStore from '../../store/ui-store';
+  import workspaceStore from '../../store/workspace-store';
+  import OperationButton from '../../util/button/OperationButton.svelte';
+  import FileUtil from '../../util/data/file-util';
+  import Record from '../../util/layout/RecordDiv.svelte';
+  import { ask } from '@tauri-apps/plugin-dialog';
+  import { relaunch } from '@tauri-apps/plugin-process';
 
   const closeWorkspace = () => {
     const exec = () => {
@@ -19,8 +19,8 @@
     if (!$dirty) {
       exec();
     } else {
-      ask("There is unsaved data. Can I delete it?", {
-        title: "Close workspace",
+      ask('There is unsaved data. Can I delete it?', {
+        title: 'Close workspace',
       }).then((isOk) => {
         if (isOk) exec();
       });
@@ -28,14 +28,14 @@
   };
 
   const openSettingDialog = () => {
-    $uiStore.dialog = "setting";
+    $uiStore.dialog = 'setting';
   };
 
   const restart = async () => {
     ask(
-      "The application will restart. Any unsaved changes will be lost. Do you want to continue?",
+      'The application will restart. Any unsaved changes will be lost. Do you want to continue?',
       {
-        title: "Confirm Restart",
+        title: 'Confirm Restart',
       },
     ).then(async (isOk) => {
       if (isOk) {
@@ -54,19 +54,19 @@
   };
 </script>
 
-<Record height={30} align="left" padding={"0 0 0 4px"} bgColor="#334">
+<Record height={30} align="left" padding={'0 0 0 4px'} bgColor="#334">
   <OperationButton
-    name={"Save"}
+    name={'Save'}
     isDisable={!isOpenProject || !$dirty}
     callback={saveProject}
     isLineup
   />
   <OperationButton
-    name={"Close"}
+    name={'Close'}
     isDisable={!isOpenProject}
     callback={closeWorkspace}
     isLineup
   />
-  <OperationButton name={"Setting"} callback={openSettingDialog} isLineup />
-  <OperationButton name={"Restart"} callback={restart} isLineup />
+  <OperationButton name={'Setting'} callback={openSettingDialog} isLineup />
+  <OperationButton name={'Restart'} callback={restart} isLineup />
 </Record>

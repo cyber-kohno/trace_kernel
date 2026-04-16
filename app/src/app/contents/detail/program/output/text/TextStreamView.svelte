@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type DclChannel from "../../util/channel/dcl-channel";
-  import StreamReceiver from "../StreamReceiver.svelte";
-  import TextFixed from "./TextFixed.svelte";
-  import TextRecord from "./TextRecord.svelte";
+  import type DclChannel from '../../util/channel/dcl-channel';
+  import StreamReceiver from '../StreamReceiver.svelte';
+  import TextFixed from './TextFixed.svelte';
+  import TextRecord from './TextRecord.svelte';
 
   export let channel: DclChannel.Props;
 

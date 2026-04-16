@@ -1,17 +1,17 @@
 <script lang="ts">
-  import PathUtil from "../../../../../../../util/data/path-util";
-  import Column from "../../../../../../../util/layout/Column.svelte";
-  import RecordDiv from "../../../../../../../util/layout/RecordDiv.svelte";
-  import type TxDetailUtil from "../../util/tx-detail-util";
-  import type TxExecuter from "../../util/tx-executer";
-  import TxPlanUtil from "../../util/tx-plan-util";
-  import CommitStatus from "./CommitStatus.svelte";
-  import CopyFileRow from "./CopyFileRow.svelte";
-  import CreateFileRow from "./CreateFileRow.svelte";
-  import DeleteFileRow from "./DeleteFileRow.svelte";
-  import MakeDirRow from "./MakeDirRow.svelte";
-  import ModifyFileRow from "./ModifyFileRow.svelte";
-  import RenameFileRow from "./RenameFileRow.svelte";
+  import PathUtil from '../../../../../../../util/data/path-util';
+  import Column from '../../../../../../../util/layout/Column.svelte';
+  import RecordDiv from '../../../../../../../util/layout/RecordDiv.svelte';
+  import type TxDetailUtil from '../../util/tx-detail-util';
+  import type TxExecuter from '../../util/tx-executer';
+  import TxPlanUtil from '../../util/tx-plan-util';
+  import CommitStatus from './CommitStatus.svelte';
+  import CopyFileRow from './CopyFileRow.svelte';
+  import CreateFileRow from './CreateFileRow.svelte';
+  import DeleteFileRow from './DeleteFileRow.svelte';
+  import MakeDirRow from './MakeDirRow.svelte';
+  import ModifyFileRow from './ModifyFileRow.svelte';
+  import RenameFileRow from './RenameFileRow.svelte';
 
   export let row: TxExecuter.OrderRow;
   export let setDetail: (v: TxDetailUtil.Props | null) => void;
@@ -26,32 +26,32 @@
 
   const targetPath = ((): string => {
     switch (order.type) {
-      case "create_dir":
+      case 'create_dir':
         return order.path;
-      case "rename_file":
-      case "copy_file":
+      case 'rename_file':
+      case 'copy_file':
         return order.from;
-      case "delete_file":
-      case "modify_file":
-      case "create_file":
+      case 'delete_file':
+      case 'modify_file':
+      case 'create_file':
         return order.path;
     }
   })();
 
   const orderName = (() => {
     switch (order.type) {
-      case "create_dir":
-        return "mkdir";
-      case "copy_file":
-        return "copy";
-      case "create_file":
-        return "create";
-      case "modify_file":
-        return "modify";
-      case "delete_file":
-        return "delete";
-      case "rename_file":
-        return "rename";
+      case 'create_dir':
+        return 'mkdir';
+      case 'copy_file':
+        return 'copy';
+      case 'create_file':
+        return 'create';
+      case 'modify_file':
+        return 'modify';
+      case 'delete_file':
+        return 'delete';
+      case 'rename_file':
+        return 'rename';
     }
   })();
 </script>
@@ -67,24 +67,24 @@
   </Column>
   <Column surplus={140}>
     <div class="detail">
-      {#if ["create_file", "modify_file", "delete_file", "rename_file"].includes(order.type)}
+      {#if ['create_file', 'modify_file', 'delete_file', 'rename_file'].includes(order.type)}
         <RecordDiv height={22}>
           <div class="dir">{PathUtil.dirname(targetPath)}</div>
         </RecordDiv>
         <RecordDiv surplus={22}>
-          {#if order.type === "create_file"}
+          {#if order.type === 'create_file'}
             <CreateFileRow {order} {setDetail} />
-          {:else if order.type === "modify_file"}
+          {:else if order.type === 'modify_file'}
             <ModifyFileRow {order} {setDetail} />
-          {:else if order.type === "delete_file"}
+          {:else if order.type === 'delete_file'}
             <DeleteFileRow {order} />
-          {:else if order.type === "rename_file"}
+          {:else if order.type === 'rename_file'}
             <RenameFileRow {order} />
           {/if}
         </RecordDiv>
-      {:else if order.type === "copy_file"}
+      {:else if order.type === 'copy_file'}
         <CopyFileRow {order} />
-      {:else if order.type === "create_dir"}
+      {:else if order.type === 'create_dir'}
         <MakeDirRow {order} />
       {/if}
     </div>
@@ -146,22 +146,22 @@
     padding: 10px 0 0 4px;
     box-sizing: border-box;
   }
-  .kind[data--kind="create_dir"] {
+  .kind[data--kind='create_dir'] {
     color: rgb(255, 234, 6);
   }
-  .kind[data--kind="copy_file"] {
+  .kind[data--kind='copy_file'] {
     color: rgb(0, 255, 149);
   }
-  .kind[data--kind="create_file"] {
+  .kind[data--kind='create_file'] {
     color: rgb(21, 255, 0);
   }
-  .kind[data--kind="modify_file"] {
+  .kind[data--kind='modify_file'] {
     color: rgb(0, 115, 255);
   }
-  .kind[data--kind="rename_file"] {
+  .kind[data--kind='rename_file'] {
     color: rgb(102, 0, 255);
   }
-  .kind[data--kind="delete_file"] {
+  .kind[data--kind='delete_file'] {
     color: rgb(255, 0, 0);
   }
 </style>

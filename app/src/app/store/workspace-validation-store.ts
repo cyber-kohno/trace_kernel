@@ -1,5 +1,5 @@
-import { writable } from "svelte/store";
-import type StoreWorkspace from "./store-workspace";
+import { writable } from 'svelte/store';
+import type StoreWorkspace from './store-workspace';
 
 export type WorkspaceValidationState = {
   disables: StoreWorkspace.Target[];

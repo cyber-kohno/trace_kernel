@@ -1,20 +1,20 @@
 <script lang="ts">
-  import uiStore from "../../store/ui-store";
-  import Record from "../../util/layout/RecordDiv.svelte";
-    import DeclareDialog from "./declare/DeclareDialog.svelte";
-  import ProgramDialog from "./program/ui/ProgramDialog.svelte";
-  import SettingDialog from "./setting/SettingDialog.svelte";
+  import uiStore from '../../store/ui-store';
+  import Record from '../../util/layout/RecordDiv.svelte';
+  import DeclareDialog from './declare/DeclareDialog.svelte';
+  import ProgramDialog from './program/ui/ProgramDialog.svelte';
+  import SettingDialog from './setting/SettingDialog.svelte';
 
   $: dialog = $uiStore.dialog;
 </script>
 
 {#if dialog != undefined}
   <div class="blind">
-    {#if dialog === "program"}
+    {#if dialog === 'program'}
       <ProgramDialog />
-    {:else if dialog === "declare"}
+    {:else if dialog === 'declare'}
       <DeclareDialog />
-    {:else if dialog === "setting"}
+    {:else if dialog === 'setting'}
       <SettingDialog />
     {/if}
   </div>

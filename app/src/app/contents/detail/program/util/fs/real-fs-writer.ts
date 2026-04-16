@@ -1,126 +1,120 @@
-import type { FileStat } from "../../../../../store/types";
-import PathUtil from "../../../../../util/data/path-util";
-import WorkerInvoke from "../worker-invoke";
+import type { FileStat } from '../../../../../store/types';
+import PathUtil from '../../../../../util/data/path-util';
+import WorkerInvoke from '../worker-invoke';
 
 export namespace RealFSWriter {
+  const assertAbsolutePath = (path: string, label: string) => {
+    if (!PathUtil.isAbsolute(path)) {
+      throw new Error(`${label} must be absolute path.`);
+    }
+  };
 
-    const assertAbsolutePath = (path: string, label: string) => {
-        if (!(PathUtil.isAbsolute(path))) {
-            throw new Error(`${label} must be absolute path.`);
-        }
+  export const readBinary = async (filePath: string) => {
+    assertAbsolutePath(filePath, 'path');
+    const raw = await WorkerInvoke.call<number[]>('read_binary', { filePath });
+    return new Uint8Array(raw);
+  };
+
+  export const existsPath = (path: string) => {
+    return WorkerInvoke.call<boolean>('exists_path', { path });
+  };
+  export const stat = async (path: string) => {
+    const stat = await WorkerInvoke.call<FileStat>('stat', { path });
+    return stat;
+  };
+
+  export const saveText = async (path: string, content: string) => {
+    assertAbsolutePath(path, 'path');
+    return WorkerInvoke.call<void>('save_text', { path, content });
+  };
+
+  export const copyFile = async (src: string, dest: string): Promise<void> => {
+    assertAbsolutePath(src, 'src');
+
+    assertAbsolutePath(dest, 'dest');
+
+    const srcStat = await stat(src);
+
+    if (srcStat.isDir) {
+      throw new Error(`Source is not a file: ${src}`);
     }
 
-    export const readBinary = async (filePath: string) => {
-        assertAbsolutePath(filePath, 'path');
-        const raw = await WorkerInvoke.call<number[]>("read_binary", { filePath });
-        return new Uint8Array(raw);
+    return WorkerInvoke.call<void>('copy_file', { src, dest });
+  };
+
+  export const makeDir = async (dirPath: string): Promise<void> => {
+    assertAbsolutePath(dirPath, 'dirPath');
+
+    if (await existsPath(dirPath)) {
+      const st = await stat(dirPath);
+      if (!st.isDir) {
+        throw new Error(`A file already exists at the path: ${dirPath}`);
+      }
+      // 既存ディレクトリなら何もしない
+      return;
     }
 
-    export const existsPath = (path: string) => {
-        return WorkerInvoke.call<boolean>("exists_path", { path });
-    }
-    export const stat = async (path: string) => {
-        const stat = await WorkerInvoke.call<FileStat>("stat", { path });
-        return stat;
-    }
+    return WorkerInvoke.call<void>('make_dir', { dirPath });
+  };
 
-    export const saveText = async (path: string, content: string) => {
-        assertAbsolutePath(path, 'path');
-        return WorkerInvoke.call<void>("save_text", { path, content });
-    }
+  export const deleteFile = async (path: string) => {
+    assertAbsolutePath(path, 'file path');
+    return WorkerInvoke.call<void>('delete_file', { path });
+  };
+  export const deleteDir = async (path: string) => {
+    assertAbsolutePath(path, 'file dir');
+    return WorkerInvoke.call<void>('delete_dir', { path });
+  };
 
-    export const copyFile = async (src: string, dest: string): Promise<void> => {
+  export const renameWithinDirectory = async (
+    targetPath: string,
+    newName: string,
+    target: 'directory' | 'file',
+  ) => {
+    // 絶対パス検証（既存ユーティリティ）
+    assertAbsolutePath(targetPath, 'targetPath');
 
-        assertAbsolutePath(src, 'src');
-
-        assertAbsolutePath(dest, 'dest');
-
-        const srcStat = await stat(src);
-
-        if (srcStat.isDir) {
-            throw new Error(`Source is not a file: ${src}`);
-        }
-
-        return WorkerInvoke.call<void>("copy_file", { src, dest });
-    };
-
-    export const makeDir = async (dirPath: string): Promise<void> => {
-        assertAbsolutePath(dirPath, 'dirPath');
-
-        if (await existsPath(dirPath)) {
-            const st = await stat(dirPath);
-            if (!st.isDir) {
-                throw new Error(`A file already exists at the path: ${dirPath}`);
-            }
-            // 既存ディレクトリなら何もしない
-            return;
-        }
-
-        return WorkerInvoke.call<void>("make_dir", { dirPath });
-    };
-
-    export const deleteFile = async (path: string) => {
-        assertAbsolutePath(path, 'file path');
-        return WorkerInvoke.call<void>("delete_file", { path });
-    }
-    export const deleteDir = async (path: string) => {
-        assertAbsolutePath(path, 'file dir');
-        return WorkerInvoke.call<void>("delete_dir", { path });
+    if (newName.includes('/') || newName.includes('\\')) {
+      throw new Error('newName must not contain path separators');
     }
 
-    export const renameWithinDirectory = async (
-        targetPath: string,
-        newName: string,
-        target: 'directory' | 'file'
-    ) => {
+    // 正規化
+    const from = PathUtil.normalize(targetPath);
 
-        // 絶対パス検証（既存ユーティリティ）
-        assertAbsolutePath(targetPath, 'targetPath');
+    // 存在確認
+    if (!(await existsPath(from))) {
+      throw new Error(`${target} does not exist: ${from}`);
+    }
 
-        if (newName.includes("/") || newName.includes("\\")) {
-            throw new Error("newName must not contain path separators");
-        }
+    const fromStat = await stat(from);
+    const expectedIsDirectory = target === 'directory';
 
-        // 正規化
-        const from = PathUtil.normalize(targetPath);
+    if (fromStat.isDir !== expectedIsDirectory) {
+      throw new Error(`Target is not a ${target}: ${from}`);
+    }
 
-        // 存在確認
-        if (!await existsPath(from)) {
-            throw new Error(`${target} does not exist: ${from}`);
-        }
+    // 親ディレクトリ
+    const parentDir = PathUtil.dirname(from);
 
-        const fromStat = await stat(from);
-        const expectedIsDirectory = target === 'directory';
+    // 新パス生成
+    const to = PathUtil.normalize(PathUtil.joinPath(parentDir, newName));
 
-        if (fromStat.isDir !== expectedIsDirectory) {
-            throw new Error(`Target is not a ${target}: ${from}`);
-        }
+    // 同一ディレクトリ保証（Windows大小文字問題対応）
+    const toParent = PathUtil.dirname(to);
 
-        // 親ディレクトリ
-        const parentDir = PathUtil.dirname(from);
+    if (!PathUtil.samePath(parentDir, toParent)) {
+      throw new Error('Cross-directory rename is not allowed');
+    }
 
-        // 新パス生成
-        const to = PathUtil.normalize(
-            PathUtil.joinPath(parentDir, newName)
-        );
+    // 既存チェック
+    if (await existsPath(to)) {
+      throw new Error(`${target} already exists: ${to}`);
+    }
 
-        // 同一ディレクトリ保証（Windows大小文字問題対応）
-        const toParent = PathUtil.dirname(to);
-
-        if (!PathUtil.samePath(parentDir, toParent)) {
-            throw new Error("Cross-directory rename is not allowed");
-        }
-
-        // 既存チェック
-        if (await existsPath(to)) {
-            throw new Error(`${target} already exists: ${to}`);
-        }
-
-        return WorkerInvoke.call<void>("rename", {
-            from,
-            to
-        });
-    };
-
+    return WorkerInvoke.call<void>('rename', {
+      from,
+      to,
+    });
+  };
 }
 export default RealFSWriter;

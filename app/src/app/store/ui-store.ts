@@ -1,5 +1,5 @@
-import { writable } from "svelte/store";
-import type StoreWorkspace from "./store-workspace";
+import { writable } from 'svelte/store';
+import type StoreWorkspace from './store-workspace';
 
 const uiStore = writable<UiState>({
   target: null,
@@ -7,7 +7,7 @@ const uiStore = writable<UiState>({
   dialog: null,
 });
 
-export type UiDialog = null | "program" | "declare" | "setting";
+export type UiDialog = null | 'program' | 'declare' | 'setting';
 
 export type UiState = {
   target: StoreWorkspace.Target | null;

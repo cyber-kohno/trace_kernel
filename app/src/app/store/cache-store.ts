@@ -1,5 +1,5 @@
-import { writable } from "svelte/store";
-import type StoreCache from "./store-cache";
+import { writable } from 'svelte/store';
+import type StoreCache from './store-cache';
 
 export type CacheState = {
   cacheMap: StoreCache.Props[];

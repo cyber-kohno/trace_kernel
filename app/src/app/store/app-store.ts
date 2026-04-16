@@ -1,6 +1,6 @@
-import { writable } from "svelte/store";
-import type StoreLicense from "./store-license";
-import StoreSetting from "./store-setting";
+import { writable } from 'svelte/store';
+import type StoreLicense from './store-license';
+import StoreSetting from './store-setting';
 
 const appStore = writable<AppState>({
   license: null,

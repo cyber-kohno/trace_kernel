@@ -1,8 +1,8 @@
 <script lang="ts">
-  import workspaceStore from "../../../store/workspace-store";
-  import uiStore from "../../../store/ui-store";
-  import StoreProject from "../../../store/store-workspace";
-  import EntryRecord from "./EntryRecord.svelte";
+  import workspaceStore from '../../../store/workspace-store';
+  import uiStore from '../../../store/ui-store';
+  import StoreProject from '../../../store/store-workspace';
+  import EntryRecord from './EntryRecord.svelte';
 
   export let index: number;
 
@@ -14,11 +14,11 @@
 
   $: isFocus = (() => {
     const target = $uiStore.target;
-    return target != null && target.cat === "env" && target.index === index;
+    return target != null && target.cat === 'env' && target.index === index;
   })();
 
   $: focus = () => {
-    $uiStore.target = { cat: "env", index };
+    $uiStore.target = { cat: 'env', index };
   };
 
   $: del = () => {
@@ -32,11 +32,11 @@
   $: envVar = workspace.envs[index];
 </script>
 
-<EntryRecord {focus} {isFocus} {del} target={{ cat: "env", index }}>
+<EntryRecord {focus} {isFocus} {del} target={{ cat: 'env', index }}>
   <span>
-    <span>{"%"}</span>
+    <span>{'%'}</span>
     <span class="key">{envVar.varName}</span>
-    <span>{"%: "}</span>
+    <span>{'%: '}</span>
     <span class="value">{envVar.value}</span>
   </span>
 </EntryRecord>

@@ -1,7 +1,6 @@
-import type StoreDataset from "../../../../store/store-dataset";
+import type StoreDataset from '../../../../store/store-dataset';
 
-
-namespace ChooseUtil {
+namespace DatasetChooseUtil {
   export const getDispRecords = (
     root: StoreDataset.UsableNode,
     isFlat: boolean,
@@ -11,10 +10,12 @@ namespace ChooseUtil {
 
   /**
    * ツリー表示
-   * @param root 
-   * @returns 
+   * @param root
+   * @returns
    */
-  const buildTreeChooser = (root: StoreDataset.UsableNode): StoreDataset.NodeDispProps[] => {
+  const buildTreeChooser = (
+    root: StoreDataset.UsableNode,
+  ): StoreDataset.NodeDispProps[] => {
     const masterList: StoreDataset.NodeDispProps[] = [];
     const rec = (
       node: StoreDataset.UsableNode,
@@ -33,12 +34,12 @@ namespace ChooseUtil {
         nodes.forEach((n, i) => {
           const nextIndents: StoreDataset.NodeIndent[] = indents.slice();
           // 自身がlastの場合、子要素はnoneにする
-          if (nextIndents[nextIndents.length - 1] === "last")
-            nextIndents[nextIndents.length - 1] = "none";
+          if (nextIndents[nextIndents.length - 1] === 'last')
+            nextIndents[nextIndents.length - 1] = 'none';
           nextIndents.push(
             (() => {
-              if (i === nodes.length - 1) return "last";
-              else return "middle";
+              if (i === nodes.length - 1) return 'last';
+              else return 'middle';
             })(),
           );
           const [cFileCnt, cSelectCnt] = rec(
@@ -76,8 +77,8 @@ namespace ChooseUtil {
 
   /**
    * フラット表示
-   * @param root 
-   * @returns 
+   * @param root
+   * @returns
    */
   const buildFlatChooser = (root: StoreDataset.UsableNode) => {
     const list: StoreDataset.NodeDispProps[] = [];
@@ -118,4 +119,4 @@ namespace ChooseUtil {
     return list;
   };
 }
-export default ChooseUtil;
+export default DatasetChooseUtil;

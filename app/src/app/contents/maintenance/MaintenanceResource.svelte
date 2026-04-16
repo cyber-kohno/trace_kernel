@@ -1,61 +1,54 @@
 <script lang="ts">
-  import { writable } from "svelte/store";
-  import workspaceStore from "../../store/workspace-store";
-  import uiStore from "../../store/ui-store";
-  import StoreWorkspace from "../../store/store-workspace";
-  import OperationButton from "../../util/button/OperationButton.svelte";
-  import OperationSwitch from "../../util/button/OperationSwitch.svelte";
-  import Textarea from "../../util/form/Textarea.svelte";
-  import TextInput from "../../util/form/TextInput.svelte";
-  import LabelRecord from "../../util/item/LabelRecord.svelte";
-  import Record from "../../util/layout/RecordDiv.svelte";
-  import Wrap from "../../util/layout/Wrap.svelte";
-  import DataUtil from "../../util/data/data-util";
+  import { writable } from 'svelte/store';
+  import workspaceStore from '../../store/workspace-store';
+  import uiStore from '../../store/ui-store';
+  import StoreWorkspace from '../../store/store-workspace';
+  import OperationButton from '../../util/button/OperationButton.svelte';
+  import OperationSwitch from '../../util/button/OperationSwitch.svelte';
+  import Textarea from '../../util/form/Textarea.svelte';
+  import TextInput from '../../util/form/TextInput.svelte';
+  import LabelRecord from '../../util/item/LabelRecord.svelte';
+  import Record from '../../util/layout/RecordDiv.svelte';
+  import Wrap from '../../util/layout/Wrap.svelte';
+  import DataUtil from '../../util/data/data-util';
+  import { commitWorkspace, getTargetEntry } from './maintenance-helpers';
 
   const testData = writable<string | null>(null);
 
   $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
 
-  $: resource = (() => {
-    const target = $uiStore.target;
-    if (target != null && target.cat === "resource")
-      return workspace.resources[target.index];
-    throw new Error();
-  })();
-
-  $: validate = () => {
-    const target = StoreWorkspace.getTarget();
-    StoreWorkspace.validate(target);
-  };
+  $: resource = getTargetEntry(
+    $uiStore.target,
+    'resource',
+    workspace.resources,
+  );
 
   $: setName = (v: string) => {
     resource.varName = v;
-    $workspaceStore.workspace = { ...workspace };
-    validate();
+    commitWorkspace(workspace);
   };
   $: setSource = (v: string) => {
     resource.source = v;
-    $workspaceStore.workspace = { ...workspace };
-    validate();
+    commitWorkspace(workspace);
   };
 
   $: toggleCsvConvert = () => {
     $testData = null;
-    if (resource.parse === "csv") {
+    if (resource.parse === 'csv') {
       resource.parse = undefined;
     } else {
-      resource.parse = "csv";
+      resource.parse = 'csv';
     }
-    $workspaceStore.workspace = { ...workspace };
+    commitWorkspace(workspace, { validate: false });
   };
   $: toggleTsvConvert = () => {
     $testData = null;
-    if (resource.parse === "tsv") {
+    if (resource.parse === 'tsv') {
       resource.parse = undefined;
     } else {
-      resource.parse = "tsv";
+      resource.parse = 'tsv';
     }
-    $workspaceStore.workspace = { ...workspace };
+    commitWorkspace(workspace, { validate: false });
   };
 
   const testParse = async () => {
@@ -65,8 +58,8 @@
     if (conv == undefined) throw new Error();
     const records = DataUtil.convertTableToJson(src, conv);
 
-    $testData = "";
-    const append = (str: string) => ($testData += str + "\n");
+    $testData = '';
+    const append = (str: string) => ($testData += str + '\n');
     append(`Start parsing the ${resource.parse}.`);
     append(`There are ${records.length} records.`);
     append(`\n★columns`);
@@ -89,34 +82,34 @@
 </script>
 
 <Wrap>
-  <LabelRecord name={"variable_name"} />
+  <LabelRecord name={'variable_name'} />
   <TextInput
     value={resource.varName}
     set={setName}
-    width={"calc(100% - 4px)"}
+    width={'calc(100% - 4px)'}
     requied
   />
-  <LabelRecord name={"source"} />
+  <LabelRecord name={'source'} />
   <Record height={150}>
     <Wrap>
-      <Textarea value={resource.source ?? ""} set={setSource} />
+      <Textarea value={resource.source ?? ''} set={setSource} />
     </Wrap>
   </Record>
-  <LabelRecord name={"parse_method"} sub={"type injection"} />
+  <LabelRecord name={'parse_method'} sub={'type injection'} />
   <Record>
     <OperationSwitch
       name="CSV to JSON"
       callback={toggleCsvConvert}
-      isActive={resource.parse === "csv"}
+      isActive={resource.parse === 'csv'}
     />
     <OperationSwitch
       name="TSV to JSON"
       callback={toggleTsvConvert}
-      isActive={resource.parse === "tsv"}
+      isActive={resource.parse === 'tsv'}
     />
   </Record>
   {#if resource.parse != undefined}
-    <LabelRecord name={"preview_parse"} />
+    <LabelRecord name={'preview_parse'} />
     <OperationButton name="Test" width={120} callback={testParse} />
     <Record height={200}>
       <Wrap>

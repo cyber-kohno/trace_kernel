@@ -1,65 +1,52 @@
 <script lang="ts">
-  import TextInput from "../../util/form/TextInput.svelte";
-  import LabelRecord from "../../util/item/LabelRecord.svelte";
-  import Record from "../../util/layout/RecordDiv.svelte";
-  import Wrap from "../../util/layout/Wrap.svelte";
-  import StoreWorkspace from "../../store/store-workspace";
-  import workspaceStore from "../../store/workspace-store";
-  import uiStore from "../../store/ui-store";
-  import NumberInput from "../../util/form/NumberInput.svelte";
-  import AddDelButton from "../system/AddDelButton.svelte";
-  import Column from "../../util/layout/Column.svelte";
-  import OperationSwitch from "../../util/button/OperationSwitch.svelte";
-  import ToastUtil from "../../util/item/toast-util";
-  import PathState from "../../util/form/validation/PathState.svelte";
-  import { writable } from "svelte/store";
-  import { onMount } from "svelte";
-  import DataUtil from "../../util/data/data-util";
-  import type { TextEncoding } from "../../store/types";
-  import ItemLabel from "../../util/item/ItemLabel.svelte";
+  import TextInput from '../../util/form/TextInput.svelte';
+  import LabelRecord from '../../util/item/LabelRecord.svelte';
+  import Record from '../../util/layout/RecordDiv.svelte';
+  import Wrap from '../../util/layout/Wrap.svelte';
+  import StoreWorkspace from '../../store/store-workspace';
+  import workspaceStore from '../../store/workspace-store';
+  import uiStore from '../../store/ui-store';
+  import NumberInput from '../../util/form/NumberInput.svelte';
+  import AddDelButton from '../system/AddDelButton.svelte';
+  import Column from '../../util/layout/Column.svelte';
+  import OperationSwitch from '../../util/button/OperationSwitch.svelte';
+  import ToastUtil from '../../util/item/toast-util';
+  import PathState from '../../util/form/validation/PathState.svelte';
+  import { writable } from 'svelte/store';
+  import { onMount } from 'svelte';
+  import DataUtil from '../../util/data/data-util';
+  import type { TextEncoding } from '../../store/types';
+  import ItemLabel from '../../util/item/ItemLabel.svelte';
+  import { commitWorkspace, getTargetEntry } from './maintenance-helpers';
 
   $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
 
-  $: process = (() => {
-    const target = $uiStore.target;
-    if (target != null && target.cat === "process")
-      return workspace.processes[target.index];
-    throw new Error();
-  })();
-
-  $: validate = () => {
-    const target = StoreWorkspace.getTarget();
-    StoreWorkspace.validate(target);
-  };
+  $: process = getTargetEntry($uiStore.target, 'process', workspace.processes);
 
   $: setName = (v: string) => {
     process.funcName = v;
-    $workspaceStore.workspace = { ...workspace };
-    validate();
+    commitWorkspace(workspace);
   };
   $: setProgramPath = (v: string) => {
     process.prgPath = v;
-    $workspaceStore.workspace = { ...workspace };
-    validate();
+    commitWorkspace(workspace);
   };
   $: addScriptArg = () => {
     process.scriptArgs.push({
       name: `arg${process.scriptArgs.length}`,
-      type: "string",
+      type: 'string',
     });
     process.scriptArgs = process.scriptArgs.slice();
-    $workspaceStore.workspace = { ...workspace };
-    validate();
+    commitWorkspace(workspace);
   };
   $: addCommaandArg = () => {
-    process.cmdArgs.push("");
+    process.cmdArgs.push('');
     process.cmdArgs = process.cmdArgs.slice();
-    $workspaceStore.workspace = { ...workspace };
-    validate();
+    commitWorkspace(workspace);
   };
   $: setTimeout = (v: number) => {
     process.timeout = v;
-    $workspaceStore.workspace = { ...workspace };
+    commitWorkspace(workspace, { validate: false });
   };
   $: isUse = (value: string) => {
     return (
@@ -74,36 +61,37 @@
   });
 
   $: createSetEncodingCallback = (
-    target: "stdout" | "stderr",
+    target: 'stdout' | 'stderr',
     encoding: TextEncoding,
   ) => {
     return () => {
       process.encoding[target] = encoding;
+      commitWorkspace(workspace, { validate: false });
     };
   };
 </script>
 
 <Wrap>
   <div class="main">
-    <LabelRecord name={"function_name"} />
+    <LabelRecord name={'function_name'} />
     <TextInput
       value={process.funcName}
       set={setName}
-      width={"calc(100% - 4px)"}
+      width={'calc(100% - 4px)'}
       requied
     />
-    <LabelRecord name={"program_path"} />
+    <LabelRecord name={'program_path'} />
     <TextInput
       value={process.prgPath}
       set={setProgramPath}
-      width={"calc(100% - 4px)"}
+      width={'calc(100% - 4px)'}
       requied
     />
     <PathState
       isDir={false}
       path={DataUtil.getAppliedEnvValue(process.prgPath, workspace.envs)}
     />
-    <LabelRecord name={"script_argument_defs"} />
+    <LabelRecord name={'script_argument_defs'} />
     {#each process.scriptArgs as arg, i}
       <Record height={30}>
         <Column width={42}>
@@ -113,8 +101,7 @@
               process.scriptArgs.splice(i, 1);
               $scriptDefErrors.splice(i, 1);
               process.scriptArgs = process.scriptArgs.slice();
-    $workspaceStore.workspace = { ...workspace };
-              validate();
+              commitWorkspace(workspace);
             }}
           />
         </Column>
@@ -124,10 +111,9 @@
             set={(v) => {
               process.scriptArgs[i].name = v;
               process.scriptArgs = process.scriptArgs.slice();
-    $workspaceStore.workspace = { ...workspace };
-              validate();
+              commitWorkspace(workspace);
             }}
-            width={"calc(100% - 4px)"}
+            width={'calc(100% - 4px)'}
             requied
             invalidValues={process.scriptArgs
               .map((a) => a.name)
@@ -137,16 +123,17 @@
         </Column>
         <Column width={98}>
           <OperationSwitch
-            name={"Number"}
-            isActive={arg.type === "number"}
+            name={'Number'}
+            isActive={arg.type === 'number'}
             callback={() => {
-              arg.type = arg.type === "number" ? "string" : "number";
+              arg.type = arg.type === 'number' ? 'string' : 'number';
               process.scriptArgs = process.scriptArgs.slice();
+              commitWorkspace(workspace, { validate: false });
             }}
           />
         </Column>
         <Column width={172}>
-          {#if !$scriptDefErrors[i] && arg.name !== ""}
+          {#if !$scriptDefErrors[i] && arg.name !== ''}
             <button
               class="label"
               data--used={isUse(arg.name)}
@@ -167,7 +154,7 @@
     <Record>
       <AddDelButton callback={addScriptArg} />
     </Record>
-    <LabelRecord name={"command_argument_values"} />
+    <LabelRecord name={'command_argument_values'} />
     {#each process.cmdArgs as arg, i}
       <Record height={30}>
         <Column width={42}>
@@ -176,8 +163,7 @@
             callback={() => {
               process.cmdArgs.splice(i, 1);
               process.cmdArgs = process.cmdArgs.slice();
-    $workspaceStore.workspace = { ...workspace };
-              validate();
+              commitWorkspace(workspace);
             }}
           />
         </Column>
@@ -186,10 +172,9 @@
             value={arg}
             set={(v) => {
               process.cmdArgs[i] = v;
-    $workspaceStore.workspace = { ...workspace };
-              validate();
+              commitWorkspace(workspace);
             }}
-            width={"calc(100% - 4px)"}
+            width={'calc(100% - 4px)'}
             requied
           />
         </Column>
@@ -198,14 +183,14 @@
     <Record>
       <AddDelButton callback={addCommaandArg} />
     </Record>
-    <LabelRecord name={"timeout_millisecond"} />
+    <LabelRecord name={'timeout_millisecond'} />
     <NumberInput
       value={process.timeout}
       set={setTimeout}
       min={500}
       max={10000}
     />
-    <LabelRecord name={"response_encoding"} />
+    <LabelRecord name={'response_encoding'} />
     <Record>
       <Column width={90}>
         <ItemLabel name="stdout" width={80} />
@@ -213,13 +198,13 @@
       <Column surplus={90}>
         <OperationSwitch
           name="UTF8"
-          callback={createSetEncodingCallback("stdout", "utf8")}
-          isActive={process.encoding.stdout === "utf8"}
+          callback={createSetEncodingCallback('stdout', 'utf8')}
+          isActive={process.encoding.stdout === 'utf8'}
         />
         <OperationSwitch
           name="SJIS"
-          callback={createSetEncodingCallback("stdout", "sjis")}
-          isActive={process.encoding.stdout === "sjis"}
+          callback={createSetEncodingCallback('stdout', 'sjis')}
+          isActive={process.encoding.stdout === 'sjis'}
         />
       </Column>
     </Record>
@@ -230,13 +215,13 @@
       <Column surplus={90}>
         <OperationSwitch
           name="UTF8"
-          callback={createSetEncodingCallback("stderr", "utf8")}
-          isActive={process.encoding.stderr === "utf8"}
+          callback={createSetEncodingCallback('stderr', 'utf8')}
+          isActive={process.encoding.stderr === 'utf8'}
         />
         <OperationSwitch
           name="SJIS"
-          callback={createSetEncodingCallback("stderr", "sjis")}
-          isActive={process.encoding.stderr === "sjis"}
+          callback={createSetEncodingCallback('stderr', 'sjis')}
+          isActive={process.encoding.stderr === 'sjis'}
         />
       </Column>
     </Record>
@@ -263,7 +248,7 @@
       background-color: rgba(255, 186, 254, 0.306);
     }
   }
-  .label[data--used="true"] {
+  .label[data--used='true'] {
     color: rgba(180, 255, 175, 0.741);
   }
 </style>

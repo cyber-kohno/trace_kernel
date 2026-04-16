@@ -1,7 +1,7 @@
 <script lang="ts">
-  import OperationButton from "../../../../util/button/OperationButton.svelte";
-  import Record from "../../../../util/layout/RecordDiv.svelte";
-  import type DclChannel from "../util/channel/dcl-channel";
+  import OperationButton from '../../../../util/button/OperationButton.svelte';
+  import Record from '../../../../util/layout/RecordDiv.svelte';
+  import type DclChannel from '../util/channel/dcl-channel';
 
   export let channels: { id: string; view: DclChannel.View }[];
   export let active: number;
@@ -36,8 +36,10 @@
     isLineup
   />
   <div class="label">
-    <span>{activeChannel == undefined ? "-" : `${activeChannel.id}`}</span>
-    <span class="view">{activeChannel == undefined ? "" : `@${activeChannel.view}`}</span>
+    <span>{activeChannel == undefined ? '-' : `${activeChannel.id}`}</span>
+    <span class="view"
+      >{activeChannel == undefined ? '' : `@${activeChannel.view}`}</span
+    >
   </div>
 </Record>
 

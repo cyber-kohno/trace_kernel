@@ -1,20 +1,20 @@
 <script lang="ts">
-  import { writable } from "svelte/store";
-  import OrderRow from "./row/OrderRow.svelte";
-  import TxPlanNormalize from "../util/tx-plan-normalize";
-  import TxExecuter from "../util/tx-executer";
-  import type RuntimeUtil from "../../../runtime/runtime-util";
-  import Blind from "../../../../../../util/layout/Blind.svelte";
-  import Wrap from "../../../../../../util/layout/Wrap.svelte";
-  import RecordDiv from "../../../../../../util/layout/RecordDiv.svelte";
-  import TxPhaseMonitor from "./TxPhaseMonitor.svelte";
-  import Column from "../../../../../../util/layout/Column.svelte";
-  import OrderSummary from "./OrderSummary.svelte";
-  import BusyIndicator from "../../../../../../util/item/BusyIndicator.svelte";
-  import ProgressBar from "../../ProgressBar.svelte";
-  import OperationButton from "../../../../../../util/button/OperationButton.svelte";
-  import TxDetailUtil from "../util/tx-detail-util";
-  import TxDetail from "./detail/TxDetail.svelte";
+  import { writable } from 'svelte/store';
+  import OrderRow from './row/OrderRow.svelte';
+  import TxPlanNormalize from '../util/tx-plan-normalize';
+  import TxExecuter from '../util/tx-executer';
+  import type RuntimeUtil from '../../../runtime/runtime-util';
+  import Blind from '../../../../../../util/layout/Blind.svelte';
+  import Wrap from '../../../../../../util/layout/Wrap.svelte';
+  import RecordDiv from '../../../../../../util/layout/RecordDiv.svelte';
+  import TxPhaseMonitor from './TxPhaseMonitor.svelte';
+  import Column from '../../../../../../util/layout/Column.svelte';
+  import OrderSummary from './OrderSummary.svelte';
+  import BusyIndicator from '../../../../../../util/item/BusyIndicator.svelte';
+  import ProgressBar from '../../ProgressBar.svelte';
+  import OperationButton from '../../../../../../util/button/OperationButton.svelte';
+  import TxDetailUtil from '../util/tx-detail-util';
+  import TxDetail from './detail/TxDetail.svelte';
 
   export let vfs: RuntimeUtil.VFSState;
   export let close: () => void;
@@ -32,7 +32,7 @@
     $detail = v;
   };
 
-  let phase = writable<TxExecuter.Phase>("confirm");
+  let phase = writable<TxExecuter.Phase>('confirm');
 
   $: commit = async () => {
     $isProcessing = true;
@@ -50,14 +50,14 @@
   };
 </script>
 
-<Blind zIndex={6} bgColor={"rgba(0, 0, 0, 0.398)"}>
+<Blind zIndex={6} bgColor={'rgba(0, 0, 0, 0.398)'}>
   <Wrap margin={20}>
     <div class="frame">
       <!-- レコードの詳細情報（前面表示） -->
       {#if $detail != null}
         <TxDetail detail={$detail} close={() => setDetail(null)} />
       {/if}
-      <RecordDiv height={30} bgColor={"#555"} align="right">
+      <RecordDiv height={30} bgColor={'#555'} align="right">
         <Column width={280}>
           <TxPhaseMonitor phase={$phase} />
         </Column>
@@ -74,32 +74,32 @@
         {#if $isProcessing}
           <div class="lock">
             <div class="info">
-              {#if $phase === "verify"}
+              {#if $phase === 'verify'}
                 <BusyIndicator>
                   <div class="msg">Verifying transaction...</div>
                 </BusyIndicator>
-              {:else if $phase === "commit"}
+              {:else if $phase === 'commit'}
                 <ProgressBar rate={($progress / orders.length) * 100} />
               {/if}
             </div>
           </div>
         {/if}
       </RecordDiv>
-      <RecordDiv height={30} bgColor={"#555"} align="right">
+      <RecordDiv height={30} bgColor={'#555'} align="right">
         <OperationButton
-          name={orders.length >= 1 && $phase !== "commit" ? "Later" : "close"}
+          name={orders.length >= 1 && $phase !== 'commit' ? 'Later' : 'close'}
           isLineup
           width={150}
           callback={close}
         />
         <OperationButton
-          name={"Commit"}
+          name={'Commit'}
           isLineup
           width={150}
           callback={() => {
             commit();
           }}
-          isDisable={orders.length === 0 || $phase === "commit"}
+          isDisable={orders.length === 0 || $phase === 'commit'}
         />
       </RecordDiv>
     </div>

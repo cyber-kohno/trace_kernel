@@ -1,4 +1,4 @@
-import type StoreDataset from "./store-dataset";
+import type StoreDataset from './store-dataset';
 
 export type FileStat = {
   size: number;
@@ -11,7 +11,7 @@ export type FileStat = {
 
 export interface ScanRequest extends StoreDataset.ScanOption {
   rootPath: string;
-};
+}
 
 export interface FileCond {
   pattern: string;
@@ -33,21 +33,21 @@ export interface PayloadNode {
 export type KeyValue = {
   key: string;
   value: string;
-}
+};
 export type TextEncoding = 'utf8' | 'sjis';
 export type FileRequest = {
   filePath: string;
   encoding: TextEncoding;
-}
+};
 
 export type DirBelong = {
   name: string;
   isDir: boolean;
-}
+};
 
 export type HtmlSource = {
   url: string;
   html: string;
   fetchedAt: number;
-}
+};
 // export type ChannelType = 'root' | 'category' | 'item';

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import DclChannel from "../../util/channel/dcl-channel";
-  import StreamReceiver from "../StreamReceiver.svelte";
-  import TableFixed from "./TableFixed.svelte";
-  import TableRecord from "./TableRecord.svelte";
+  import DclChannel from '../../util/channel/dcl-channel';
+  import StreamReceiver from '../StreamReceiver.svelte';
+  import TableFixed from './TableFixed.svelte';
+  import TableRecord from './TableRecord.svelte';
 
   export let channel: DclChannel.Props;
 
@@ -25,6 +25,6 @@
     <TableFixed channelId={channel.id} {total} {columnDef} />
   </svelte:fragment>
   <svelte:fragment slot="record" let:record let:index>
-    <TableRecord recordStr={record} {index}  {columnDef} />
+    <TableRecord recordStr={record} {index} {columnDef} />
   </svelte:fragment>
 </StreamReceiver>

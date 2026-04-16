@@ -1,12 +1,12 @@
 <script lang="ts">
-  import workspaceValidationStore from "../../../store/workspace-validation-store";
-  import uiStore from "../../../store/ui-store";
-  import StoreProject from "../../../store/store-workspace";
-  import Cover from "../../../util/layout/Cover.svelte";
-  import Hover from "../../../util/layout/Hover.svelte";
-  import Record from "../../../util/layout/RecordDiv.svelte";
-  import Wrap from "../../../util/layout/Wrap.svelte";
-  import AddDelButton from "../AddDelButton.svelte";
+  import workspaceValidationStore from '../../../store/workspace-validation-store';
+  import uiStore from '../../../store/ui-store';
+  import StoreProject from '../../../store/store-workspace';
+  import Cover from '../../../util/layout/Cover.svelte';
+  import Hover from '../../../util/layout/Hover.svelte';
+  import Record from '../../../util/layout/RecordDiv.svelte';
+  import Wrap from '../../../util/layout/Wrap.svelte';
+  import AddDelButton from '../AddDelButton.svelte';
 
   export let focus: () => void;
   export let isFocus: boolean;
@@ -36,11 +36,11 @@
 <Record height={56}>
   <Wrap margin={1}>
     <button class="label" {onclick} {oncontextmenu} data--disable={isDisable}>
-      <Record height={30} padding={"5px 0 0 2px"} nowrap>
+      <Record height={30} padding={'5px 0 0 2px'} nowrap>
         <slot />
       </Record>
-      <Record height={20} padding={"0 0 0 4px"}>
-        <span data--disable={isDisable}>{!isDisable ? "enable" : "error"}</span>
+      <Record height={20} padding={'0 0 0 4px'}>
+        <span data--disable={isDisable}>{!isDisable ? 'enable' : 'error'}</span>
       </Record>
       <Hover />
       {#if isFocus}
@@ -74,7 +74,7 @@
 
     border-radius: 2px;
   }
-  .label[data--disable="true"] {
+  .label[data--disable='true'] {
     background-color: rgba(255, 0, 0, 0.1);
     /* border: 2px solid rgba(255, 6, 6, 0.364); */
   }
@@ -88,7 +88,7 @@
     color: rgba(177, 255, 177, 0.683);
     background-color: rgba(177, 255, 0, 0.203);
   }
-  span[data--disable="true"] {
+  span[data--disable='true'] {
     color: rgb(253, 95, 95);
     background-color: rgba(230, 0, 0, 0.203);
   }

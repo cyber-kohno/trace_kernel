@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type DclChannel from "../../util/channel/dcl-channel";
+  import type DclChannel from '../../util/channel/dcl-channel';
 
   export let recordStr: string;
   export let index: number;
@@ -29,7 +29,7 @@
     min-width: 100%;
     background-color: rgba(240, 248, 255, 0.119);
   }
-  .wrap[data--even="true"] {
+  .wrap[data--even='true'] {
     background-color: rgba(200, 239, 250, 0.233);
   }
   .row {
@@ -65,7 +65,7 @@
     border: 1px solid rgba(255, 255, 255, 0.385);
     vertical-align: top;
   }
-  .cell[data--number="true"] {
+  .cell[data--number='true'] {
     text-align: right;
   }
 </style>

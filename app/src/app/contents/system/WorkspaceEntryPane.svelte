@@ -1,18 +1,18 @@
 <script lang="ts">
-  import workspaceStore from "../../store/workspace-store";
-  import uiStore from "../../store/ui-store";
-  import StoreProcess from "../../store/store-process";
-  import StoreDataset from "../../store/store-dataset";
-  import StoreWorkspace from "../../store/store-workspace";
-  import StoreResource from "../../store/store-resource";
-  import StoreWork from "../../store/store-work";
-  import EntrySection from "./EntrySection.svelte";
-  import ProcessEntry from "./entries/ProcessEntry.svelte";
-  import EnvEntry from "./entries/EnvEntry.svelte";
-  import ResourceEntry from "./entries/ResourceEntry.svelte";
-  import WorkEntry from "./entries/WorkEntry.svelte";
-  import storeLIcense from "../../store/store-license";
-  import DatasetEntry from "./entries/DatasetEntry.svelte";
+  import workspaceStore from '../../store/workspace-store';
+  import uiStore from '../../store/ui-store';
+  import StoreProcess from '../../store/store-process';
+  import StoreDataset from '../../store/store-dataset';
+  import StoreWorkspace from '../../store/store-workspace';
+  import StoreResource from '../../store/store-resource';
+  import StoreWork from '../../store/store-work';
+  import EntrySection from './EntrySection.svelte';
+  import ProcessEntry from './entries/ProcessEntry.svelte';
+  import EnvEntry from './entries/EnvEntry.svelte';
+  import ResourceEntry from './entries/ResourceEntry.svelte';
+  import WorkEntry from './entries/WorkEntry.svelte';
+  import storeLicense from '../../store/store-license';
+  import DatasetEntry from './entries/DatasetEntry.svelte';
 
   $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
   $: validate = (target: StoreWorkspace.Target) => {
@@ -25,7 +25,7 @@
     $uiStore.target = target;
   };
 
-  const addEntry = <T>(cat: StoreWorkspace.Category, items: T[], entry: T) => {
+  const addEntry = <T,>(cat: StoreWorkspace.Category, items: T[], entry: T) => {
     items.push(entry);
     const nextItems = items.slice();
     const target: StoreWorkspace.Target = {
@@ -34,19 +34,19 @@
     };
 
     switch (cat) {
-      case "env":
+      case 'env':
         workspace.envs = nextItems as typeof workspace.envs;
         break;
-      case "resource":
+      case 'resource':
         workspace.resources = nextItems as typeof workspace.resources;
         break;
-      case "dataset":
+      case 'dataset':
         workspace.datasets = nextItems as typeof workspace.datasets;
         break;
-      case "process":
+      case 'process':
         workspace.processes = nextItems as typeof workspace.processes;
         break;
-      case "work":
+      case 'work':
         workspace.works = nextItems as typeof workspace.works;
         break;
     }
@@ -55,40 +55,40 @@
   };
 
   const addEnv = () =>
-    addEntry("env", workspace.envs, {
-      varName: "",
-      value: "",
+    addEntry('env', workspace.envs, {
+      varName: '',
+      value: '',
     });
 
   const addResource = () =>
-    addEntry("resource", workspace.resources, StoreResource.getInitial(""));
+    addEntry('resource', workspace.resources, StoreResource.getInitial(''));
 
   const addDataset = () =>
-    addEntry("dataset", workspace.datasets, StoreDataset.getInitial(""));
+    addEntry('dataset', workspace.datasets, StoreDataset.getInitial(''));
 
   const addProcess = () =>
-    addEntry("process", workspace.processes, StoreProcess.getInitial());
+    addEntry('process', workspace.processes, StoreProcess.getInitial());
 
   const addWork = () =>
     addEntry(
-      "work",
+      'work',
       workspace.works,
       StoreWork.getInitial(`work${workspace.works.length}`),
     );
 
   $: openDeclare = () => {
-    $uiStore.dialog = "declare";
+    $uiStore.dialog = 'declare';
   };
 </script>
 
 <div class="category">
-  <div class="label">{"context"}</div>
+  <div class="label">{'context'}</div>
 </div>
 
 <div class="indent">
   <!-- 環境変数 -->
   <EntrySection
-    label={"-env"}
+    label={'-env'}
     items={workspace.envs}
     entryComponent={EnvEntry}
     add={addEnv}
@@ -96,7 +96,7 @@
 
   <!-- リソース -->
   <EntrySection
-    label={"-resource"}
+    label={'-resource'}
     items={workspace.resources}
     entryComponent={ResourceEntry}
     add={addResource}
@@ -104,16 +104,16 @@
 
   <!-- データセット -->
   <EntrySection
-    label={"-dataset"}
+    label={'-dataset'}
     items={workspace.datasets}
     entryComponent={DatasetEntry}
     add={addDataset}
   />
 
   <!-- プロセス -->
-  {#if storeLIcense.isPro()}
+  {#if storeLicense.isPro()}
     <EntrySection
-      label={"-process"}
+      label={'-process'}
       items={workspace.processes}
       entryComponent={ProcessEntry}
       add={addProcess}
@@ -122,16 +122,16 @@
 </div>
 
 <div class="category">
-  <div class="label">{"program"}</div>
+  <div class="label">{'program'}</div>
   <div class="right">
-    <button onclick={openDeclare}>{"__common_declare__"}</button>
+    <button onclick={openDeclare}>{'__common_declare__'}</button>
   </div>
 </div>
 
 <div class="indent">
   <!-- ワーク -->
   <EntrySection
-    label={"-work"}
+    label={'-work'}
     items={workspace.works}
     entryComponent={WorkEntry}
     add={addWork}

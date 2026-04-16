@@ -3,13 +3,13 @@
   export let type: string;
 
   $: records = (() => {
-    const str = type.replaceAll("{", "{\n").replaceAll(";", ";\n");
-    const list = str.split("\n").map(r => r.trim());
+    const str = type.replaceAll('{', '{\n').replaceAll(';', ';\n');
+    const list = str.split('\n').map((r) => r.trim());
     let indent = 0;
     list.forEach((r, i) => {
-        if(r.indexOf('}') !== -1) indent --;
-        list[i] = '　'.repeat(indent) + r;
-        if(r.indexOf('{') !== -1) indent ++;
+      if (r.indexOf('}') !== -1) indent--;
+      list[i] = '　'.repeat(indent) + r;
+      if (r.indexOf('{') !== -1) indent++;
     });
     return list;
   })();
@@ -17,7 +17,7 @@
 
 <div class="record">
   <span class="name">${name}</span>
-  <span>{":"}&nbsp;</span>
+  <span>{':'}&nbsp;</span>
   <span>{records[0]}</span>
 </div>
 {#if records.length > 1}

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import workspaceStore from "../../../store/workspace-store";
-  import uiStore from "../../../store/ui-store";
-  import StoreProject from "../../../store/store-workspace";
-  import EntryRecord from "./EntryRecord.svelte";
+  import workspaceStore from '../../../store/workspace-store';
+  import uiStore from '../../../store/ui-store';
+  import StoreProject from '../../../store/store-workspace';
+  import EntryRecord from './EntryRecord.svelte';
 
   export let index: number;
 
@@ -14,11 +14,11 @@
 
   $: isFocus = (() => {
     const target = $uiStore.target;
-    return target != null && target.cat === "process" && target.index === index;
+    return target != null && target.cat === 'process' && target.index === index;
   })();
 
   $: focus = () => {
-    $uiStore.target = { cat: "process", index };
+    $uiStore.target = { cat: 'process', index };
   };
 
   $: del = () => {
@@ -30,14 +30,14 @@
   };
 
   $: process = workspace.processes[index];
-  $: prgPath = process.prgPath.split("\\").slice(-3).join("\\");
+  $: prgPath = process.prgPath.split('\\').slice(-3).join('\\');
 </script>
 
-<EntryRecord {focus} {isFocus} {del} target={{ cat: "process", index }}>
+<EntryRecord {focus} {isFocus} {del} target={{ cat: 'process', index }}>
   <span>
-    <span>{"%"}</span>
+    <span>{'%'}</span>
     <span class="key">{process.funcName}</span>
-    <span>{"%: "}</span>
+    <span>{'%: '}</span>
     <span class="command">{prgPath}</span>
   </span>
 </EntryRecord>

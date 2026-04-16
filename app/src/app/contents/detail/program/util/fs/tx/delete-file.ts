@@ -1,93 +1,76 @@
-import RuntimeUtil from "../../../runtime/runtime-util";
+import RuntimeUtil from '../../../runtime/runtime-util';
 
 namespace DeleteFile {
+  // ==========================
+  // Public API
+  // ==========================
 
-    // ==========================
-    // Public API
-    // ==========================
+  export const byPath = (vfs: RuntimeUtil.VFSState, filePath: string) => {
+    const { pathIndex, fileTable } = vfs;
 
-    export const byPath = (
-        vfs: RuntimeUtil.VFSState,
-        filePath: string
-    ) => {
+    let state: RuntimeUtil.FileState | undefined;
 
-        const { pathIndex, fileTable } = vfs;
+    const token = pathIndex.get(filePath);
 
-        let state: RuntimeUtil.FileState | undefined;
+    if (!token) {
+      // 未touch → 削除意図登録
+      const newToken = RuntimeUtil.createFileToken();
 
-        const token = pathIndex.get(filePath);
+      state = {
+        path: filePath,
+        intent: 'delete',
+      };
 
-        if (!token) {
-            // 未touch → 削除意図登録
-            const newToken = RuntimeUtil.createFileToken();
+      fileTable.set(newToken, state);
+      pathIndex.set(filePath, newToken);
+      return;
+    }
 
-            state = {
-                path: filePath,
-                intent: "delete"
-            };
+    state = fileTable.get(token);
+    if (!state) {
+      throw new Error('corrupted transaction state');
+    }
 
-            fileTable.set(newToken, state);
-            pathIndex.set(filePath, newToken);
-            return;
-        }
+    // open済み（snapshotあり）は token経由のみ許可
+    if (state.snapshot) {
+      throw new Error(`opened file must be deleted via token: ${filePath}`);
+    }
 
-        state = fileTable.get(token);
-        if (!state) {
-            throw new Error("corrupted transaction state");
-        }
+    core(state, filePath);
+  };
 
-        // open済み（snapshotあり）は token経由のみ許可
-        if (state.snapshot) {
-            throw new Error(
-                `opened file must be deleted via token: ${filePath}`
-            );
-        }
+  export const byToken = (
+    vfs: RuntimeUtil.VFSState,
+    token: RuntimeUtil.FileToken,
+  ) => {
+    const { fileTable } = vfs;
 
-        core(state, filePath);
-    };
+    const state = fileTable.get(token);
 
+    if (!state) {
+      throw new Error('invalid file token');
+    }
 
-    export const byToken = (
-        vfs: RuntimeUtil.VFSState,
-        token: RuntimeUtil.FileToken
-    ) => {
+    const filePath = state.path;
 
-        const { fileTable } = vfs;
+    core(state, filePath);
+  };
 
-        const state = fileTable.get(token);
+  // ==========================
+  // Internal Shared Logic
+  // ==========================
 
-        if (!state) {
-            throw new Error("invalid file token");
-        }
+  const core = (state: RuntimeUtil.FileState, filePath: string) => {
+    if (state.intent === 'delete') {
+      throw new Error(`file already deleted: ${filePath}`);
+    }
 
-        const filePath = state.path;
+    if (state.intent === 'create') {
+      throw new Error(`cannot delete newly created file: ${filePath}`);
+    }
 
-        core(state, filePath);
-    };
-
-
-    // ==========================
-    // Internal Shared Logic
-    // ==========================
-
-    const core = (
-        state: RuntimeUtil.FileState,
-        filePath: string
-    ) => {
-
-        if (state.intent === "delete") {
-            throw new Error(`file already deleted: ${filePath}`);
-        }
-
-        if (state.intent === "create") {
-            throw new Error(
-                `cannot delete newly created file: ${filePath}`
-            );
-        }
-
-        state.intent = "delete";
-    };
+    state.intent = 'delete';
+  };
 }
-
 
 export default DeleteFile;

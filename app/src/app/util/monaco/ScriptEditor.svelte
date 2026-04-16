@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
-  import loader from "@monaco-editor/loader";
-  import * as Monaco from "monaco-editor";
-  import { get, writable } from "svelte/store";
-  import appStore from "../../store/app-store";
-  import MonacoFactory from "./monaco-factory";
-import { restrictedGlobals } from "./restricted-globals";
+  import { onMount, onDestroy } from 'svelte';
+  import loader from '@monaco-editor/loader';
+  import * as Monaco from 'monaco-editor';
+  import { get, writable } from 'svelte/store';
+  import appStore from '../../store/app-store';
+  import MonacoFactory from './monaco-factory';
+  import { restrictedGlobals } from './restricted-globals';
 
   let editorDiv: HTMLDivElement | null = null;
   let editor: Monaco.editor.IStandaloneCodeEditor;
@@ -19,10 +19,10 @@ import { restrictedGlobals } from "./restricted-globals";
 
   export let executeAction: () => void = () => {};
 
-  const LANGUAGE = "typescript";
+  const LANGUAGE = 'typescript';
   let hasError = writable(false);
 
-  const uid = ""; //crypto.randomUUID();
+  const uid = ''; //crypto.randomUUID();
   const themeName = `theme-${uid}`;
 
   let typescript: any | null = null;
@@ -33,6 +33,26 @@ import { restrictedGlobals } from "./restricted-globals";
   let userModel: any;
   let analysisModel: any;
   let runtimeDecorations: string[] = [];
+  const unusedTag = Monaco.MarkerTag.Unnecessary;
+
+  const toMarkerSeverity = (diagnostic: any) => {
+    if (diagnostic.reportsUnnecessary) {
+      return monaco.MarkerSeverity.Hint;
+    }
+
+    const category = diagnostic.category;
+    switch (category) {
+      case 0:
+        return monaco.MarkerSeverity.Warning;
+      case 2:
+        return monaco.MarkerSeverity.Hint;
+      case 3:
+        return monaco.MarkerSeverity.Info;
+      case 1:
+      default:
+        return monaco.MarkerSeverity.Error;
+    }
+  };
 
   const getRestrictedGlobalMarkers = (code: string) => {
     if (!monaco) return [];
@@ -49,17 +69,21 @@ import { restrictedGlobals } from "./restricted-globals";
             tokenIndex + 1 < lineTokens.length
               ? lineTokens[tokenIndex + 1].offset + 1
               : lineText.length + 1;
-          const tokenText = lineText.slice(startColumn - 1, endColumn - 1).trim();
-          const prevChar = lineText[startColumn - 2] ?? "";
+          const tokenText = lineText
+            .slice(startColumn - 1, endColumn - 1)
+            .trim();
+          const prevChar = lineText[startColumn - 2] ?? '';
 
-          const restricted = restrictedGlobals.find((entry) => entry.name === tokenText);
+          const restricted = restrictedGlobals.find(
+            (entry) => entry.name === tokenText,
+          );
           if (!restricted) return [];
 
           const isIdentifierToken =
-            typeof token.type === "string" && token.type.includes("identifier");
+            typeof token.type === 'string' && token.type.includes('identifier');
           if (!isIdentifierToken) return [];
 
-          if (prevChar === ".") return [];
+          if (prevChar === '.') return [];
 
           return [
             {
@@ -92,7 +116,7 @@ import { restrictedGlobals } from "./restricted-globals";
         ),
         options: {
           isWholeLine: true,
-          className: "runtime-error-line",
+          className: 'runtime-error-line',
           hoverMessage: { value: `**Runtime Error**\n\n${message}` },
         },
       },
@@ -100,7 +124,7 @@ import { restrictedGlobals } from "./restricted-globals";
 
     const lineLength = userModel.getLineLength(pos.line);
 
-    monaco.editor.setModelMarkers(userModel, "runtime", [
+    monaco.editor.setModelMarkers(userModel, 'runtime', [
       {
         severity: monaco.MarkerSeverity.Error,
         message,
@@ -114,7 +138,7 @@ import { restrictedGlobals } from "./restricted-globals";
 
   const clearRuntimeMarkers = () => {
     if (!userModel || !monaco) return;
-    monaco.editor.setModelMarkers(userModel, "runtime", []);
+    monaco.editor.setModelMarkers(userModel, 'runtime', []);
     runtimeDecorations = editor.deltaDecorations(runtimeDecorations, []);
   };
 
@@ -124,35 +148,20 @@ import { restrictedGlobals } from "./restricted-globals";
     (loader as any).__reset?.();
     loader.config({
       paths: {
-        vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs",
+        vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs',
       },
     });
 
-    // monaco = await loader.init();
     monaco = await MonacoFactory.createMonaco();
 
     typescript = monaco.languages.typescript as any;
     MonacoFactory.configureTypeScriptDefaults(monaco);
 
-    // typescript.typescriptDefaults.setCompilerOptions({
-    //   target: monaco.languages.typescript.ScriptTarget.ES2020,
-    //   module: monaco.languages.typescript.ModuleKind.ESNext,
-
-    //   // 🔴 ここが最重要
-    //   lib: ["es2020"], // ← "dom" を絶対に入れない
-
-    //   strict: true,
-    //   noEmit: true,
-    // });
-
     const userUri = monaco.Uri.parse(`inmemory://user-${uid}.ts`);
     const analysisUri = monaco.Uri.parse(`inmemory://analysis-${uid}.ts`);
 
-    const makeWrapped = (code: string) => `
-      async function __run() {
-        ${code}
-      }
-    `;
+    const makeWrapped = (code: string) =>
+      `async function __run() {\n${code}\n}`;
 
     typescript.typescriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: true,
@@ -160,15 +169,15 @@ import { restrictedGlobals } from "./restricted-globals";
     });
 
     injectionModel = monaco.editor.createModel(
-      injectionDefs.join("\n"),
-      "typescript",
-      monaco.Uri.parse("file:///__externals__/injection.d.ts"),
+      injectionDefs.join('\n'),
+      'typescript',
+      monaco.Uri.parse('file:///__externals__/injection.d.ts'),
     );
 
     declareModel = monaco.editor.createModel(
       declareSource,
-      "typescript",
-      monaco.Uri.parse("file:///__externals__/declare.d.ts"),
+      'typescript',
+      monaco.Uri.parse('file:///__externals__/declare.d.ts'),
     );
 
     userModel = MonacoFactory.getUserModel(userUri, value);
@@ -194,6 +203,7 @@ import { restrictedGlobals } from "./restricted-globals";
       theme: themeName,
       automaticLayout: true,
       fontSize,
+      showUnused: true,
     });
 
     editor.onDidChangeModelContent(() => {
@@ -219,20 +229,23 @@ import { restrictedGlobals } from "./restricted-globals";
           analysisModel.uri.toString(),
         )),
         ...(await service.getSemanticDiagnostics(analysisModel.uri.toString())),
+        ...(await service.getSuggestionDiagnostics(
+          analysisModel.uri.toString(),
+        )),
       ];
 
-      const offsetLine = 2; // async function + '{'
+      const offsetLine = 1; // async function line before user code
 
       const markers = diagnostics
-        .filter((d: any) => typeof d.start === "number")
+        .filter((d: any) => typeof d.start === 'number')
         .map((d: any) => {
           const startPos = analysisModel.getPositionAt(d.start);
           const endPos = analysisModel.getPositionAt(d.start + (d.length ?? 0));
 
           return {
-            severity: monaco.MarkerSeverity.Error,
+            severity: toMarkerSeverity(d),
             message:
-              typeof d.messageText === "string"
+              typeof d.messageText === 'string'
                 ? d.messageText
                 : d.messageText.messageText,
 
@@ -240,13 +253,18 @@ import { restrictedGlobals } from "./restricted-globals";
             startColumn: startPos.column,
             endLineNumber: Math.max(1, endPos.lineNumber - offsetLine),
             endColumn: endPos.column,
+            tags: d.reportsUnnecessary ? [unusedTag] : [],
           };
         });
 
       markers.push(...getRestrictedGlobalMarkers(code));
-      monaco.editor.setModelMarkers(userModel, "user", markers);
+      monaco.editor.setModelMarkers(userModel, 'user', markers);
 
-      const hasErr = markers.length > 0;
+      const hasErr = markers.some(
+        (marker: any) =>
+          marker.severity === monaco.MarkerSeverity.Error &&
+          !(marker.tags ?? []).includes(unusedTag),
+      );
       $hasError = hasErr;
       setError(hasErr);
     };
@@ -284,7 +302,7 @@ import { restrictedGlobals } from "./restricted-globals";
     border: 3px solid rgb(0, 0, 0);
     box-sizing: border-box;
   }
-  div[data--error="true"] {
+  div[data--error='true'] {
     border: 3px solid red;
   }
   :global(.runtime-error-line) {

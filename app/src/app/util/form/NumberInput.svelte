@@ -19,9 +19,9 @@
   oninput={(e) => {
     const v = e.currentTarget.value;
     let value: number | undefined = 0;
-    if (optional && v === "") {
+    if (optional && v === '') {
       value = undefined;
-    } else if (!optional || v !== "") {
+    } else if (!optional || v !== '') {
       value = Number.parseInt(v);
     }
     set(value as number);
@@ -43,7 +43,7 @@
     font-size: 14px;
     outline: none;
   }
-  input[data--blank="true"] {
+  input[data--blank='true'] {
     background-color: #ff0;
   }
 </style>

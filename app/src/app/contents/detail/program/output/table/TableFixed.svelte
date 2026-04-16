@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
-  import OperationButton from "../../../../../util/button/OperationButton.svelte";
-  import ToastUtil from "../../../../../util/item/toast-util";
-  import type DclChannel from "../../util/channel/dcl-channel";
-  import Record from "../../../../../util/layout/RecordDiv.svelte";
-  import DataUtil from "../../../../../util/data/data-util";
+  import { invoke } from '@tauri-apps/api/core';
+  import OperationButton from '../../../../../util/button/OperationButton.svelte';
+  import ToastUtil from '../../../../../util/item/toast-util';
+  import type DclChannel from '../../util/channel/dcl-channel';
+  import Record from '../../../../../util/layout/RecordDiv.svelte';
+  import DataUtil from '../../../../../util/data/data-util';
 
   export let channelId: string;
   export let total: number;
@@ -13,27 +13,27 @@
 
 <Record>
   <OperationButton
-    name={"Clipboad"}
+    name={'Clipboad'}
     width={140}
     callback={async () => {
-      const lines = await invoke<string[]>("get_range_lines", {
-        workerId: "a",
+      const lines = await invoke<string[]>('get_range_lines', {
+        workerId: 'a',
         channelId,
         from: 0,
         to: total,
       });
-      const json = JSON.parse(`[${lines.join(",")}]`);
+      const json = JSON.parse(`[${lines.join(',')}]`);
       const csvStr = DataUtil.convertJsonToTable(json, 'csv');
       navigator.clipboard.writeText(csvStr);
       ToastUtil.disp({
-        text: "Copied the output to the clipboard!",
+        text: 'Copied the output to the clipboard!',
       });
     }}
   />
 </Record>
 <Record>
   <div class="wrap">
-    <div class="cell" style:width="{80}px">{"Row"}</div>
+    <div class="cell" style:width="{80}px">{'Row'}</div>
     {#each columnDef as def}
       <div class="cell" style:width="{def.width ?? 100}px">{def.name}</div>
     {/each}

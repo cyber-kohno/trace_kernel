@@ -4,7 +4,7 @@
 </script>
 
 <div class="wrap">
-  <button class="adddel" onclick={callback}>{!del ? "+" : "-"}</button>
+  <button class="adddel" onclick={callback}>{!del ? '+' : '-'}</button>
 </div>
 
 <style>

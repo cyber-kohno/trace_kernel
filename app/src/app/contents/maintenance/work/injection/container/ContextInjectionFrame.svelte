@@ -1,11 +1,11 @@
 <script lang="ts">
-  import workspaceStore from "../../../../../store/workspace-store";
-  import workspaceValidationStore from "../../../../../store/workspace-validation-store";
-  import StoreWorkspace from "../../../../../store/store-workspace";
-  import Record from "../../../../../util/layout/RecordDiv.svelte";
-  import Wrap from "../../../../../util/layout/Wrap.svelte";
-  import ContextDataUtil from "../../../../detail/program/util/context-data-util";
-  import InjectionItem from "./ContextInjectionItem.svelte";
+  import workspaceStore from '../../../../../store/workspace-store';
+  import workspaceValidationStore from '../../../../../store/workspace-validation-store';
+  import StoreWorkspace from '../../../../../store/store-workspace';
+  import Record from '../../../../../util/layout/RecordDiv.svelte';
+  import Wrap from '../../../../../util/layout/Wrap.svelte';
+  import ContextDataUtil from '../../../../detail/program/util/context-data-util';
+  import InjectionItem from './ContextInjectionItem.svelte';
 
   $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
 
@@ -16,7 +16,7 @@
 </script>
 
 <Record surplus={364}>
-  <Wrap margin={4} bgColor={"rgba(115, 115, 135, 0.4)"}>
+  <Wrap margin={4} bgColor={'rgba(115, 115, 135, 0.4)'}>
     <!-- {#each apis as api}
       <InjectionItem str={api} />
     {/each} -->

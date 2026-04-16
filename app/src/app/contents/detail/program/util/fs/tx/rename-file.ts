@@ -1,141 +1,120 @@
-import RuntimeUtil from "../../../runtime/runtime-util";
+import RuntimeUtil from '../../../runtime/runtime-util';
 namespace RenameFile {
+  // ==========================
+  // Public API
+  // ==========================
 
-    // ==========================
-    // Public API
-    // ==========================
+  export const byPath = (
+    vfs: RuntimeUtil.VFSState,
+    filePath: string,
+    newName: string,
+  ) => {
+    if (newName.includes('/') || newName.includes('\\')) {
+      throw new Error('rename cannot change directory (filename only)');
+    }
 
-    export const byPath = (
-        vfs: RuntimeUtil.VFSState,
-        filePath: string,
-        newName: string
-    ) => {
+    const { pathIndex, fileTable } = vfs;
 
-        if (newName.includes("/") || newName.includes("\\")) {
-            throw new Error(
-                "rename cannot change directory (filename only)"
-            );
-        }
+    let state: RuntimeUtil.FileState;
 
-        const { pathIndex, fileTable } = vfs;
+    const existingToken = pathIndex.get(filePath);
 
-        let state: RuntimeUtil.FileState;
+    if (existingToken) {
+      state = fileTable.get(existingToken)!;
+    } else {
+      // 未touch → rename intent 登録
+      const newToken = RuntimeUtil.createFileToken();
 
-        const existingToken = pathIndex.get(filePath);
+      state = {
+        path: filePath,
+      };
 
-        if (existingToken) {
-            state = fileTable.get(existingToken)!;
-        } else {
-            // 未touch → rename intent 登録
-            const newToken = RuntimeUtil.createFileToken();
+      fileTable.set(newToken, state);
+      pathIndex.set(filePath, newToken);
+    }
 
-            state = {
-                path: filePath
-            };
+    core(vfs, state, filePath, newName);
+  };
 
-            fileTable.set(newToken, state);
-            pathIndex.set(filePath, newToken);
-        }
+  export const byToken = (
+    vfs: RuntimeUtil.VFSState,
+    token: RuntimeUtil.FileToken,
+    newName: string,
+  ) => {
+    if (newName.includes('/') || newName.includes('\\')) {
+      throw new Error('rename cannot change directory (filename only)');
+    }
 
-        core(vfs, state, filePath, newName);
-    };
+    const { fileTable } = vfs;
 
+    const state = fileTable.get(token);
 
-    export const byToken = (
-        vfs: RuntimeUtil.VFSState,
-        token: RuntimeUtil.FileToken,
-        newName: string
-    ) => {
+    if (!state) {
+      throw new Error('invalid file token');
+    }
 
-        if (newName.includes("/") || newName.includes("\\")) {
-            throw new Error(
-                "rename cannot change directory (filename only)"
-            );
-        }
+    core(vfs, state, state.path, newName);
+  };
 
-        const { fileTable } = vfs;
+  // ==========================
+  // Internal Shared Logic
+  // ==========================
 
-        const state = fileTable.get(token);
+  const core = (
+    vfs: RuntimeUtil.VFSState,
+    state: RuntimeUtil.FileState,
+    oldPath: string,
+    newName: string,
+  ) => {
+    const { pathIndex, reservedPaths, fileTable } = vfs;
 
-        if (!state) {
-            throw new Error("invalid file token");
-        }
+    if (state.intent === 'create') {
+      throw new Error(`cannot rename newly created file: ${oldPath}`);
+    }
 
-        core(vfs, state, state.path, newName);
-    };
+    if (state.intent === 'delete') {
+      throw new Error(`cannot rename deleted file: ${oldPath}`);
+    }
 
+    if (state.renameTo) {
+      throw new Error(`file already renamed: ${oldPath} → ${state.renameTo}`);
+    }
 
-    // ==========================
-    // Internal Shared Logic
-    // ==========================
+    // ★ ディレクトリ抽出
+    const lastSlash = Math.max(
+      oldPath.lastIndexOf('/'),
+      oldPath.lastIndexOf('\\'),
+    );
 
-    const core = (
-        vfs: RuntimeUtil.VFSState,
-        state: RuntimeUtil.FileState,
-        oldPath: string,
-        newName: string
-    ) => {
+    const dir = lastSlash >= 0 ? oldPath.substring(0, lastSlash + 1) : '';
 
-        const { pathIndex, reservedPaths, fileTable } = vfs;
+    const newPath = dir + newName;
 
-        if (state.intent === "create") {
-            throw new Error(
-                `cannot rename newly created file: ${oldPath}`
-            );
-        }
+    if (newPath === oldPath) {
+      throw new Error('new name is identical to current name');
+    }
 
-        if (state.intent === "delete") {
-            throw new Error(
-                `cannot rename deleted file: ${oldPath}`
-            );
-        }
+    if (reservedPaths.has(newPath)) {
+      throw new Error(`rename target already reserved: ${newPath}`);
+    }
 
-        if (state.renameTo) {
-            throw new Error(
-                `file already renamed: ${oldPath} → ${state.renameTo}`
-            );
-        }
+    if (pathIndex.has(newPath)) {
+      throw new Error(
+        `rename target already touched in transaction: ${newPath}`,
+      );
+    }
 
-        // ★ ディレクトリ抽出
-        const lastSlash = Math.max(
-            oldPath.lastIndexOf("/"),
-            oldPath.lastIndexOf("\\")
+    for (const s of fileTable.values()) {
+      if (s.renameTo === newPath) {
+        throw new Error(
+          `rename target already used by another rename: ${newPath}`,
         );
+      }
+    }
 
-        const dir =
-            lastSlash >= 0
-                ? oldPath.substring(0, lastSlash + 1)
-                : "";
-
-        const newPath = dir + newName;
-
-        if (newPath === oldPath) {
-            throw new Error("new name is identical to current name");
-        }
-
-        if (reservedPaths.has(newPath)) {
-            throw new Error(
-                `rename target already reserved: ${newPath}`
-            );
-        }
-
-        if (pathIndex.has(newPath)) {
-            throw new Error(
-                `rename target already touched in transaction: ${newPath}`
-            );
-        }
-
-        for (const s of fileTable.values()) {
-            if (s.renameTo === newPath) {
-                throw new Error(
-                    `rename target already used by another rename: ${newPath}`
-                );
-            }
-        }
-
-        state.renameTo = newPath;
-        reservedPaths.add(newPath);
-    };
+    state.renameTo = newPath;
+    reservedPaths.add(newPath);
+  };
 }
 
 export default RenameFile;

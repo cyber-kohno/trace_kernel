@@ -1,10 +1,10 @@
 <script lang="ts">
-  import uiStore from "../../store/ui-store";
-  import OperationButton from "../../util/button/OperationButton.svelte";
-  import Column from "../../util/layout/Column.svelte";
-  import Record from "../../util/layout/RecordDiv.svelte";
+  import uiStore from '../../store/ui-store';
+  import OperationButton from '../../util/button/OperationButton.svelte';
+  import Column from '../../util/layout/Column.svelte';
+  import Record from '../../util/layout/RecordDiv.svelte';
 
-  export let title: string = "";
+  export let title: string = '';
 
   $: close = () => {
     $uiStore.dialog = null;
@@ -13,12 +13,12 @@
   const CloseButtonAreaWidth = 40;
 </script>
 
-<Record height={30} bgColor={"#333"}>
+<Record height={30} bgColor={'#333'}>
   <Column surplus={CloseButtonAreaWidth}>
     <span>{title}</span>
   </Column>
   <Column width={CloseButtonAreaWidth}>
-    <OperationButton name={"×"} callback={close} isLineup bgColor={"#faa"} />
+    <OperationButton name={'×'} callback={close} isLineup bgColor={'#faa'} />
   </Column>
 </Record>
 

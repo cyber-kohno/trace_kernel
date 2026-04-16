@@ -1,36 +1,36 @@
-@import "highlight.js/styles/github.css";
+@import 'highlight.js/styles/github.css';
 
 html,
 body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    font-size: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-size: 0;
 }
 
 .monaco-editor,
 .monaco-editor-background {
-    background: rgba(0, 0, 0, 0.4) !important;
+  background: rgba(0, 0, 0, 0.4) !important;
 }
 
 * {
-    outline: none;
+  outline: none;
 }
 
 body {
-    background-color: #1e1e2f; /* 任意の色 */
-    color: white;
-    font-family: sans-serif;
+  background-color: #1e1e2f; /* 任意の色 */
+  color: white;
+  font-family: sans-serif;
 }
 
 button {
-    border: none;
-    text-align: left;
+  border: none;
+  text-align: left;
 }
 
 #svelte {
-    height: 100%;
+  height: 100%;
 }
 .toast-success {
   background-color: #333;

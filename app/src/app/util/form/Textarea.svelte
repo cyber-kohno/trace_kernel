@@ -4,7 +4,6 @@
   export let readonly: boolean = false;
   export let disable: boolean = false;
   export let bgColor: string = '#d8d8d8';
-
 </script>
 
 <textarea
@@ -30,10 +29,10 @@
     background-color: #d8d8d8;
     color: #000000;
   }
-  textarea[data--readonly="true"] {
+  textarea[data--readonly='true'] {
     color: #c0ceff;
   }
-  textarea[data--disable="true"] {
+  textarea[data--disable='true'] {
     opacity: 0.6;
     pointer-events: none;
   }

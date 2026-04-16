@@ -1,8 +1,8 @@
 <script lang="ts">
-  import workspaceStore from "../../../store/workspace-store";
-  import uiStore from "../../../store/ui-store";
-  import StoreProject from "../../../store/store-workspace";
-  import EntryRecord from "./EntryRecord.svelte";
+  import workspaceStore from '../../../store/workspace-store';
+  import uiStore from '../../../store/ui-store';
+  import StoreProject from '../../../store/store-workspace';
+  import EntryRecord from './EntryRecord.svelte';
 
   export let index: number;
 
@@ -14,11 +14,11 @@
 
   $: isFocus = (() => {
     const target = $uiStore.target;
-    return target != null && target.cat === "dataset" && target.index === index;
+    return target != null && target.cat === 'dataset' && target.index === index;
   })();
 
   $: focus = () => {
-    $uiStore.target = { cat: "dataset", index };
+    $uiStore.target = { cat: 'dataset', index };
   };
 
   $: del = () => {
@@ -31,18 +31,18 @@
 
   $: dataSets = workspace.datasets[index];
 
-  $: rootPath = dataSets.rootPath.split("\\").slice(-3).join("\\");
+  $: rootPath = dataSets.rootPath.split('\\').slice(-3).join('\\');
 </script>
 
-<EntryRecord {focus} {isFocus} {del} target={{ cat: "dataset", index }}>
+<EntryRecord {focus} {isFocus} {del} target={{ cat: 'dataset', index }}>
   <span>
-    <span>{"$"}</span>
+    <span>{'$'}</span>
     <span class="name">{dataSets.varName}</span>
-    <span>&nbsp;{"["}</span>
+    <span>&nbsp;{'['}</span>
     <span class="method">
-      {dataSets.scanOption == undefined ? "all" : "choice"}
+      {dataSets.scanOption == undefined ? 'all' : 'choice'}
     </span>
-    <span>{"] "}</span>
+    <span>{'] '}</span>
     <span class="root">{rootPath}</span>
   </span>
 </EntryRecord>

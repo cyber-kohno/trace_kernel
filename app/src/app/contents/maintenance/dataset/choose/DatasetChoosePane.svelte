@@ -1,20 +1,20 @@
 <script lang="ts">
-  import ChooseRecord from "./ChooseRecord.svelte";
-  import { writable } from "svelte/store";
-  import ChooseUtil from "./choose-util";
-  import OperationButton from "../../../../util/button/OperationButton.svelte";
-  import workspaceStore from "../../../../store/workspace-store";
-  import uiStore from "../../../../store/ui-store";
-  import StoreDataset from "../../../../store/store-dataset";
-  import StoreCache from "../../../../store/store-cache";
-  import Record from "../../../../util/layout/RecordDiv.svelte";
-  import StoreWorkspace from "../../../../store/store-workspace";
-  import ToastUtil from "../../../../util/item/toast-util";
+  import DatasetChooseRow from './DatasetChooseRow.svelte';
+  import { writable } from 'svelte/store';
+  import DatasetChooseUtil from './dataset-choose-util';
+  import OperationButton from '../../../../util/button/OperationButton.svelte';
+  import workspaceStore from '../../../../store/workspace-store';
+  import uiStore from '../../../../store/ui-store';
+  import StoreDataset from '../../../../store/store-dataset';
+  import StoreCache from '../../../../store/store-cache';
+  import Record from '../../../../util/layout/RecordDiv.svelte';
+  import StoreWorkspace from '../../../../store/store-workspace';
+  import ToastUtil from '../../../../util/item/toast-util';
 
   let ref: HTMLDivElement | undefined = undefined;
 
   export let dataset: StoreDataset.Props;
-  export let setPhase: (phase: StoreDataset.ChoosePhase) => void;
+  export let setPhase: (phase: StoreDataset.DatasetPhase) => void;
   export let validate: () => void;
 
   let root = writable<StoreDataset.UsableNode>(
@@ -32,7 +32,7 @@
   const isFlat = writable<boolean>(false);
 
   $: baseRecords = (() => {
-    const list = ChooseUtil.getDispRecords($root, $isFlat);
+    const list = DatasetChooseUtil.getDispRecords($root, $isFlat);
     return list;
   })();
 
@@ -50,8 +50,11 @@
   })();
 
   $: cancel = () => {
-    setPhase("scan");
-    StoreCache.remove({ type: "dataset-choose", index: $uiStore.target?.index ?? -1 });
+    setPhase('scan');
+    StoreCache.remove({
+      type: 'dataset-choose',
+      index: $uiStore.target?.index ?? -1,
+    });
     $workspaceStore = { ...$workspaceStore };
     validate();
   };
@@ -63,11 +66,11 @@
    * ルートからの差分パスに変換して、選択リストに転送
    */
   $: transfer = () => {
-    const selectedNodes = ChooseUtil.getDispRecords($root, true)
+    const selectedNodes = DatasetChooseUtil.getDispRecords($root, true)
       // 選択中の要素でフィルター
       .filter((r) => r.node.isSelected);
 
-  const workspace = StoreWorkspace.getWorkspace($workspaceStore);
+    const workspace = StoreWorkspace.getWorkspace($workspaceStore);
     // 環境件数を加味した正式なルートパスを取得
     const rootPath = workspace.envs.reduce(
       (ret, cur) => ret.replaceAll(`%${cur.varName}%`, cur.value),
@@ -80,14 +83,14 @@
     });
     if (!isPathCheck) {
       ToastUtil.disp({
-        text: "The root path has changed since the scan. Please try scanning again.",
+        text: 'The root path has changed since the scan. Please try scanning again.',
       });
       return;
     }
     dataset.targets = selectedNodes
       // 絶対パスからルートパスを除いて差分パスに変換
-      .map((r) => r.node.path.replace(rootPath, ""));
-    setPhase("list");
+      .map((r) => r.node.path.replace(rootPath, ''));
+    setPhase('list');
     validate();
     $workspaceStore = { ...$workspaceStore };
   };
@@ -96,8 +99,8 @@
     let ret: string | null = null;
     if ($isFlat) {
       ret = item.node.path
-        .replace(dataset.rootPath, "")
-        .replace(item.node.name, "");
+        .replace(dataset.rootPath, '')
+        .replace(item.node.name, '');
     }
     return ret;
   };
@@ -105,7 +108,7 @@
 
 <Record align="right">
   <OperationButton
-    name={!$isFlat ? "Flat" : "Tree"}
+    name={!$isFlat ? 'Flat' : 'Tree'}
     width={120}
     isDisable={false}
     callback={toggleView}
@@ -122,21 +125,21 @@
   >
     <div class="inner" style:height="{baseRecords.length * 25}px">
       {#each dispRecords as item}
-        <ChooseRecord {item} dir={getDir(item)} {invalidate} />
+        <DatasetChooseRow {item} dir={getDir(item)} {invalidate} />
       {/each}
     </div>
   </div>
 </Record>
 <Record align="right">
   <OperationButton
-    name={"Cancel"}
+    name={'Cancel'}
     width={140}
     isDisable={false}
     callback={cancel}
     isLineup
   />
   <OperationButton
-    name={"Transfer"}
+    name={'Transfer'}
     width={190}
     isDisable={false}
     callback={transfer}

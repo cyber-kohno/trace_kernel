@@ -1,7 +1,8 @@
 <script lang="ts">
   export let width: number = 50;
   export let surplus: number | null = null;
-  const widthValue = surplus == null ? `${width}px` : `calc(100% - ${surplus}px)`;
+  const widthValue =
+    surplus == null ? `${width}px` : `calc(100% - ${surplus}px)`;
 </script>
 
 <div style:width={widthValue}><slot /></div>

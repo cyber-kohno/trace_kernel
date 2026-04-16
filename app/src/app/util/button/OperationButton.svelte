@@ -4,7 +4,7 @@
   export let callback: () => void = () => {};
   export let isLineup = false;
   export let width = 0;
-  export let bgColor: string = "rgba(184, 186, 202, 0.6)";
+  export let bgColor: string = 'rgba(184, 186, 202, 0.6)';
   export let tooltip: string | null = null;
 </script>
 
@@ -12,10 +12,10 @@
   data--disable={isDisable}
   data--lineup={isLineup}
   onclick={callback}
-  style:width={width === 0 ? "none" : `${width}px`}
+  style:width={width === 0 ? 'none' : `${width}px`}
   style:background-color={bgColor}
-  { ...(tooltip ? { title: tooltip } : {}) } 
->{name}</button>
+  {...tooltip ? { title: tooltip } : {}}>{name}</button
+>
 
 <style>
   button {
@@ -38,11 +38,11 @@
       opacity: 0.81;
     }
   }
-  button[data--disable="true"] {
+  button[data--disable='true'] {
     opacity: 0.4;
     pointer-events: none;
   }
-  button[data--lineup="true"] {
+  button[data--lineup='true'] {
     display: inline-block;
     margin: 3px 4px 0 0;
   }

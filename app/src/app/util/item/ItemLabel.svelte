@@ -3,7 +3,7 @@
   export let width = 0;
 </script>
 
-<button style:width={width === 0 ? "none" : `${width}px`}>{name}</button>
+<button style:width={width === 0 ? 'none' : `${width}px`}>{name}</button>
 
 <style>
   button {

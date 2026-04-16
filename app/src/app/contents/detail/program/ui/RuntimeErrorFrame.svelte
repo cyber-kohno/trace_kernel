@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { SourceMapConsumer, type NullableMappedPosition } from "source-map";
-  import mappingsWasm from "source-map/lib/mappings.wasm?url";
+  import { SourceMapConsumer, type NullableMappedPosition } from 'source-map';
+  import mappingsWasm from 'source-map/lib/mappings.wasm?url';
 
   let exceptionMsg: string;
   let dispLines: string[];
@@ -17,7 +17,7 @@
     async function ensureSourceMap() {
       if (sourceMapReady) return;
       (SourceMapConsumer as any).initialize({
-        "lib/mappings.wasm": mappingsWasm,
+        'lib/mappings.wasm': mappingsWasm,
       });
       sourceMapReady = true;
     }
@@ -35,14 +35,14 @@
         column: jsCol,
       });
 
-      exceptionMsg = stack.split("\n")[0];
+      exceptionMsg = stack.split('\n')[0];
       setRuntimeErrorMarker(pos, exceptionMsg);
 
       targetIndex = (pos.line as number) - 1;
-      const tsCodeLines = tsCode.split("\n");
+      const tsCodeLines = tsCode.split('\n');
       dispLines = [];
       for (let i = 0; i < 5; i++) {
-        dispLines.push(tsCodeLines[targetIndex - 2 + i] ?? "");
+        dispLines.push(tsCodeLines[targetIndex - 2 + i] ?? '');
       }
     }
 
@@ -51,7 +51,7 @@
 
   const getLine = (lineNum: number) => {
     const num = -1 + targetIndex + lineNum;
-    return `${num >= 1 ? num : ""}`;
+    return `${num >= 1 ? num : ''}`;
   };
 </script>
 
@@ -106,7 +106,7 @@
     overflow: hidden;
     white-space: nowrap;
   }
-  [data--target="true"] {
+  [data--target='true'] {
     text-decoration: wavy underline;
     text-decoration-color: #f00;
     background-color: rgba(160, 57, 57, 0.755);
