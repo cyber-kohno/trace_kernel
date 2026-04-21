@@ -192,13 +192,11 @@ namespace DataUtil {
   ): ColumnDef[] => {
     if (!source) return [];
 
-    const rows = source.split('\n').filter((r) => r.trim() !== '');
+    const rows =
+      parseMethod === 'csv' ? splitCsvRows(source) : splitTsvRows(source);
     if (rows.length === 0) return [];
 
-    const header =
-      parseMethod === 'csv'
-        ? rows[0].split(',').map((c) => c.trim().replaceAll('"', ''))
-        : rows[0].split('\t').map((c) => c.trim());
+    const header = parseRow(rows[0], parseMethod);
 
     const dataRows = rows.slice(1);
 
@@ -221,7 +219,7 @@ namespace DataUtil {
       let isNumber = true;
 
       for (const row of dataRows) {
-        const cols = parseMethod === 'csv' ? row.split(',') : row.split('\t');
+        const cols = parseRow(row, parseMethod);
         if (colIdx >= cols.length) {
           isNumber = false;
           break;

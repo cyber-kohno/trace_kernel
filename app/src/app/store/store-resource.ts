@@ -5,6 +5,7 @@ namespace StoreResource {
     varName: string;
     source: string;
     parse?: ParseMethod;
+    parseValidated?: true;
   };
 
   export const getInitial = (varName: string): Props => {

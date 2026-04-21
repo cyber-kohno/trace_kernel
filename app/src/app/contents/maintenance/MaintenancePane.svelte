@@ -1,7 +1,7 @@
 <script lang="ts">
   import MaintenanceProcess from './MaintenanceProcess.svelte';
   import MaintenanceEnv from './MaintenanceEnv.svelte';
-  import MaintenanceResource from './MaintenanceResource.svelte';
+  import MaintenanceResource from './resource/MaintenanceResource.svelte';
   import MaintenanceWork from './work/MaintenanceWork.svelte';
   import type storeWorkspace from '../../store/store-workspace';
   import MaintenanceDataset from './dataset/MaintenanceDataset.svelte';

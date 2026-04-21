@@ -30,7 +30,7 @@
     color: #000000;
   }
   textarea[data--readonly='true'] {
-    color: #c0ceff;
+    color: #0026ae;
   }
   textarea[data--disable='true'] {
     opacity: 0.6;

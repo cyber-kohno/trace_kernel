@@ -79,7 +79,9 @@ export const validate = (target: StoreWorkspace.Target) => {
     case 'resource': {
       const resource = workspace.resources[target.index];
       const isUnique = checkDuplicate(target, workspace);
-      setEnable(target, resource.varName !== '' && isUnique);
+      const isParseValid =
+        resource.parse == undefined || resource.parseValidated === true;
+      setEnable(target, resource.varName !== '' && isUnique && isParseValid);
       break;
     }
     case 'dataset': {

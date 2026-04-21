@@ -12,7 +12,7 @@ import { dirty, getSnapshot } from '../../store/dirty';
 
 namespace FileUtil {
   export const VERSION = 'v1.10';
-  export const APP_NAME = `Trace Kernel ${VERSION}.9`;
+  export const APP_NAME = `Trace Kernel ${VERSION}.10`;
   const FILE_EXTENSION: string = `${VERSION}.trk`;
 
   export const updateAppTitle = async () => {
@@ -169,6 +169,7 @@ namespace FileUtil {
       curr.snapshot = snapshot;
       return curr;
     });
+    StoreWorkspace.validateAll();
     ToastUtil.disp({ text: 'Project loaded successfully.' });
   };
 }
