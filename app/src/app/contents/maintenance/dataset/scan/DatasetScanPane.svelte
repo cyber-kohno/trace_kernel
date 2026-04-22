@@ -21,6 +21,7 @@
 
   export let dataset: StoreDataset.Props;
   export let setPhase: (phase: StoreDataset.DatasetPhase) => void;
+  export let validate: () => void;
 
   $: scanOption = (() => {
     if (dataset.scanOption == null) throw new Error();
@@ -44,6 +45,8 @@
 
   const scan = () => {
     $isSearch = true;
+    dataset.targets = [];
+    validate();
 
     const workspace = StoreWorkspace.getWorkspace($workspaceStore);
     const newFilePath = workspace.envs.reduce(

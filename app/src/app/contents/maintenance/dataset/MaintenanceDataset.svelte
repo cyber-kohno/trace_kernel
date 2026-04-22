@@ -56,7 +56,10 @@
     StoreInvalidate.remove('dataset');
   });
 
-  $: hasTree = StoreCache.getDatasetChoose(itemIndex);
+  $: hasTree = (() => {
+    $cacheStore.cacheMap;
+    return StoreCache.getDatasetChoose(itemIndex);
+  })();
 
   $: directoryTree = (() => {
     $cacheStore.cacheMap; // 値変更を検知するために記述
@@ -90,6 +93,8 @@
     dataset.targets = [];
     invalidate();
   };
+
+  $: hasTargets = dataset.targets != null && dataset.targets.length > 0;
 </script>
 
 <Wrap>
@@ -156,12 +161,12 @@
           name="List"
           callback={() => setPhase('list')}
           isActive={$datasetPhase === 'list'}
-          isDisable={dataset.targets == null}
+          isDisable={!hasTargets}
         />
       </Record>
       <Record surplus={30}>
         {#if $datasetPhase === 'scan'}
-          <DatasetScanPane {dataset} {setPhase} />
+          <DatasetScanPane {dataset} {setPhase} {validate} />
         {:else if $datasetPhase === 'choose'}
           <DatasetChoosePane {dataset} {setPhase} {validate} />
         {:else if $datasetPhase === 'list'}

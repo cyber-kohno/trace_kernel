@@ -192,7 +192,14 @@
       base: 'vs-dark',
       inherit: true,
       rules: [],
-      colors: {},
+      colors: {
+        'editorWidget.background': '#1e1e1e',
+        'editorWidget.foreground': '#f0f0f0',
+        'editorWidget.border': '#3c3c3c',
+        'input.background': '#252526',
+        'input.foreground': '#ffffff',
+        'input.border': '#3c3c3c',
+      },
     });
 
     const fontSize = get(appStore).setting.monacoFontSize;
@@ -307,5 +314,10 @@
   }
   :global(.runtime-error-line) {
     background-color: rgba(255, 0, 0, 0.18);
+  }
+  :global(.monaco-editor .rename-box .rename-input) {
+    color: var(--vscode-input-foreground);
+    caret-color: var(--vscode-input-foreground);
+    background-color: var(--vscode-input-background);
   }
 </style>
