@@ -29,34 +29,71 @@ namespace ExcelParser {
     maxRow: number;
     maxCol: number;
     rows: Row[];
-    row(index: number): Row | null;
-    cell(row: number, col: number): Cell | null;
-    toTable(headerRow?: number): Record<string, string>[];
+    rowAt(index: number): Row | null;
+    cellAt(rowIndex: number, colIndex: number): Cell | null;
+    cellAt(address: string): Cell | null;
+    toTable(headerRowIndex?: number): Record<string, string>[];
   };
   export type Row = {
-    index: number;
+    rowIndex: number;
     cells: Cell[];
-    cell(col: number): Cell | null;
+    cellAt(colIndex: number): Cell | null;
   };
   export type Cell = {
-    row: number;
-    col: number;
+    rowIndex: number;
+    colIndex: number;
+    address: string;
     value: string;
   };
 
+  const toColumnName = (colIndex: number): string => {
+    let value = colIndex + 1;
+    let name = '';
+    while (value > 0) {
+      const rem = (value - 1) % 26;
+      name = String.fromCharCode(65 + rem) + name;
+      value = Math.floor((value - 1) / 26);
+    }
+    return name;
+  };
+
+  const toCellAddress = (rowIndex: number, colIndex: number): string =>
+    `${toColumnName(colIndex)}${rowIndex + 1}`;
+
+  const parseCellAddress = (
+    address: string,
+  ): { rowIndex: number; colIndex: number } | null => {
+    const match = address.trim().match(/^\$?([A-Za-z]+)\$?([1-9][0-9]*)$/);
+    if (!match) {
+      return null;
+    }
+
+    const [, colPart, rowPart] = match;
+    let colIndex = 0;
+    for (const char of colPart.toUpperCase()) {
+      colIndex = colIndex * 26 + (char.charCodeAt(0) - 64);
+    }
+
+    return {
+      rowIndex: Number(rowPart) - 1,
+      colIndex: colIndex - 1,
+    };
+  };
+
   const createCell = (raw: RawCell): Cell => ({
-    row: raw.row,
-    col: raw.col,
+    rowIndex: raw.row,
+    colIndex: raw.col,
+    address: toCellAddress(raw.row, raw.col),
     value: raw.value,
   });
 
   const createRow = (raw: RawRow): Row => {
     const cells = raw.cells.map(createCell);
     return {
-      index: raw.index,
+      rowIndex: raw.index,
       cells,
-      cell(col: number) {
-        return cells.find((c) => c.col === col) ?? null;
+      cellAt(colIndex: number) {
+        return cells.find((c) => c.colIndex === colIndex) ?? null;
       },
     };
   };
@@ -68,19 +105,35 @@ namespace ExcelParser {
       maxRow: raw.maxRow,
       maxCol: raw.maxCol,
       rows,
-      row(index: number) {
-        return rows.find((r) => r.index === index) ?? null;
+      rowAt(index: number) {
+        return rows.find((r) => r.rowIndex === index) ?? null;
       },
-      cell(row: number, col: number) {
-        return this.row(row)?.cell(col) ?? null;
-      },
-      toTable(headerRow = 0) {
-        const header = rows.find((r) => r.index === headerRow);
-        if (!header) {
-          throw new Error(`Header row not found: ${headerRow}`);
+      cellAt(
+        rowIndexOrAddress: number | string,
+        colIndex?: number,
+      ): Cell | null {
+        if (typeof rowIndexOrAddress === 'string') {
+          const index = parseCellAddress(rowIndexOrAddress);
+          if (!index) {
+            return null;
+          }
+          return this.rowAt(index.rowIndex)?.cellAt(index.colIndex) ?? null;
         }
 
-        const headerCells = [...header.cells].sort((a, b) => a.col - b.col);
+        if (colIndex == null) {
+          return null;
+        }
+        return this.rowAt(rowIndexOrAddress)?.cellAt(colIndex) ?? null;
+      },
+      toTable(headerRowIndex = 0) {
+        const header = rows.find((r) => r.rowIndex === headerRowIndex);
+        if (!header) {
+          throw new Error(`Header row not found: ${headerRowIndex}`);
+        }
+
+        const headerCells = [...header.cells].sort(
+          (a, b) => a.colIndex - b.colIndex,
+        );
         const columns = headerCells.map((c) => c.value);
 
         if (columns.length === 0) {
@@ -93,11 +146,11 @@ namespace ExcelParser {
         }
 
         return rows
-          .filter((r) => r.index > headerRow)
+          .filter((r) => r.rowIndex > headerRowIndex)
           .map((r) => {
             const record: Record<string, string> = {};
             headerCells.forEach((cell, idx) => {
-              record[columns[idx]] = r.cell(cell.col)?.value ?? '';
+              record[columns[idx]] = r.cellAt(cell.colIndex)?.value ?? '';
             });
             return record;
           });

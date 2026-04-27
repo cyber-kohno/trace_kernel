@@ -11,5 +11,14 @@ namespace TypescriptUtil {
       },
     });
   };
+
+  export const transpileTsModuleToCjs = (tsCode: string) => {
+    return ts.transpileModule(tsCode, {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2017,
+      },
+    }).outputText;
+  };
 }
 export default TypescriptUtil;

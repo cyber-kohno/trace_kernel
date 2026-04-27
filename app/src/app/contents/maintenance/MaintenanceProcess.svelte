@@ -12,6 +12,7 @@
   import OperationSwitch from '../../util/button/OperationSwitch.svelte';
   import ToastUtil from '../../util/item/toast-util';
   import PathState from '../../util/form/validation/PathState.svelte';
+  import Textarea from '../../util/form/Textarea.svelte';
   import { writable } from 'svelte/store';
   import { onMount } from 'svelte';
   import DataUtil from '../../util/data/data-util';
@@ -22,6 +23,15 @@
   $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
 
   $: process = getTargetEntry($uiStore.target, 'process', workspace.processes);
+  $: if (process.cwd == undefined) {
+    process.cwd = '';
+  }
+  $: if (process.stdin == undefined) {
+    process.stdin = '';
+  }
+  $: if (process.encoding.stdin == undefined) {
+    process.encoding.stdin = 'utf8';
+  }
 
   $: setName = (v: string) => {
     process.funcName = v;
@@ -48,9 +58,20 @@
     process.timeout = v;
     commitWorkspace(workspace, { validate: false });
   };
+  $: setCwd = (v: string) => {
+    process.cwd = v;
+    commitWorkspace(workspace, { validate: false });
+  };
+  $: setStdin = (v: string) => {
+    process.stdin = v;
+    commitWorkspace(workspace, { validate: false });
+  };
   $: isUse = (value: string) => {
     return (
-      process.cmdArgs.find((c) => c.indexOf(`__${value}__`) !== -1) != undefined
+      process.cmdArgs.find((c) => c.indexOf(`__${value}__`) !== -1) !=
+        undefined ||
+      (process.cwd ?? '').indexOf(`__${value}__`) !== -1 ||
+      (process.stdin ?? '').indexOf(`__${value}__`) !== -1
     );
   };
 
@@ -61,7 +82,7 @@
   });
 
   $: createSetEncodingCallback = (
-    target: 'stdout' | 'stderr',
+    target: 'stdin' | 'stdout' | 'stderr',
     encoding: TextEncoding,
   ) => {
     return () => {
@@ -183,6 +204,18 @@
     <Record>
       <AddDelButton callback={addCommaandArg} />
     </Record>
+    <LabelRecord name={'working_directory'} />
+    <TextInput
+      value={process.cwd ?? ''}
+      set={setCwd}
+      width={'calc(100% - 4px)'}
+    />
+    <LabelRecord name={'standard_input'} />
+    <Record height={120}>
+      <div class="textarea-wrap">
+        <Textarea value={process.stdin ?? ''} set={setStdin} />
+      </div>
+    </Record>
     <LabelRecord name={'timeout_millisecond'} />
     <NumberInput
       value={process.timeout}
@@ -191,6 +224,23 @@
       max={10000}
     />
     <LabelRecord name={'response_encoding'} />
+    <Record>
+      <Column width={90}>
+        <ItemLabel name="stdin" width={80} />
+      </Column>
+      <Column surplus={90}>
+        <OperationSwitch
+          name="UTF8"
+          callback={createSetEncodingCallback('stdin', 'utf8')}
+          isActive={process.encoding.stdin === 'utf8'}
+        />
+        <OperationSwitch
+          name="SJIS"
+          callback={createSetEncodingCallback('stdin', 'sjis')}
+          isActive={process.encoding.stdin === 'sjis'}
+        />
+      </Column>
+    </Record>
     <Record>
       <Column width={90}>
         <ItemLabel name="stdout" width={80} />
@@ -250,5 +300,13 @@
   }
   .label[data--used='true'] {
     color: rgba(180, 255, 175, 0.741);
+  }
+  .textarea-wrap {
+    display: inline-block;
+    position: relative;
+    margin: 5px 0 0 2px;
+    width: calc(100% - 4px);
+    height: calc(100% - 7px);
+    box-sizing: border-box;
   }
 </style>

@@ -20,6 +20,7 @@ const isMatch = (a: SnapshotLog, b: SnapshotLog) => {
     a.resource === b.resource &&
     a.dataset === b.dataset &&
     a.process === b.process &&
+    a.logic === b.logic &&
     a.declare === b.declare &&
     a.work === b.work
   );
@@ -28,12 +29,14 @@ const isMatch = (a: SnapshotLog, b: SnapshotLog) => {
 export const getSnapshot = async (
   workspace: StoreWorkspace.Props,
 ): Promise<SnapshotLog> => {
-  const { envs, resources, datasets, processes, declare, works } = workspace;
+  const { envs, resources, datasets, processes, logics, declare, works } =
+    workspace;
   return {
     env: await getHash(JSON.stringify(envs)),
     resource: await getHash(JSON.stringify(resources)),
     dataset: await getHash(JSON.stringify(datasets)),
     process: await getHash(JSON.stringify(processes)),
+    logic: await getHash(JSON.stringify(logics)),
     declare: await getHash(JSON.stringify(declare)),
     work: await getHash(JSON.stringify(works)),
   };
@@ -48,7 +51,7 @@ export const updateDirty = () => {
 
     let newSnapshot = { ...s.snapshot };
 
-    const { envs, resources, datasets, processes, works, declare } =
+    const { envs, resources, datasets, processes, logics, works, declare } =
       s.workspace;
     if (target == null) {
       newSnapshot = await getSnapshot(s.workspace);
@@ -65,6 +68,9 @@ export const updateDirty = () => {
           break;
         case 'process':
           newSnapshot.env = await getHash(JSON.stringify(processes));
+          break;
+        case 'logic':
+          newSnapshot.logic = await getHash(JSON.stringify(logics));
           break;
         case 'work': {
           newSnapshot.declare = await getHash(JSON.stringify(declare));

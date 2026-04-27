@@ -42,6 +42,8 @@ const checkDuplicate = (
         return [workspace.datasets, 'varName'];
       case 'process':
         return [workspace.processes, 'funcName'];
+      case 'logic':
+        return [workspace.logics, 'name'];
       case 'work':
         return [workspace.works, 'name'];
     }
@@ -111,7 +113,7 @@ export const validate = (target: StoreWorkspace.Target) => {
         );
         return arg.name === '' || isDuplicate;
       });
-      const isEnableCommandArgValues = !process.cmdArgs.find(
+      const isEnableCommandArgValues = !process.cmdArgs.some(
         (arg) => arg === '',
       );
       const isUnique = checkDuplicate(target, workspace);
@@ -123,6 +125,12 @@ export const validate = (target: StoreWorkspace.Target) => {
           isEnableCommandArgValues &&
           isUnique,
       );
+      break;
+    }
+    case 'logic': {
+      const logic = workspace.logics[target.index];
+      const isUnique = checkDuplicate(target, workspace);
+      setEnable(target, logic.name !== '' && isUnique);
       break;
     }
     case 'work': {
@@ -153,5 +161,6 @@ export const validateAll = () => {
   workspace.processes.forEach((_, index) =>
     validate({ cat: 'process', index }),
   );
+  workspace.logics.forEach((_, index) => validate({ cat: 'logic', index }));
   workspace.works.forEach((_, index) => validate({ cat: 'work', index }));
 };

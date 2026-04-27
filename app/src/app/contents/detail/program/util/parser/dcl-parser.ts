@@ -38,18 +38,20 @@ namespace DclParser {
             maxRow: number;
             maxCol: number;
             rows: Row[];
-            row(index: number): Row | null;
-            cell(row: number, col: number): Cell | null;
-            toTable(headerRow?: number): Record<string, string>[];
+            rowAt(index: number): Row | null;
+            cellAt(rowIndex: number, colIndex: number): Cell | null;
+            cellAt(address: string): Cell | null;
+            toTable(headerRowIndex?: number): Record<string, string>[];
         };
         type Row = {
-            index: number;
+            rowIndex: number;
             cells: Cell[];
-            cell(col: number): Cell | null;
+            cellAt(colIndex: number): Cell | null;
         };
         type Cell = {
-            row: number;
-            col: number;
+            rowIndex: number;
+            colIndex: number;
+            address: string;
             value: string;
         };
         type JsonInspector = {

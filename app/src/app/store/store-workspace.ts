@@ -2,6 +2,7 @@ import { get } from 'svelte/store';
 import type StoreDataset from './store-dataset';
 import type StoreDeclare from './store-declare';
 import type StoreEnv from './store-env';
+import type StoreLogic from './store-logic';
 import type StoreProcess from './store-process';
 import type StoreResource from './store-resource';
 import uiStore from './ui-store';
@@ -17,6 +18,7 @@ namespace StoreWorkspace {
     resources: StoreResource.Props[];
     datasets: StoreDataset.Props[];
     processes: StoreProcess.Props[];
+    logics: StoreLogic.Props[];
     declare: StoreDeclare.Props;
     works: StoreWork.Props[];
   };
@@ -28,6 +30,7 @@ namespace StoreWorkspace {
       resources: [],
       datasets: [],
       processes: [],
+      logics: [],
       declare: { source: '' },
       works: [],
     };
@@ -45,7 +48,13 @@ namespace StoreWorkspace {
     return target;
   };
 
-  export type Category = 'env' | 'resource' | 'dataset' | 'process' | 'work';
+  export type Category =
+    | 'env'
+    | 'resource'
+    | 'dataset'
+    | 'process'
+    | 'logic'
+    | 'work';
 
   export type Target = {
     cat: Category;

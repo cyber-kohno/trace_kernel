@@ -7,7 +7,7 @@ const uiStore = writable<UiState>({
   dialog: null,
 });
 
-export type UiDialog = null | 'program' | 'declare' | 'setting';
+export type UiDialog = null | 'program' | 'logic' | 'declare' | 'setting';
 
 export type UiState = {
   target: StoreWorkspace.Target | null;

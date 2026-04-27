@@ -16,6 +16,15 @@
   export let declareSource: string;
   export let setError: (flg: boolean) => void;
   export let initDone: () => void;
+  export let analysisMode: 'wrapped' | 'module' = 'wrapped';
+  export let extraMarkers: {
+    severity?: number;
+    message: string;
+    startLineNumber: number;
+    startColumn: number;
+    endLineNumber: number;
+    endColumn: number;
+  }[] = [];
 
   export let executeAction: () => void = () => {};
 
@@ -162,6 +171,8 @@
 
     const makeWrapped = (code: string) =>
       `async function __run() {\n${code}\n}`;
+    const toAnalysisCode = (code: string) =>
+      analysisMode === 'wrapped' ? makeWrapped(code) : code;
 
     typescript.typescriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: true,
@@ -182,7 +193,7 @@
 
     userModel = MonacoFactory.getUserModel(userUri, value);
     analysisModel = MonacoFactory.getAnalysisModel(
-      makeWrapped,
+      toAnalysisCode,
       analysisUri,
       value,
     );
@@ -220,7 +231,7 @@
       const code = userModel.getValue();
       onChange(code);
 
-      analysisModel.setValue(makeWrapped(code));
+      analysisModel.setValue(toAnalysisCode(code));
     });
 
     editor.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.Enter, () => {
@@ -241,7 +252,7 @@
         )),
       ];
 
-      const offsetLine = 1; // async function line before user code
+      const offsetLine = analysisMode === 'wrapped' ? 1 : 0;
 
       const markers = diagnostics
         .filter((d: any) => typeof d.start === 'number')
@@ -265,6 +276,17 @@
         });
 
       markers.push(...getRestrictedGlobalMarkers(code));
+      markers.push(
+        ...extraMarkers.map((marker) => ({
+          severity: marker.severity ?? monaco.MarkerSeverity.Error,
+          message: marker.message,
+          startLineNumber: marker.startLineNumber,
+          startColumn: marker.startColumn,
+          endLineNumber: marker.endLineNumber,
+          endColumn: marker.endColumn,
+          tags: [],
+        })),
+      );
       monaco.editor.setModelMarkers(userModel, 'user', markers);
 
       const hasErr = markers.some(
@@ -282,7 +304,7 @@
       const code = userModel.getValue();
       onChange(code);
 
-      analysisModel.setValue(makeWrapped(code));
+      analysisModel.setValue(toAnalysisCode(code));
 
       await runDiagnostics();
     });

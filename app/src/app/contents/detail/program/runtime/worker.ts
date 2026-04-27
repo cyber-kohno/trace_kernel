@@ -135,9 +135,12 @@ self.onmessage = async (e: MessageEvent<MessageProps>) => {
       await Promise.all(tasks);
     }
 
-    // 初期化
+    // Initialize the runtime worker before executing user code.
     const workerId = cache.rust.workerId;
     await WorkerInvoke.call('worker_init', { workerId });
+    WorkerAdapter.post({
+      type: 'prepar_end',
+    });
     if (outputMethod === 'plain') {
       WorkerAdapter.post({
         type: 'create_stream',
@@ -152,45 +155,44 @@ self.onmessage = async (e: MessageEvent<MessageProps>) => {
         channelId: RuntimeUtil.PLAIN_CHANNEL_ID,
       });
     }
-    // await new Promise((resolve) => setTimeout(resolve, 1000));
-    WorkerAdapter.post({
-      type: 'prepar_end',
-    });
 
     const injectionalObjects = ContextDataUtil.createObjects(
       injectionalData,
       cache.prepar,
     );
 
-    // ユーザコードから関数を作成（returnは内部Promiseのrejectをcatchするため）
-    const wrappedCode = `return (async () => {${outputText}\n$done();})()`;
+    // ユーザーコードの return でも正常終了できるよう、done 通知は外側で行う
+    const wrappedCode = `return (async () => {${outputText}\n})()`;
     const func = new Function(
       ...reserveObjects
         .map((f) => f.name)
-        .concat(injectionalObjects.map((d) => d.name))
-        .concat('$done'),
+        .concat(injectionalObjects.map((d) => d.name)),
       wrappedCode,
     );
 
-    // 実行
+    let shouldNotifyDone = false;
     try {
       await func(
         ...reserveObjects
           .map((f) => f.value)
-          .concat(injectionalObjects.map((d) => d.value))
-          .concat($done),
+          .concat(injectionalObjects.map((d) => d.value)),
       );
+      shouldNotifyDone = true;
     } catch (err: any) {
       if (DclRuntime.isExitSignal(err)) {
-        $done();
-        return;
+        shouldNotifyDone = true;
+      } else {
+        console.log();
+        WorkerAdapter.post({
+          type: 'runtime-error',
+          stack: err.stack,
+          sourceMap: sourceMapText,
+        });
       }
-      console.log();
-      WorkerAdapter.post({
-        type: 'runtime-error',
-        stack: err.stack,
-        sourceMap: sourceMapText,
-      });
+    } finally {
+      if (shouldNotifyDone) {
+        $done();
+      }
     }
   }
 };

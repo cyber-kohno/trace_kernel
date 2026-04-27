@@ -1,5 +1,6 @@
 import type StoreProcess from '../../../../store/store-process';
 import type StoreDataset from '../../../../store/store-dataset';
+import type StoreLogic from '../../../../store/store-logic';
 import type StoreResource from '../../../../store/store-resource';
 import type { FileRequest } from '../../../../store/types';
 import DataUtil from '../../../../util/data/data-util';
@@ -9,6 +10,8 @@ import WorkerInvoke from './worker-invoke';
 import type StoreEnv from '../../../../store/store-env';
 import type StoreWorkspace from '../../../../store/store-workspace';
 import StoreLicense from '../../../../store/store-license';
+import LogicSourceUtil from '../../logic/util/logic-source-util';
+import TypescriptUtil from '../../../../util/typescript-util';
 
 namespace ContextDataUtil {
   export type Props = {
@@ -16,6 +19,7 @@ namespace ContextDataUtil {
     resources: StoreResource.Props[];
     datasets: StoreDataset.Props[];
     processes: StoreProcess.Props[];
+    logics: StoreLogic.Props[];
   };
 
   export const getUsableData = (
@@ -38,6 +42,7 @@ namespace ContextDataUtil {
       ),
       datasets: workspace.datasets.filter((_, i) => !isDisable('dataset', i)),
       processes,
+      logics: workspace.logics.filter((_, i) => !isDisable('logic', i)),
     };
     return injectionalData;
   };
@@ -46,9 +51,9 @@ namespace ContextDataUtil {
     data: Props,
     prepar: RuntimeUtil.PreparCache,
   ) => {
-    const { envs: envVars, resources, datasets, processes } = data;
+    const { envs: envVars, resources, datasets, processes, logics } = data;
     const items = [
-      // 環境変数
+      // 迺ｰ蠅・､画焚
       {
         name: '$env',
         objects: envVars.map((env) => {
@@ -58,7 +63,7 @@ namespace ContextDataUtil {
           };
         }),
       },
-      // 固定リソース
+      // 蝗ｺ螳壹Μ繧ｽ繝ｼ繧ｹ
       {
         name: '$resource',
         objects: resources.map((r) => {
@@ -71,14 +76,13 @@ namespace ContextDataUtil {
           return { name: varName, value };
         }),
       },
-      // ファイルごと
+      // 繝輔ぃ繧､繝ｫ縺斐→
       {
         name: '$dataset',
         objects: datasets.map((ds) => {
           const name = ds.varName;
           const value = (() => {
             let { encoding, rootPath, targets } = ds;
-            // 遅延ロードのキャッシュから取得
             if (targets == null) {
               const fnd = prepar.datasetMap.find((dm) => dm.key === ds.varName);
               if (fnd == undefined) throw new Error();
@@ -109,7 +113,7 @@ namespace ContextDataUtil {
           };
         }),
       },
-      // プロセス
+      // 繝励Ο繧ｻ繧ｹ
       {
         name: '$process',
         objects: processes.map((process) => {
@@ -119,6 +123,9 @@ namespace ContextDataUtil {
             exitCode: number;
           };
           const { prgPath, cmdArgs, scriptArgs, timeout } = process;
+          const cwd = process.cwd ?? '';
+          const stdin = process.stdin ?? '';
+          const stdinEncoding = process.encoding.stdin ?? 'utf8';
           const callback = async (
             ...scriptArgValues: (string | number)[]
           ): Promise<ReturnType> => {
@@ -128,18 +135,17 @@ namespace ContextDataUtil {
               exitCode: number;
             };
 
-            // スクリプト引数のKVを生成
             const scriptKV = scriptArgValues.map((arg, i) => {
               const def = scriptArgs[i];
 
-              // 型チェック
+              // 蝙九メ繧ｧ繝・け
               if (typeof arg !== def.type) {
                 throw new Error(
                   `Argument types do not match definition. [${arg}]`,
                 );
               }
               const value = String(arg);
-              // 空文字チェック
+              // 遨ｺ譁・ｭ励メ繧ｧ繝・け
               if (value === '')
                 throw new Error(
                   'Command line arguments do not allow empty strings.',
@@ -147,36 +153,46 @@ namespace ContextDataUtil {
               return { key: `__${def.name}__`, value };
             });
 
-            const req = {
-              program: DataUtil.getAppliedEnvValue(prgPath, envVars),
-              args: cmdArgs.map((c) => {
-                let cmd = DataUtil.getAppliedEnvValue(c, envVars);
-                // スクリプト引数を注入
-                scriptKV.forEach((kv) => {
-                  cmd = cmd.replaceAll(kv.key, kv.value);
-                });
-                return cmd;
-              }),
-              timeoutMs: timeout,
+            const applyScriptArgs = (base: string) => {
+              let value = DataUtil.getAppliedEnvValue(base, envVars);
+              scriptKV.forEach((kv) => {
+                value = value.replaceAll(kv.key, kv.value);
+              });
+              return value;
             };
 
-            // 未解決プレースホルダのチェック
-            const unresolved = req.args.filter((a) => /__\w+__/.test(a));
+            const normalizeOptional = (value: string) =>
+              value === '' ? undefined : value;
+            const req = {
+              program: DataUtil.getAppliedEnvValue(prgPath, envVars),
+              args: cmdArgs.map((c) => applyScriptArgs(c)),
+              cwd: normalizeOptional(applyScriptArgs(cwd)),
+              stdin: normalizeOptional(applyScriptArgs(stdin)),
+              timeoutMs: timeout,
+              stdinEncoding,
+            };
+
+            const unresolved = [
+              ...req.args,
+              ...(req.cwd == undefined ? [] : [req.cwd]),
+              ...(req.stdin == undefined ? [] : [req.stdin]),
+            ].filter((a) => /__\w+__/.test(a));
             if (unresolved.length > 0) {
               throw new Error(
                 `Unresolved script arguments: ${unresolved.join(', ')}`,
               );
             }
-            // 未使用スクリプト引数のチェック
             scriptKV.forEach((kv) => {
-              const used = cmdArgs.some((c) => c.includes(kv.key));
+              const used =
+                cmdArgs.some((c) => c.includes(kv.key)) ||
+                cwd.includes(kv.key) ||
+                stdin.includes(kv.key);
               if (!used) {
                 throw new Error(
-                  `Script argument "${kv.key}" is never used in cmdArgs.`,
+                  `Script argument "${kv.key}" is never used in cmdArgs, cwd, or stdin.`,
                 );
               }
             });
-
             const res = await WorkerInvoke.call<InvokeType>('run_process', {
               req,
             });
@@ -198,18 +214,82 @@ namespace ContextDataUtil {
           };
         }),
       },
+      {
+        name: '$logic',
+        objects: logics.map((logic) => {
+          const callback = async (..._args: any[]) => undefined;
+          return {
+            name: logic.name,
+            value: callback,
+          };
+        }),
+      },
     ];
-    return items.map((item) => {
+    const mappedItems = items.map((item) => {
       const objects: any = {};
       item.objects.forEach((o) => {
         objects[o.name] = o.value;
       });
       return { name: item.name, value: objects };
     });
+
+    const logicEntry = mappedItems.find((item) => item.name === '$logic');
+    if (logicEntry == null) {
+      return mappedItems;
+    }
+
+    const contextMap = Object.fromEntries(
+      mappedItems.map((item) => [item.name, item.value]),
+    ) as Record<string, any>;
+    const logicObjects = logicEntry.value as Record<
+      string,
+      (...args: any[]) => any
+    >;
+
+    logics.forEach((logic) => {
+      if (logic.name === '') return;
+
+      logicObjects[logic.name] = (...args: any[]) => {
+        const compiledJs = TypescriptUtil.transpileTsModuleToCjs(logic.source);
+        const createExportedFunc = new Function(
+          '$env',
+          '$resource',
+          '$dataset',
+          '$process',
+          '$logic',
+          `
+const module = { exports: {} };
+const exports = module.exports;
+${compiledJs}
+return module.exports.default ?? exports.default;
+`,
+        );
+
+        const injectedLogics = Object.fromEntries(
+          Object.entries(logicObjects).filter(([name]) => name !== logic.name),
+        );
+
+        const exported = createExportedFunc(
+          contextMap.$env,
+          contextMap.$resource,
+          contextMap.$dataset,
+          contextMap.$process,
+          injectedLogics,
+        );
+
+        if (typeof exported !== 'function') {
+          throw new Error(`$logic.${logic.name} did not export a function.`);
+        }
+
+        return exported(...args);
+      };
+    });
+
+    return mappedItems;
   };
 
   export const createDeclareDef = (data: Props) => {
-    const { envs: envVars, resources, datasets, processes } = data;
+    const { envs: envVars, resources, datasets, processes, logics } = data;
     const items: {
       name: string;
       defs: {
@@ -218,7 +298,7 @@ namespace ContextDataUtil {
       }[];
     }[] = [];
 
-    // 環境変数
+    // 迺ｰ蠅・､画焚
     if (envVars.length > 0) {
       items.push({
         name: '$env',
@@ -228,7 +308,7 @@ namespace ContextDataUtil {
         }),
       });
     }
-    // 固定リソース
+    // 蝗ｺ螳壹Μ繧ｽ繝ｼ繧ｹ
     if (resources.length > 0) {
       items.push({
         name: '$resource',
@@ -245,7 +325,7 @@ namespace ContextDataUtil {
         }),
       });
     }
-    // データセット
+    // 繝・・繧ｿ繧ｻ繝・ヨ
     if (datasets.length > 0) {
       items.push({
         name: '$dataset',
@@ -264,7 +344,7 @@ namespace ContextDataUtil {
         }),
       });
     }
-    // プロセス
+    // 繝励Ο繧ｻ繧ｹ
     if (processes.length > 0) {
       items.push({
         name: '$process',
@@ -274,6 +354,31 @@ namespace ContextDataUtil {
           return {
             name,
             declareDef: `${name}: (${args}) => Promise<{stdout: string; stderr: string; exitCode: number;}>`,
+          };
+        }),
+      });
+    }
+    if (logics.length > 0) {
+      const ambientDefs = items.map(
+        (item) =>
+          `declare const ${item.name}: {${item.defs
+            .map((d) => d.declareDef)
+            .join(',')}}`,
+      );
+      items.push({
+        name: '$logic',
+        defs: logics.map((logic) => {
+          const signature = LogicSourceUtil.getSignatureInfo(logic.source, {
+            injectionDefs: ambientDefs,
+          });
+          const name = `${logic.name}`;
+          const declareDef =
+            signature == null
+              ? `${name}: (...args: any[]) => any`
+              : `${name}: (${signature.args.join(', ')}) => ${signature.returnType}`;
+          return {
+            name,
+            declareDef,
           };
         }),
       });

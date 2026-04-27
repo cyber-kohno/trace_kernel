@@ -2,6 +2,7 @@
   import uiStore from '../../store/ui-store';
   import Record from '../../util/layout/RecordDiv.svelte';
   import DeclareDialog from './declare/DeclareDialog.svelte';
+  import LogicDialog from './logic/ui/LogicDialog.svelte';
   import ProgramDialog from './program/ui/ProgramDialog.svelte';
   import SettingDialog from './setting/SettingDialog.svelte';
 
@@ -12,6 +13,8 @@
   <div class="blind">
     {#if dialog === 'program'}
       <ProgramDialog />
+    {:else if dialog === 'logic'}
+      <LogicDialog />
     {:else if dialog === 'declare'}
       <DeclareDialog />
     {:else if dialog === 'setting'}

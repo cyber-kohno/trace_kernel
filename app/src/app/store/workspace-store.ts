@@ -6,6 +6,7 @@ export type SnapshotLog = {
   resource: string;
   dataset: string;
   process: string;
+  logic: string;
   declare: string;
   work: string;
 };
@@ -21,6 +22,7 @@ export const createInitialSnapshot = (): SnapshotLog => ({
   resource: '',
   dataset: '',
   process: '',
+  logic: '',
   declare: '',
   work: '',
 });

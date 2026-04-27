@@ -17,8 +17,6 @@
   import RuntimeErrorFrame from './RuntimeErrorFrame.svelte';
   import WorkerAdapter from './worker-adapter';
   import RuntimeUtil from '../runtime/runtime-util';
-  import StorePermission from '../../../../store/store-license';
-  import type StoreProcess from '../../../../store/store-process';
   import TextStreamView from '../output/text/TextStreamView.svelte';
   import ChannelSwitchFrame from '../output/ChannelSwitchFrame.svelte';
   import type DclChannel from '../util/channel/dcl-channel';
@@ -45,7 +43,6 @@
     total: -1,
   });
   let progress = writable<{ cur: number; total: number }>(getInitialProgress());
-  /** Monacoの初期化が完了したかどうか */
   let isMonacoInitDone = writable(false);
 
   let txCache = writable<RuntimeUtil.VFSState | null>(null);
@@ -53,30 +50,11 @@
 
   let monacoRef: ScriptEditor;
 
-  $: [workspace, injectionalData] = (() => {
-    const workspace = StoreWorkspace.getWorkspace($workspaceStore);
-
-    const isDisable = (cat: StoreWorkspace.Category, i: number) =>
-      $workspaceValidationStore.disables.find(
-        (d) => d.cat === cat && d.index === i,
-      ) != undefined;
-
-    let processes: StoreProcess.Props[] = [];
-    if (StorePermission.isPro()) {
-      processes = workspace.processes.filter(
-        (_, i) => !isDisable('process', i),
-      );
-    }
-    const injectionalData: ContextDataUtil.Props = {
-      envs: workspace.envs.filter((_, i) => !isDisable('env', i)),
-      resources: workspace.resources.filter(
-        (_, i) => !isDisable('resource', i),
-      ),
-      datasets: workspace.datasets.filter((_, i) => !isDisable('dataset', i)),
-      processes,
-    };
-    return [workspace, injectionalData];
-  })();
+  $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
+  $: injectionalData = ContextDataUtil.getUsableData(
+    workspace,
+    $workspaceValidationStore.disables,
+  );
 
   $: work = (() => {
     const target = $uiStore.target;
@@ -85,6 +63,8 @@
   })();
 
   $: usableUtils = DeclareUtil.getUsableReserveList({ method: work.method });
+  $: injectionalDefs = ContextDataUtil.createDeclareDef(injectionalData);
+  $: activeChannel = $channels[$activeChannelIdx];
 
   onDestroy(() => {
     $uiStore.shortcutEvent = null;
@@ -94,14 +74,12 @@
     async (e) => {
       switch (e.type) {
         case 'create_stream': {
-          // 重複チェック
           if ($channels.some((ch) => ch.id === e.props.id)) {
             throw new Error(`A stream with ID "${e.props.id}" already exists.`);
           }
           $channels.push(e.props);
           $channels = $channels.slice();
 
-          // 1つ目が追加された時は自動でアクティブにする
           if ($channels.length === 1) {
             $activeChannelIdx = 0;
           }
@@ -125,53 +103,41 @@
           $phase = 'done';
           streamRef?.end();
 
-          // IO操作があれば追加
           if (e.vfs != null) {
             $txCache = e.vfs;
             $isDispTxDialog = true;
           }
           break;
-        case 'runtime-error':
-          {
-            $phase = 'error';
-            const { sourceMap, stack } = e;
-            setTimeout(() => {
-              errorFrameRef.init(
-                sourceMap,
-                stack,
-                work.source,
-                (monacoRef as any).setRuntimeErrorMarker,
-              );
-            }, 0);
+        case 'runtime-error': {
+          $phase = 'error';
+          const { sourceMap, stack } = e;
+          setTimeout(() => {
+            errorFrameRef.init(
+              sourceMap,
+              stack,
+              work.source,
+              (monacoRef as any).setRuntimeErrorMarker,
+            );
+          }, 0);
+          break;
+        }
+        case 'state': {
+          switch (e.method) {
+            case 'progress_start':
+              $progress.total = e.total;
+              break;
+            case 'progress_tick':
+              $progress.cur++;
+              break;
+            case 'monitor_init':
+              $monitorLines = Array.from({ length: e.allocSize }, () => '');
+              break;
+            case 'monitor_set':
+              $monitorLines[e.index] = e.str;
+              break;
           }
           break;
-        case 'state':
-          {
-            const method = e.method;
-            switch (method) {
-              case 'progress_start':
-                {
-                  $progress.total = e.total;
-                }
-                break;
-              case 'progress_tick':
-                {
-                  $progress.cur++;
-                }
-                break;
-              case 'monitor_init':
-                {
-                  $monitorLines = Array.from({ length: e.allocSize }, () => '');
-                }
-                break;
-              case 'monitor_set':
-                {
-                  $monitorLines[e.index] = e.str;
-                }
-                break;
-            }
-          }
-          break;
+        }
       }
     },
   );
@@ -193,7 +159,6 @@
   $: cancel = () => {
     if ($phase === 'coding' || $isDispTxDialog) return;
     terminate();
-    // logViewerRef.reset();
     $channels = [];
     $phase = 'coding';
     $progress = getInitialProgress();
@@ -207,7 +172,6 @@
   $: runScript = () => {
     if ($phase !== 'coding' || $hasError) return;
 
-    // monaco editorからフォーカスを外す
     (document.activeElement as HTMLElement)?.blur();
     document.body.focus();
 
@@ -216,7 +180,6 @@
     const { outputText, sourceMapText } = TypescriptUtil.transpileTsToJs(
       work.source,
     );
-    // sourceMap: trueなので値が入っている前提
     if (!sourceMapText) throw new Error();
     start({
       type: 'execute',
@@ -227,10 +190,6 @@
       outputMethod: work.method,
     });
   };
-
-  $: injectionalDefs = ContextDataUtil.createDeclareDef(injectionalData);
-
-  $: activeChannel = $channels[$activeChannelIdx];
 </script>
 
 <div class="frame">
@@ -255,13 +214,13 @@
                 })
                 .concat(injectionalDefs)}
               declareSource={workspace.declare.source}
+              analysisMode={'wrapped'}
               setError={(flg) => ($hasError = flg)}
               executeAction={runScript}
               initDone={() => {
                 $isMonacoInitDone = true;
               }}
             />
-            <!-- 実行後 -->
             {#if $phase !== 'coding'}
               <div class="blind">
                 <div class="progressmsg">
@@ -283,9 +242,7 @@
                     <RuntimeErrorFrame bind:this={errorFrameRef} />
                   {/if}
                   {#if $progress.total !== -1}
-                    <ProgressBar
-                      rate={($progress.cur / $progress.total) * 100}
-                    />
+                    <ProgressBar rate={($progress.cur / $progress.total) * 100} />
                   {/if}
                   {#each $monitorLines as m}
                     <div class="monitor">{m}</div>
@@ -325,13 +282,10 @@
                   channels={$channels}
                   move={(dir) => {
                     $activeChannelIdx += dir;
-                    // チャンネルを切り替えたらストリームを受信する
                     setTimeout(() => {
                       if (streamRef) {
                         const ref = streamRef;
-                        // トラッキングを有効化する
                         ref.init();
-                        // 受信したらスクロールをリセットする
                         ref.receiveStream().then(() => ref.init());
                         if ($phase === 'done') ref.end();
                       }
@@ -342,15 +296,9 @@
               <Record surplus={work.method === 'channel' ? 30 : 0}>
                 {#if activeChannel != undefined}
                   {#if activeChannel.view === 'text'}
-                    <TextStreamView
-                      bind:this={streamRef}
-                      channel={activeChannel}
-                    />
+                    <TextStreamView bind:this={streamRef} channel={activeChannel} />
                   {:else if activeChannel.view === 'table'}
-                    <TableStreamView
-                      bind:this={streamRef}
-                      channel={activeChannel}
-                    />
+                    <TableStreamView bind:this={streamRef} channel={activeChannel} />
                   {/if}
                 {/if}
               </Record>
@@ -378,7 +326,6 @@
       </div>
     </div>
 
-    <!-- トランザクション -->
     {#if $txCache != null && $isDispTxDialog}
       <TxDialog vfs={$txCache} close={() => ($isDispTxDialog = false)} />
     {/if}
@@ -392,8 +339,6 @@
     margin: 8px 0 0 8px;
     width: calc(100% - 16px);
     height: calc(100% - 16px);
-    /* background-color: rgb(0, 0, 0); */
-    /* opacity: 0.95; */
   }
   .half {
     display: inline-block;
@@ -412,13 +357,12 @@
   }
   .blind {
     position: absolute;
-    inset: 0; /* top:0; left:0; right:0; bottom:0 の省略 */
+    inset: 0;
     background-color: #00d9ff7d;
     z-index: 5;
-
     display: flex;
-    justify-content: center; /* 横中央 */
-    align-items: center; /* 縦中央 */
+    justify-content: center;
+    align-items: center;
     backdrop-filter: blur(2px);
   }
   .right {
@@ -455,12 +399,10 @@
     width: 100%;
     height: 30px;
     font-size: 18px;
-    /* line-height: 35px; */
     text-align: left;
     color: rgb(173, 255, 160);
     font-weight: 400;
     background-color: rgba(0, 0, 0, 0.406);
-    /* margin-top: 1px; */
     padding-left: 4px;
     box-sizing: border-box;
     overflow: hidden;

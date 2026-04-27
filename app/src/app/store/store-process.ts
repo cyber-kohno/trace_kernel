@@ -6,8 +6,11 @@ namespace StoreProcess {
     prgPath: string;
     scriptArgs: ScriptArgDef[];
     cmdArgs: string[];
+    cwd: string;
+    stdin: string;
     timeout: number;
     encoding: {
+      stdin: TextEncoding;
       stdout: TextEncoding;
       stderr: TextEncoding;
     };
@@ -24,8 +27,11 @@ namespace StoreProcess {
       prgPath: '',
       scriptArgs: [],
       cmdArgs: [],
+      cwd: '',
+      stdin: '',
       timeout: 3000,
       encoding: {
+        stdin: 'utf8',
         stdout: 'utf8',
         stderr: 'utf8',
       },

@@ -11,8 +11,8 @@ import StoreWorkspace from '../../store/store-workspace';
 import { dirty, getSnapshot } from '../../store/dirty';
 
 namespace FileUtil {
-  export const VERSION = 'v1.10';
-  export const APP_NAME = `Trace Kernel ${VERSION}.10`;
+  export const VERSION = 'v1.11';
+  export const APP_NAME = `Trace Kernel ${VERSION}.0`;
   const FILE_EXTENSION: string = `${VERSION}.trk`;
 
   export const updateAppTitle = async () => {

@@ -3,6 +3,7 @@
   import uiStore from '../../store/ui-store';
   import StoreProcess from '../../store/store-process';
   import StoreDataset from '../../store/store-dataset';
+  import StoreLogic from '../../store/store-logic';
   import StoreWorkspace from '../../store/store-workspace';
   import StoreResource from '../../store/store-resource';
   import StoreWork from '../../store/store-work';
@@ -11,6 +12,7 @@
   import EnvEntry from './entries/EnvEntry.svelte';
   import ResourceEntry from './entries/ResourceEntry.svelte';
   import WorkEntry from './entries/WorkEntry.svelte';
+  import LogicEntry from './entries/LogicEntry.svelte';
   import storeLicense from '../../store/store-license';
   import DatasetEntry from './entries/DatasetEntry.svelte';
 
@@ -46,6 +48,9 @@
       case 'process':
         workspace.processes = nextItems as typeof workspace.processes;
         break;
+      case 'logic':
+        workspace.logics = nextItems as typeof workspace.logics;
+        break;
       case 'work':
         workspace.works = nextItems as typeof workspace.works;
         break;
@@ -69,6 +74,9 @@
   const addProcess = () =>
     addEntry('process', workspace.processes, StoreProcess.getInitial());
 
+  const addLogic = () =>
+    addEntry('logic', workspace.logics, StoreLogic.getInitial());
+
   const addWork = () =>
     addEntry(
       'work',
@@ -86,31 +94,24 @@
 </div>
 
 <div class="indent">
-  <!-- 環境変数 -->
   <EntrySection
     label={'-env'}
     items={workspace.envs}
     entryComponent={EnvEntry}
     add={addEnv}
   />
-
-  <!-- リソース -->
   <EntrySection
     label={'-resource'}
     items={workspace.resources}
     entryComponent={ResourceEntry}
     add={addResource}
   />
-
-  <!-- データセット -->
   <EntrySection
     label={'-dataset'}
     items={workspace.datasets}
     entryComponent={DatasetEntry}
     add={addDataset}
   />
-
-  <!-- プロセス -->
   {#if storeLicense.isPro()}
     <EntrySection
       label={'-process'}
@@ -129,7 +130,12 @@
 </div>
 
 <div class="indent">
-  <!-- ワーク -->
+  <EntrySection
+    label={'-logic'}
+    items={workspace.logics}
+    entryComponent={LogicEntry}
+    add={addLogic}
+  />
   <EntrySection
     label={'-work'}
     items={workspace.works}
@@ -152,9 +158,7 @@
     position: relative;
     width: 100%;
     height: 30px;
-    /* background-color: rgb(57, 57, 57); */
     margin-top: 4px;
-
     text-align: left;
   }
   .label {
@@ -186,7 +190,6 @@
     font-weight: 600;
     border: none;
     text-align: center;
-    /* background-color: rgba(240, 248, 255, 0.086); */
     background-color: transparent;
     border-radius: 4px;
     font-style: italic;
@@ -194,7 +197,6 @@
 
     &:hover {
       color: rgba(255, 255, 255, 0.97);
-      /* opacity: 0.81; */
     }
   }
 </style>
