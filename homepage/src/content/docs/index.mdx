@@ -1,0 +1,46 @@
+---
+title: Trace Kernelとは
+description: TypeScriptを、日常の問題解決に使うための実行基盤。
+template: splash
+hero:
+  title: Trace Kernel
+  tagline: TypeScriptを、日常の問題解決に使うための実行基盤。
+  image:
+    file: ../../assets/logo.svg
+  actions:
+    - text: 基本ワークフロー
+      link: /overview/workflow/
+      icon: right-arrow
+    - text: APIリファレンス
+      link: /reference/api-overview/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+Trace Kernelは、TypeScriptで「書く」「実行する」「結果を見る」をひとつのアプリ上で完結させるためのデスクトップ実行基盤です。
+
+アプリ開発のためのプロジェクトを作るのではなく、ログ分析、データ加工、ファイル整理のような小さな問題をすぐに解くことを主眼に置いています。
+
+<CardGrid>
+  <Card title="環境構築なしで書く" icon="seti:typescript">
+    プロジェクト作成、依存関係、実行用ターミナルを意識せず、アプリ内のMonacoエディタでTypeScriptを書きます。
+  </Card>
+  <Card title="リソースをGUIで管理する" icon="seti:folder">
+    env、resource、dataset、processをワークスペースに登録し、スクリプトへ型付きで注入します。
+  </Card>
+  <Card title="結果をアプリ内で見る" icon="seti:json">
+    テキスト出力、チャンネル出力、テーブル出力、進捗表示をGUI上で確認できます。
+  </Card>
+  <Card title="ファイル操作を安全に確認する" icon="seti:lock">
+    トランザクションAPIにより、仮想FS上で変更内容を積み、確認後に実FSへ反映できます。
+  </Card>
+</CardGrid>
+
+![ワークスペース管理画面](/screen_shot/ワークスペース管理.JPG)
+
+## このサイトの位置づけ
+
+このサイトは、最終的にTrace Kernelの全機能をMD中心で管理するリファレンスになります。
+
+現時点では、見え方と構造を確認するための仮コンテンツを含みます。今後、`app` 配下の最新ソースを正として解析し、各ページの仕様を更新していきます。
