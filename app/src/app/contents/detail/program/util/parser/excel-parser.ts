@@ -168,9 +168,9 @@ namespace ExcelParser {
     };
   };
 
-  export const parse = async (buffer: ArrayBuffer): Promise<Book> => {
-    const raw = await WorkerInvoke.call<RawBook>('excel_parse', {
-      buffer: new Uint8Array(buffer),
+  export const parse = async (filePath: string): Promise<Book> => {
+    const raw = await WorkerInvoke.call<RawBook>('excel_parse_file', {
+      filePath,
     });
     return createBook(raw);
   };

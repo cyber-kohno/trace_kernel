@@ -8,7 +8,7 @@ namespace DclParser {
   type ParserAPI = {
     xml: (source: string) => Promise<DomParser.DomController>;
     html: (source: string) => Promise<DomParser.DomController>;
-    excel: (buffer: ArrayBuffer) => Promise<ExcelParser.Book>;
+    excel: (filePath: string) => Promise<ExcelParser.Book>;
     csv: (source: string) => Inspector.TableInspector;
     tsv: (source: string) => Inspector.TableInspector;
     json: (source: string) => Inspector.JsonInspector;
@@ -69,7 +69,7 @@ namespace DclParser {
         type ParserAPI = {
             xml: (source: string) => Promise<DomController>;
             html: (source: string) => Promise<DomController>;
-            excel: (buffer: ArrayBuffer) => Promise<Book>;
+            excel: (filePath: string) => Promise<Book>;
             csv: (source: string) => Inspector.TableInspector;
             tsv: (source: string) => Inspector.TableInspector;
             json: (source: string) => JsonInspector;
@@ -82,7 +82,7 @@ namespace DclParser {
     return {
       xml: (source: string) => DomParser.parse(rustCache, source),
       html: (source: string) => DomParser.parseHtml(rustCache, source),
-      excel: (buffer: ArrayBuffer) => ExcelParser.parse(buffer),
+      excel: (filePath: string) => ExcelParser.parse(filePath),
       csv: (source: string) => {
         const data = DataUtil.convertTableToJson(source, 'csv');
         return Inspector.createTableInspector(data);

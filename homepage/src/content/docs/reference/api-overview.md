@@ -1,29 +1,51 @@
 ---
 title: API概要
-description: Trace Kernelがworkへ注入するAPI。
+description: Trace Kernelがworkから利用できる標準API。
 ---
 
-Trace Kernelは、workの実行時に独自APIを注入します。
+Trace Kernelは、workから利用できる独自APIを提供します。
+
+contextはワークスペースで定義した内容によって変わります。一方、APIはTrace Kernelが実行環境として提供する機能です。
 
 ```text
-$print / $println
-$channel
-$state
-$fs
-$parser
-$net
-$runtime
+標準API
+├── $print / $println
+├── $channel
+├── $state
+├── $parser
+└── $runtime
 ```
 
-また、ワークスペースで定義したコンテキストも注入されます。
+## contextとの違い
 
-```text
-$env
-$resource
-$dataset
-$process
+contextは、ユーザーがワークスペースに登録した情報です。
+
+```ts
+$env.OUTPUT_DIR
+$resource.userData
+$dataset.workspace
 ```
 
-## 注意
+APIは、Trace Kernelの実行環境が提供する操作能力です。
 
-このページはサイト構造確認用の仮ページです。今後、`app/src/app/contents/detail/program/util/declare-util.ts` と関連実装を正として、API一覧を抽出します。
+```ts
+$println('hello');
+const { tick } = $state.useProgress(100);
+```
+
+この2つは役割が異なるため、リファレンス上も分けて扱います。
+
+## 出力方式とAPI
+
+workの`output_method`により、出力用APIが変わります。
+
+| output_method | 利用できる出力API | 用途 |
+| --- | --- | --- |
+| `Plain` | `$print` / `$println` | シンプルなテキスト出力 |
+| `Channel` | `$channel` | 複数ストリーム、テーブル出力 |
+
+`$state`、`$parser`、`$runtime`は、出力方式とは別に利用するAPIです。
+
+## Pro API
+
+ファイル操作やネットワークアクセスのようにTrace Kernelの外側へ作用するAPIは、[Pro](/pro/)配下で扱います。

@@ -57,8 +57,7 @@ pub enum CellValue {
     },
 }
 
-#[tauri::command]
-pub fn excel_parse(buffer: Vec<u8>) -> Result<Book, String> {
+fn parse_excel_buffer(buffer: Vec<u8>) -> Result<Book, String> {
     let cursor = Cursor::new(buffer);
     let mut workbook: calamine::Sheets<Cursor<Vec<u8>>> =
         open_workbook_auto_from_rs(cursor).map_err(|e| format!("failed to open excel: {}", e))?;
@@ -121,4 +120,11 @@ pub fn excel_parse(buffer: Vec<u8>) -> Result<Book, String> {
     }
 
     Ok(Book { sheets })
+}
+
+#[tauri::command]
+pub fn excel_parse_file(file_path: String) -> Result<Book, String> {
+    let buffer = std::fs::read(&file_path)
+        .map_err(|e| format!("failed to read excel file: {}", e))?;
+    parse_excel_buffer(buffer)
 }

@@ -1,31 +1,49 @@
 ---
-title: ファイル一括処理
-description: datasetと$fsトランザクションを組み合わせる例。
+title: ログ/CSVを解析する
+description: resourceに登録したテキストをTypeScriptで処理し、結果を出力する例。
 ---
 
-このページは、実践レシピの見え方を確認するための仮ページです。
+このレシピでは、GUIで登録したCSVをworkから参照し、集計結果を出力します。
+
+標準機能だけで完結する作業です。ファイルを更新したり、外部プログラムを呼び出したりせず、Trace Kernel上で入力を確認し、TypeScriptで処理し、結果をコピーして利用します。
 
 ## やりたいこと
 
-datasetで対象ファイルを列挙し、条件に合うファイルだけを書き換えます。
+売上CSVを`resource`として登録し、担当者ごとの合計金額を集計します。
+
+```csv
+owner,amount
+sato,1200
+sato,800
+suzuki,2000
+```
 
 ## 例
 
 ```ts
-const tx = $fs.useTransaction();
-const { tick } = $state.useProgress($dataset.workspace.length);
+const totals = new Map<string, number>();
 
-for (const file of $dataset.workspace) {
-  const { token, content } = await tx.openText(file.absolutePath, 'utf8');
+for (const row of $resource.sales) {
+  const owner = row.owner;
+  const amount = Number(row.amount);
+  totals.set(owner, (totals.get(owner) ?? 0) + amount);
+}
 
-  if (content.includes('oldName')) {
-    tx.updateText(token, content.replaceAll('oldName', 'newName'));
-  }
+$println('owner,total');
 
-  tick();
+for (const [owner, total] of totals) {
+  $println(`${owner},${total}`);
 }
 ```
 
-実行後、トランザクションダイアログで変更内容を確認してからコミットします。
+## 結果
 
-![書き込み内容確認](/screen_shot/書き込み内容確認.JPG)
+```csv
+owner,total
+sato,2000
+suzuki,2000
+```
+
+出力結果は、必要に応じてコピーし、表計算ソフトや報告用のメモに貼り付けて使います。
+
+> **画像メモ:** resourceにCSVを登録し、`$resource.sales`と列名が補完され、実行結果をコピーするまでのGIFがあるとよい。

@@ -1,46 +1,179 @@
 ---
 title: Trace Kernelとは
-description: TypeScriptを、日常の問題解決に使うための実行基盤。
+description: 準備は不要。アプリを開いて書き始めるだけ。
 template: splash
 hero:
-  title: Trace Kernel
-  tagline: TypeScriptを、日常の問題解決に使うための実行基盤。
+  title: 準備は不要。アプリを開いて書き始めるだけ。
+  tagline: プロジェクト作成も、<code>npm install</code>も不要。<br />GUIで登録したリソースを補完付きで参照し、<br />TypeScriptによる記述、実行、結果確認までをアプリ内で完結。
   image:
-    file: ../../assets/logo.svg
+    html: |
+      <video class="hero-video" src="/media/demo.mp4" autoplay muted loop playsinline controls></video>
   actions:
-    - text: 基本ワークフロー
-      link: /overview/workflow/
-      icon: right-arrow
-    - text: APIリファレンス
-      link: /reference/api-overview/
+    - text: Windows版をダウンロード（v1.0.0）
+      link: '#'
+      icon: download
+    - text: 旧バージョン・その他のOS
+      link: /download/
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Icon } from '@astrojs/starlight/components';
 
-Trace Kernelは、TypeScriptで「書く」「実行する」「結果を見る」をひとつのアプリ上で完結させるためのデスクトップ実行基盤です。
+<section class="home-section">
 
-アプリ開発のためのプロジェクトを作るのではなく、ログ分析、データ加工、ファイル整理のような小さな問題をすぐに解くことを主眼に置いています。
+## プログラミングを問題解決のための”道具”として再定義
 
-<CardGrid>
-  <Card title="環境構築なしで書く" icon="seti:typescript">
-    プロジェクト作成、依存関係、実行用ターミナルを意識せず、アプリ内のMonacoエディタでTypeScriptを書きます。
-  </Card>
-  <Card title="リソースをGUIで管理する" icon="seti:folder">
-    env、resource、dataset、processをワークスペースに登録し、スクリプトへ型付きで注入します。
-  </Card>
-  <Card title="結果をアプリ内で見る" icon="seti:json">
-    テキスト出力、チャンネル出力、テーブル出力、進捗表示をGUI上で確認できます。
-  </Card>
-  <Card title="ファイル操作を安全に確認する" icon="seti:lock">
-    トランザクションAPIにより、仮想FS上で変更内容を積み、確認後に実FSへ反映できます。
-  </Card>
-</CardGrid>
+<div class="overview-demo">
+  <div class="overview-demo-copy">
+    <p>ログファイルを一部抽出したい。<br></br>数百のCSVデータをサクッとSQLに変換したい。<br></br>
+    そんなほんの数行のスクリプトで解決できる問題でも、<br></br>
+    プログラムを作ろうとすると、作業用ディレクトリ、実行設定、入力ファイルを読み込むためのコードを用意する必要があります。</p>
+    <p>Trace Kernelでは、そういった事前準備や定型作業の一切を排除し、
+    思いったったらすぐにプログラム（TypeScript）を書いて実行できる作業環境を提供します。</p>
+  </div>
+  <div class="tool-concept-visual">
+    <img src="/illustrations/concept-everyday-tool.png" alt="プログラミングを問題解決のための道具として使うイメージ" />
+  </div>
+</div>
 
-![ワークスペース管理画面](/screen_shot/ワークスペース管理.JPG)
+</section>
 
-## このサイトの位置づけ
+<section class="home-section home-section-muted">
 
-このサイトは、最終的にTrace Kernelの全機能をMD中心で管理するリファレンスになります。
+## ファイル読み取りのコードは書かなくていい
 
-現時点では、見え方と構造を確認するための仮コンテンツを含みます。今後、`app` 配下の最新ソースを正として解析し、各ページの仕様を更新していきます。
+Trace Kernelでは、設定やリソースなどの前提情報（**コンテキスト**）と、処理本体（**ワーク**）をひとつの**ワークスペース**内で集中管理します。GUI上で定義したコンテキストは、Monacoエディタに自動的に注入され、強力な型推論と補完とともに即座に呼び出せます。
+
+<div class="context-flow-images">
+  <img src="/screen_shot/コンテキスト定義.JPG" alt="GUIでresourceを定義する画面" />
+  <img src="/screen_shot/補完参照.JPG" alt="Monacoエディタでresourceが補完候補に表示される画面" />
+</div>
+
+<div class="context-card-grid">
+  <article class="context-card">
+    <div class="context-card-icon"><Icon name="setting" /></div>
+    <h3>env（環境変数）</h3>
+    <p class="context-card-subtitle">パスや設定値の定数化</p>
+    <p>ファイルの出力先ディレクトリなどをGUI上で変数（例：<code>DEST_DIR</code>）として定義します。プログラムに直書きしないためエスケープミスを防ぎ、環境ごとのパス変更もGUIからワンタッチで行えます。</p>
+    <p class="context-call">呼び出し例：<code>$env.DEST_DIR</code></p>
+  </article>
+
+  <article class="context-card">
+    <div class="context-card-icon"><Icon name="document" /></div>
+    <h3>resource（静的リソース）</h3>
+    <p class="context-card-subtitle">テキストやCSVを直接オブジェクト化</p>
+    <p>GUIのテキストエリアにCSVやTSVを貼り付け、「CSV to JSON」パースを指定するだけ。実行時には自動でJSONオブジェクトの配列としてパースされるため、面倒な文字列分割処理を書くことなく、即座にループ処理へ移行できます。</p>
+    <p class="context-call">呼び出し例：<code>$resource.userData</code></p>
+  </article>
+
+  <article class="context-card">
+    <div class="context-card-icon"><Icon name="list-format" /></div>
+    <h3>dataset（動的データセット）</h3>
+    <p class="context-card-subtitle">ローカルPC内の大量ファイルを安全にバインド</p>
+    <p>指定したディレクトリ配下から、複雑なフィルタ条件（例：<code>.git</code>フォルダを除外し、<code>*.java</code>のみ抽出）に合致するファイルだけをGUIで直感的に抽出。数万のファイル群でも遅延ロードで安全に走査・解析が可能です。</p>
+    <p class="context-call">呼び出し例：<code>$dataset.workspace</code></p>
+  </article>
+</div>
+
+</section>
+
+<section class="home-section">
+
+## プログラムからGUIを制御
+
+<div class="terminal-free-section">
+  <div class="terminal-free-copy">
+    <p>
+      プログラムの実行結果は、GUI上に直接反映されます。<br></br>
+      標準出力するだけの<code>$print</code>, <code>$println</code>関数を始め、<br></br>
+      GUIアプリならではの利便性の高い様々なAPI群（<code>$</code>で始まる独自関数）が用意されています。<br></br>
+      APIを用途に応じて使い分けることで、問題をスムーズに解決することができます。
+    </p>
+    <ul class="terminal-feature-list">
+      <li>
+        <strong>状態表示 (<code>$state</code>)</strong>
+        <p>「いつ終わるかわからないループ処理」は、<br></br>数行追加するだけで、GUI上にリアルタイムなプログレスバーやモニター（解析中のファイル名表示など）を表示することができます。<br></br>
+        ログを汚染せずに状態を把握することができます。</p>
+      </li>
+      <li>
+        <strong>複雑な出力 (<code>$channel</code>)</strong>
+        <p>プログラム上でストリームを動的に作成し、<br></br>
+        複数のログを別々に出力することができます。<br></br>
+        出力結果はGUI上でチャンネルを切り替えながら直接確認できます。<br></br>
+        また、テキストだけでなく、整った表（テーブル）形式のストリームとして表示・整理することも可能です。<br></br>
+        単一のテキスト出力では手に余る問題にも対応できます。</p>
+      </li>
+    </ul>
+  </div>
+  <div class="terminal-free-images">
+    <img src="/screen_shot/スクリプト実行中（モニター）.JPG" alt="スクリプト実行中のモニター表示" />
+    <img src="/screen_shot/テーブルストリーム出力.JPG" alt="テーブルストリーム出力" />
+  </div>
+</div>
+
+</section>
+
+<section class="home-section home-section-muted">
+
+## ストレージを散らかさない
+
+<div class="storage-clean-section">
+  <div class="storage-clean-copy">
+    <p>
+      package.json やコンパイル後の .js ファイルなどが、
+      あなたのローカルディレクトリに出力されて散らかることはありません。
+      作業で使うコンテキストやソースコードは、
+      メモリ上のワークスペースでクリーンに管理されます。
+    </p>
+  </div>
+  <div class="storage-clean-visual">
+    <img src="/illustrations/workspace-managed.png" alt="ワークスペース単位でリソース、データセット、ソースコードを一元管理する抽象イメージ" />
+  </div>
+</div>
+
+</section>
+
+<section class="home-section">
+
+## 通常の開発環境との違い
+
+| 通常の開発環境 | Trace Kernel |
+| --- | --- |
+| プロジェクトを作成してコードや設定ファイルを管理する | 物理ファイルを作らず、アプリ上のワークスペースでリソースとプログラムを管理する |
+| npm install やビルド設定を用意する | アプリ内の実行環境でTypeScriptを実行する |
+| 入力ファイルを読み込むコードを書く | GUIで登録したログやCSVが、プログラム上の補完候補として使える |
+| プログラムを実行するためにコマンドを叩く | 実行ボタン、またはエディタ画面のショートカットキーで即実行する |
+
+より詳しい考え方は、[通常の開発環境との違い](/overview/philosophy/)で説明しています。
+
+<div class="overview-callout">
+  Trace Kernelは、VS CodeやNode.jsプロジェクトの置き換えではありません。開発環境を組むほどではないが、手作業では曖昧になりやすい処理を、TypeScriptで明示して実行するための環境です。
+</div>
+
+</section>
+
+<section class="home-section home-section-muted">
+
+## Trace Kernelでできないこと
+Trace Kernelは、日常で発生する小さな問題を、<br></br>
+プログラムを使ってスムーズに解決するための道具として設計されています。<br></br>
+アプリ開発のためのソフトではありません。
+
+<ul class="not-supported-list">
+  <li><Icon name="close" />Webアプリやライブラリを開発するための本格的なプロジェクト管理</li>
+  <li><Icon name="close" />npmパッケージを自由に追加して構成するNode.js開発</li>
+  <li><Icon name="close" />長期間運用するサーバーアプリケーション</li>
+  <li><Icon name="close" />複数人でGit管理する通常のソフトウェア開発プロジェクト</li>
+</ul>
+
+</section>
+
+<section class="home-section">
+
+## 次に読むページ
+
+初めて使う場合は、まず[基本ワークフロー](/overview/workflow/)で作業の流れを確認してください。GUIで登録した情報がコードからどう見えるかを知りたい場合は[Context概要](/context/)、プログラムから使える機能を確認したい場合は[API概要](/reference/api-overview/)が入口になります。
+
+アプリを入手する場合は、[Download](/download/)から最新版を確認してください。
+
+</section>

@@ -8,8 +8,22 @@ export default defineConfig({
       title: 'Trace Kernel',
       description: 'TypeScriptを、日常の問題解決に使うための実行基盤。',
       favicon: '/favicon.svg',
+      locales: {
+        root: {
+          label: '日本語',
+          lang: 'ja',
+        },
+        en: {
+          label: 'English',
+          lang: 'en',
+        },
+      },
+      defaultLocale: 'root',
       logo: {
         src: './src/assets/logo.svg',
+      },
+      components: {
+        Header: './src/components/Header.astro',
       },
       customCss: ['./src/styles/starlight.css'],
       tableOfContents: {
@@ -21,33 +35,96 @@ export default defineConfig({
           label: 'Overview',
           items: [
             { slug: 'index', label: 'Trace Kernelとは' },
-            { slug: 'overview/philosophy', label: '理念' },
+            { slug: 'overview/philosophy', label: '通常の開発環境との違い' },
             { slug: 'overview/workflow', label: '基本ワークフロー' },
+            { slug: 'overview/terminology', label: '用語と全体像' },
           ],
         },
         {
-          label: 'Guide',
+          label: 'Features',
           items: [
             { slug: 'guide/workspace', label: 'ワークスペース' },
-            { slug: 'guide/context', label: 'コンテキスト' },
             { slug: 'guide/program', label: 'プログラムを書く' },
-            { slug: 'guide/transaction', label: 'トランザクション' },
+          ],
+        },
+        {
+          label: 'Context',
+          items: [
+            { slug: 'context', label: '概要' },
+            { slug: 'context/env', label: 'env' },
+            { slug: 'context/resource', label: 'resource' },
+            { slug: 'context/dataset', label: 'dataset' },
           ],
         },
         {
           label: 'API Reference',
           items: [
             { slug: 'reference/api-overview', label: 'API概要' },
-            { slug: 'reference/fs', label: '$fs' },
+            { slug: 'reference/print', label: '$print / $println' },
             { slug: 'reference/channel', label: '$channel' },
             { slug: 'reference/state', label: '$state' },
-            { slug: 'reference/parser-net-runtime', label: '$parser / $net / $runtime' },
+            { slug: 'reference/parser', label: '$parser' },
+            { slug: 'reference/runtime', label: '$runtime' },
           ],
         },
         {
           label: 'Recipes',
           items: [
-            { slug: 'recipes/file-batch', label: 'ファイル一括処理' },
+            { slug: 'recipes/file-batch', label: 'ログ/CSVを解析する' },
+          ],
+        },
+        {
+          label: 'Download',
+          items: [
+            { slug: 'download', label: 'ダウンロード' },
+            { slug: 'download/compatibility', label: 'バージョン互換性' },
+            { slug: 'download/release-notes', label: 'リリースノート' },
+          ],
+        },
+        {
+          label: 'Pro',
+          items: [
+            { slug: 'pro', label: 'Pro版とは' },
+            { slug: 'pro/activate', label: 'アクティベート' },
+            {
+              label: 'Features',
+              items: [
+                { slug: 'pro/file-system', label: 'ファイル操作' },
+                { slug: 'pro/process', label: '外部プログラム' },
+                { slug: 'pro/logic', label: '共通ロジック' },
+              ],
+            },
+            {
+              label: 'Context',
+              items: [
+                { slug: 'pro/context', label: '概要' },
+                { slug: 'pro/context/process', label: 'process' },
+                { slug: 'pro/context/logic', label: 'logic' },
+              ],
+            },
+            {
+              label: 'API Reference',
+              items: [
+                { slug: 'pro/api/fs', label: '$fs' },
+                { slug: 'pro/api/net', label: '$net' },
+              ],
+            },
+            {
+              label: 'Recipes',
+              items: [
+                { slug: 'pro/recipes/jar-vulnerability', label: 'jar脆弱性OSS検出' },
+                { slug: 'pro/recipes/csv-daily-sort', label: 'CSV傾向別フォルダ分け' },
+                { slug: 'pro/recipes/codebase-export', label: 'コードベース部分エクスポート' },
+              ],
+            },
+          ],
+        },
+        {
+          label: 'Legal',
+          items: [
+            { slug: 'legal/terms-license', label: '利用規約・ライセンス' },
+            { slug: 'legal/disclaimer', label: '免責・利用上の注意' },
+            { slug: 'legal/privacy', label: 'プライバシーポリシー' },
           ],
         },
       ],

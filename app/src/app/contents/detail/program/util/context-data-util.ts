@@ -30,10 +30,12 @@ namespace ContextDataUtil {
       disables.find((d) => d.cat === cat && d.index === i) != undefined;
 
     let processes: StoreProcess.Props[] = [];
+    let logics: StoreLogic.Props[] = [];
     if (StoreLicense.isPro()) {
       processes = workspace.processes.filter(
         (_, i) => !isDisable('process', i),
       );
+      logics = workspace.logics.filter((_, i) => !isDisable('logic', i));
     }
     const injectionalData: ContextDataUtil.Props = {
       envs: workspace.envs.filter((_, i) => !isDisable('env', i)),
@@ -42,7 +44,7 @@ namespace ContextDataUtil {
       ),
       datasets: workspace.datasets.filter((_, i) => !isDisable('dataset', i)),
       processes,
-      logics: workspace.logics.filter((_, i) => !isDisable('logic', i)),
+      logics,
     };
     return injectionalData;
   };

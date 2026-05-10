@@ -10,7 +10,6 @@ namespace DclFileSystem {
     glob: (pattern: string) => Promise<string[]>;
     stat: (path: string) => Promise<FileStat>;
     readDir: (dir: string) => Promise<{ name: string; isDir: boolean }[]>;
-    readBinary: (filePath: string) => Promise<ArrayBuffer>;
     readText: (filePath: string, encoding: 'utf8' | 'sjis') => Promise<string>;
     saveText: (filePath: string, content: string) => Promise<void>;
     copyFile: (src: string, dest: string) => Promise<void>;
@@ -50,7 +49,6 @@ namespace DclFileSystem {
             glob: (pattern: string) => Promise<string[]>,
             stat: (path: string) => Promise<FileStat>,
             readDir: (dir: string) => Promise<{ name: string; isDir: boolean; }[]>,
-            readBinary: (filePath: string) => Promise<ArrayBuffer>,
             readText: (filePath: string, encoding?: 'utf8' | 'sjis') => Promise<string>;
             saveText: (filePath: string, content: string) => Promise<void>;
             copyFile: (src: string, dest: string) => Promise<void>;
@@ -79,10 +77,6 @@ namespace DclFileSystem {
       },
       readDir: (dir: string) => {
         return WorkerInvoke.call('read_dir', { dir });
-      },
-      readBinary: async (filePath: string) => {
-        const bytes = await RealFSWriter.readBinary(filePath);
-        return bytes.buffer;
       },
       readText: async (filePath: string, encoding?: 'utf8' | 'sjis') => {
         const req: FileRequest = { filePath, encoding: encoding ?? 'utf8' };

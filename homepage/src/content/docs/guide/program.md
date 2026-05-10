@@ -1,43 +1,93 @@
 ---
 title: プログラムを書く
-description: Monacoエディタ、補完、実行、出力方式。
+description: work、Monacoエディタ、補完、実行、出力方式。
 ---
 
-workは、Trace KernelでTypeScriptを書く単位です。
+`work`は、Trace KernelでTypeScriptを書いて実行する作業単位です。
+
+1つのworkは、1つのプログラムとして扱います。通常のプロジェクトのようなファイル分割、import/export、ビルド設定はありません。複数のworkを作る場合も、それぞれは独立しており、必要に応じて手動で順に実行します。
+
+## workの設定
+
+![work追加時](/screen_shot/work追加時.JPG)
+
+| 項目 | 説明 |
+| --- | --- |
+| `name` | ワーク名。識別用の名前で、他のworkから自動参照されるものではありません。 |
+| `output_method` | 出力方式。PlainまたはChannelを選びます。 |
+| `api_injections` | 利用できる独自APIの一覧です。 |
+| `context_injections` | workから参照できるcontextの一覧です。`error`状態のcontextは表示されません。 |
+
+## output_method
+
+出力方式により、使える出力APIが変わります。
+
+| output_method | 使えるAPI | 用途 |
+| --- | --- | --- |
+| `Plain` | `$print` / `$println` | シンプルなテキスト出力 |
+| `Channel` | `$channel` | 複数ストリーム、テーブル出力 |
+
+最初は`Plain`で十分です。複数の出力を切り替えたい場合や、表形式で結果を確認したい場合に`Channel`を使います。
+
+## エディタ
+
+workの詳細画面でOpen Editorを押すと、プログラムエディタが表示されます。
 
 ![プログラムエディタ](/screen_shot/プログラムエディタ表示時.JPG)
 
+エディタにはMonaco Editorを採用しています。VS Codeに近い操作感でTypeScriptを書けます。
+
+主な特徴は次の通りです。
+
+- ワークスペースで定義したcontextが補完候補として反映される
+- 編集内容はリアルタイムでワークスペースに反映される
+- `×`ボタンまたは`ESC`キーでエディタを閉じられる
+
 ## 補完
 
-ワークスペースに登録したコンテキストは、Monacoエディタに型情報として注入されます。
+GUIで登録したcontextは、プログラム上の補完候補として使えます。
 
 ![補完](/screen_shot/補完.JPG)
 
+```ts
+$resource.userList[0].id
+$env.DEST_DIR
+$dataset.workspace
+```
+
+CSVをresourceとして登録した場合、ヘッダ名がプロパティとして補完されます。入力の準備をGUI側に寄せながら、処理本体はTypeScriptとして書けます。
+
 ## 実行
 
-プログラムは画面上のRun操作、またはショートカットで実行します。
+以下の操作でworkを実行します。
 
-実行後は、ソース表示から結果表示に切り替わります。
+| 操作 | 方法 |
+| --- | --- |
+| ボタン | 右下のRunボタン |
+| ショートカット | `F5`または`Alt + Enter` |
+
+実行を開始すると、画面はソース表示と出力表示に切り替わります。
 
 ![プログラム実行時](/screen_shot/プログラム実行時（出力結果）.JPG)
 
-## 出力方式
-
-workの出力方式には、主に次の2系統があります。
-
-| 方式 | 主なAPI | 用途 |
-| --- | --- | --- |
-| plain | `$print` / `$println` | シンプルなテキスト出力 |
-| channel | `$channel` | 複数ストリーム、テーブル出力 |
-
-```ts
-$println('hello');
+```text
+左半分: ソースコード
+右半分: 出力結果パネル
 ```
 
-```ts
-const report = $channel.createTableStream('report', [
-  { name: 'id' },
-  { name: 'name' },
-]);
-report.add({ id: '001', name: 'taro' });
-```
+実行中は`Executing...`と表示されます。`$state`を使うと、プログレスバーやモニターを追加表示できます。
+
+## 出力結果のコピー
+
+標準機能では、解析や集計の結果を出力パネルで確認し、必要な内容をコピーして使います。
+
+出力結果画面にはClipboard操作があり、テキストベースの成果物を表計算ソフト、チャット、メモ、別ドキュメントへ貼り付けられます。
+
+## 実行のキャンセル
+
+| 操作 | 方法 |
+| --- | --- |
+| ボタン | 画面下部のCancelボタン |
+| ショートカット | `Alt + 左キー` |
+
+キャンセルすると、ソースコード編集画面に戻ります。

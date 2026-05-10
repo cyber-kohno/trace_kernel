@@ -130,12 +130,14 @@
 </div>
 
 <div class="indent">
-  <EntrySection
-    label={'-logic'}
-    items={workspace.logics}
-    entryComponent={LogicEntry}
-    add={addLogic}
-  />
+  {#if storeLicense.isPro()}
+    <EntrySection
+      label={'-logic'}
+      items={workspace.logics}
+      entryComponent={LogicEntry}
+      add={addLogic}
+    />
+  {/if}
   <EntrySection
     label={'-work'}
     items={workspace.works}

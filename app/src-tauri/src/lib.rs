@@ -40,7 +40,7 @@ use crate::parser::dom::dom_parse_html;
 use crate::parser::dom::dom_query;
 use crate::parser::dom::dom_query_from_node;
 use crate::parser::dom::dom_root;
-use crate::parser::excel::excel_parse;
+use crate::parser::excel::excel_parse_file;
 use crate::runtime::worker_dispose;
 use crate::runtime::worker_init;
 use crate::runtime::AppState;
@@ -117,7 +117,7 @@ pub fn run() {
             dom_node_parent,
             dom_info,
             dom_dispose,
-            excel_parse,
+            excel_parse_file,
             run_process,
         ])
         .run(tauri::generate_context!())
