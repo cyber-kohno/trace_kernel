@@ -1,10 +1,10 @@
 ---
 title: Trace Kernelとは
-description: 準備は不要。アプリを開いて書き始めるだけ。
+description: プログラムを、問題解決の道具に。
 template: splash
 hero:
-  title: 準備は不要。アプリを開いて書き始めるだけ。
-  tagline: プロジェクト作成も、<code>npm install</code>も不要。<br />GUIで登録したリソースを補完付きで参照し、<br />TypeScriptによる記述、実行、結果確認までをアプリ内で完結。
+  title: プログラムを、問題解決の道具に。
+  tagline: プロジェクト作成も、<code>npm install</code>も不要。<br />TypeScriptによる記述、実行、結果確認までをアプリ内で完結する、<br />日々の問題解決のためのローカル作業環境。
   image:
     html: |
       <video class="hero-video" src="/media/demo.mp4" autoplay muted loop playsinline controls></video>
@@ -21,15 +21,16 @@ import { Icon } from '@astrojs/starlight/components';
 
 <section class="home-section">
 
-## プログラミングを問題解決のための”道具”として再定義
+## 数行で済むはずの処理に、準備が多すぎる。
 
 <div class="overview-demo">
   <div class="overview-demo-copy">
-    <p>ログファイルを一部抽出したい。<br></br>数百のCSVデータをサクッとSQLに変換したい。<br></br>
-    そんなほんの数行のスクリプトで解決できる問題でも、<br></br>
-    プログラムを作ろうとすると、作業用ディレクトリ、実行設定、入力ファイルを読み込むためのコードを用意する必要があります。</p>
-    <p>Trace Kernelでは、そういった事前準備や定型作業の一切を排除し、
-    思いったったらすぐにプログラム（TypeScript）を書いて実行できる作業環境を提供します。</p>
+    <p>ログファイルを一部抽出したい。<br></br>数百行のCSVをSQLに変換したい。<br></br>
+    ほんの数行のスクリプトで済むはずの処理でも、動かすためには、作業用ディレクトリ、実行設定、入力ファイルを読み込むためのコードが必要になる。</p>
+    <p>Trace Kernelでは、環境構築や実行設定をアプリ側の実行基盤が引き受けます。<br></br>
+    CSVやログ、対象ディレクトリをGUIで登録し、workには処理本体だけを書く。<br></br>
+    実行結果はアプリ内の出力パネルで確認できます。<br></br>
+    思い立ったらアプリを開き、その場でコードを書いて実行できます。</p>
   </div>
   <div class="tool-concept-visual">
     <img src="/illustrations/concept-everyday-tool.png" alt="プログラミングを問題解決のための道具として使うイメージ" />
@@ -40,9 +41,11 @@ import { Icon } from '@astrojs/starlight/components';
 
 <section class="home-section home-section-muted">
 
-## ファイル読み取りのコードは書かなくていい
+## 入力データを、コードからそのまま使える形に。
 
-Trace Kernelでは、設定やリソースなどの前提情報（**コンテキスト**）と、処理本体（**ワーク**）をひとつの**ワークスペース**内で集中管理します。GUI上で定義したコンテキストは、Monacoエディタに自動的に注入され、強力な型推論と補完とともに即座に呼び出せます。
+CSV、ログ、対象ディレクトリ、固定値などを、ワークスペース上の**コンテキスト**として登録できます。<br></br>
+登録したコンテキストはMonacoエディタに型情報として注入され、TypeScriptから補完付きで参照できます。<br></br>
+入力ファイルを読み込むための定型コードを書かずに、処理本体から始められます。
 
 <div class="context-flow-images">
   <img src="/screen_shot/コンテキスト定義.JPG" alt="GUIでresourceを定義する画面" />
@@ -54,7 +57,7 @@ Trace Kernelでは、設定やリソースなどの前提情報（**コンテキ
     <div class="context-card-icon"><Icon name="setting" /></div>
     <h3>env（環境変数）</h3>
     <p class="context-card-subtitle">パスや設定値の定数化</p>
-    <p>ファイルの出力先ディレクトリなどをGUI上で変数（例：<code>DEST_DIR</code>）として定義します。プログラムに直書きしないためエスケープミスを防ぎ、環境ごとのパス変更もGUIからワンタッチで行えます。</p>
+    <p>ファイルの出力先ディレクトリなどをGUI上で変数（例：<code>DEST_DIR</code>）として定義します。プログラムに直書きしないためエスケープミスを防ぎ、パスの存在チェックも画面上で行えます。</p>
     <p class="context-call">呼び出し例：<code>$env.DEST_DIR</code></p>
   </article>
 
@@ -62,7 +65,7 @@ Trace Kernelでは、設定やリソースなどの前提情報（**コンテキ
     <div class="context-card-icon"><Icon name="document" /></div>
     <h3>resource（静的リソース）</h3>
     <p class="context-card-subtitle">テキストやCSVを直接オブジェクト化</p>
-    <p>GUIのテキストエリアにCSVやTSVを貼り付け、「CSV to JSON」パースを指定するだけ。実行時には自動でJSONオブジェクトの配列としてパースされるため、面倒な文字列分割処理を書くことなく、即座にループ処理へ移行できます。</p>
+    <p>GUIのテキストエリアにCSVやTSVを貼り付け、「CSV to JSON」パースを指定するだけで、自動でJSONオブジェクトの配列としてプログラムに注入されます。面倒な文字列分割処理を書くことなく、即座にループ処理へ移行できます。</p>
     <p class="context-call">呼び出し例：<code>$resource.userData</code></p>
   </article>
 
@@ -79,29 +82,24 @@ Trace Kernelでは、設定やリソースなどの前提情報（**コンテキ
 
 <section class="home-section">
 
-## プログラムからGUIを制御
+## 実行結果を、GUIに直接表示する
 
 <div class="terminal-free-section">
   <div class="terminal-free-copy">
     <p>
-      プログラムの実行結果は、GUI上に直接反映されます。<br></br>
-      標準出力するだけの<code>$print</code>, <code>$println</code>関数を始め、<br></br>
-      GUIアプリならではの利便性の高い様々なAPI群（<code>$</code>で始まる独自関数）が用意されています。<br></br>
-      APIを用途に応じて使い分けることで、問題をスムーズに解決することができます。
+      プログラムの実行結果は、アプリ内の出力パネルに直接表示されます。<br></br>
+      Trace Kernelでは、<code>$</code>で始まる独自APIを使って、出力、進捗表示、テーブル表示などをプログラムから扱えます。<br></br>
+      単純なテキストは<code>$print</code> / <code>$println</code>で出力し、長時間の処理は<code>$state</code>で進捗や現在処理中のファイル名を表示できます。<br></br>
+      出力を用途ごとに分けたい場合は<code>$channel</code>で複数のストリームを作成し、テキストやテーブルとして結果を確認できます。
     </p>
     <ul class="terminal-feature-list">
       <li>
         <strong>状態表示 (<code>$state</code>)</strong>
-        <p>「いつ終わるかわからないループ処理」は、<br></br>数行追加するだけで、GUI上にリアルタイムなプログレスバーやモニター（解析中のファイル名表示など）を表示することができます。<br></br>
-        ログを汚染せずに状態を把握することができます。</p>
+        <p>大量ファイルの走査や変換処理では、完了までに時間がかかることがあります。<code>$state</code>を使うと、プログレスバーやモニターを表示し、処理件数や現在処理中のファイル名をログとは別に確認できます。</p>
       </li>
       <li>
         <strong>複雑な出力 (<code>$channel</code>)</strong>
-        <p>プログラム上でストリームを動的に作成し、<br></br>
-        複数のログを別々に出力することができます。<br></br>
-        出力結果はGUI上でチャンネルを切り替えながら直接確認できます。<br></br>
-        また、テキストだけでなく、整った表（テーブル）形式のストリームとして表示・整理することも可能です。<br></br>
-        単一のテキスト出力では手に余る問題にも対応できます。</p>
+        <p><code>$channel</code>を使うと、ログ、集計結果、エラー一覧などを別々のストリームに分けて出力できます。テーブルストリームを使えば、集計結果を行と列の形で確認できます。</p>
       </li>
     </ul>
   </div>
@@ -120,14 +118,12 @@ Trace Kernelでは、設定やリソースなどの前提情報（**コンテキ
 <div class="storage-clean-section">
   <div class="storage-clean-copy">
     <p>
-      package.json やコンパイル後の .js ファイルなどが、
-      あなたのローカルディレクトリに出力されて散らかることはありません。
-      作業で使うコンテキストやソースコードは、
-      メモリ上のワークスペースでクリーンに管理されます。
+      Trace Kernelでコードを実行するために、作業ディレクトリへ<code>package.json</code>やコンパイル後の<code>.js</code>ファイルを作る必要はありません。
+      実行に必要なコードや設定は、アプリ内のワークスペースで扱われます。コードを動かすために、物理的な作業ディレクトリや実行用ファイルを用意する必要はありません。
     </p>
   </div>
   <div class="storage-clean-visual">
-    <img src="/illustrations/workspace-managed.png" alt="ワークスペース単位でリソース、データセット、ソースコードを一元管理する抽象イメージ" />
+    <img src="/illustrations/workspace-managed.png" alt="実行用ファイルをローカルストレージに作らず、アプリ内でコードと結果を扱うイメージ" />
   </div>
 </div>
 
@@ -141,7 +137,7 @@ Trace Kernelでは、設定やリソースなどの前提情報（**コンテキ
 | --- | --- |
 | プロジェクトを作成してコードや設定ファイルを管理する | 物理ファイルを作らず、アプリ上のワークスペースでリソースとプログラムを管理する |
 | npm install やビルド設定を用意する | アプリ内の実行環境でTypeScriptを実行する |
-| 入力ファイルを読み込むコードを書く | GUIで登録したログやCSVが、プログラム上の補完候補として使える |
+| 入力ファイルを読み込むボイラープレートを書く | GUIで登録したログやCSVが、プログラム上の補完候補として使える |
 | プログラムを実行するためにコマンドを叩く | 実行ボタン、またはエディタ画面のショートカットキーで即実行する |
 
 より詳しい考え方は、[通常の開発環境との違い](/overview/philosophy/)で説明しています。
@@ -155,9 +151,9 @@ Trace Kernelでは、設定やリソースなどの前提情報（**コンテキ
 <section class="home-section home-section-muted">
 
 ## Trace Kernelでできないこと
-Trace Kernelは、日常で発生する小さな問題を、<br></br>
-プログラムを使ってスムーズに解決するための道具として設計されています。<br></br>
-アプリ開発のためのソフトではありません。
+Trace Kernelは、アプリやライブラリを開発するためのIDEではありません。<br></br>
+ログ解析、データ変換、ファイル調査のような技術作業を、TypeScriptでその場で処理するための作業環境です。<br></br>
+そのため、以下のような本格的な開発プロジェクトの管理や運用は対象外です。
 
 <ul class="not-supported-list">
   <li><Icon name="close" />Webアプリやライブラリを開発するための本格的なプロジェクト管理</li>

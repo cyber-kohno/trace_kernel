@@ -104,6 +104,12 @@
   width: min(100%, 48rem);
 }
 
+.hero .tagline {
+  font-size: clamp(1.25rem, 1.02rem + 0.52vw, 1.52rem);
+  line-height: 1.8;
+  max-width: 48rem;
+}
+
 .hero .hero-video {
   display: block;
   width: 100%;
