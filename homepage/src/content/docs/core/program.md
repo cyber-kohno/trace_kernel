@@ -1,33 +1,9 @@
 ---
 title: プログラムを書く
-description: work、Monacoエディタ、補完、実行、出力方式。
+description: MonacoエディタでTypeScriptを書き、補完を使い、workを実行する操作。
 ---
 
-`work`は、Trace KernelでTypeScriptを書いて実行する作業単位です。
-
-1つのworkは、1つのプログラムとして扱います。通常のプロジェクトのようなファイル分割、import/export、ビルド設定はありません。複数のworkを作る場合も、それぞれは独立しており、必要に応じて手動で順に実行します。
-
-## workの設定
-
-![work追加時](/screen_shot/work追加時.JPG)
-
-| 項目 | 説明 |
-| --- | --- |
-| `name` | ワーク名。識別用の名前で、他のworkから自動参照されるものではありません。 |
-| `output_method` | 出力方式。PlainまたはChannelを選びます。 |
-| `api_injections` | 利用できる独自APIの一覧です。 |
-| `context_injections` | workから参照できるcontextの一覧です。`error`状態のcontextは表示されません。 |
-
-## output_method
-
-出力方式により、使える出力APIが変わります。
-
-| output_method | 使えるAPI | 用途 |
-| --- | --- | --- |
-| `Plain` | `$print` / `$println` | シンプルなテキスト出力 |
-| `Channel` | `$channel` | 複数ストリーム、テーブル出力 |
-
-最初は`Plain`で十分です。複数の出力を切り替えたい場合や、表形式で結果を確認したい場合に`Channel`を使います。
+このページでは、作成済みの`work`を開き、TypeScriptを書いて実行する操作を扱います。workそのものの概念や設定は、[work](/core/work/)を参照してください。
 
 ## エディタ
 
@@ -77,11 +53,7 @@ CSVをresourceとして登録した場合、ヘッダ名がプロパティとし
 
 実行中は`Executing...`と表示されます。`$state`を使うと、プログレスバーやモニターを追加表示できます。
 
-## 出力結果のコピー
-
-標準機能では、解析や集計の結果を出力パネルで確認し、必要な内容をコピーして使います。
-
-出力結果画面にはClipboard操作があり、テキストベースの成果物を表計算ソフト、チャット、メモ、別ドキュメントへ貼り付けられます。
+進捗表示やモニター表示に使うAPIの詳細は、[$state](/reference/state/)を参照してください。
 
 ## 実行のキャンセル
 

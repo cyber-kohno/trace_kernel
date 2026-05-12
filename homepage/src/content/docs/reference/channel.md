@@ -7,7 +7,11 @@ description: テキストストリームとテーブルストリーム。
 
 複数の出力ストリームを動的に生成し、ストリームごとに結果を分けて確認できます。
 
-`output_method`が`Plain`のworkでは`$channel`は利用せず、代わりに`$print` / `$println`を使います。
+workの管理画面では、`output_method`として`Plain`または`Channel`を選択できます。`Channel`を選択すると、通常の`$print` / `$println`は注入されず、代わりに`$channel`を利用できるようになります。
+
+`Plain`は単一のテキスト出力に向いています。`Channel`は、ログ、集計結果、詳細一覧のように、出力を複数のストリームへ分けたい場合に使います。
+
+チャンネルAPIでは、出力対象のストリームを任意に生成し、ストリーム生成時に取得したハンドルを経由して出力します。複数のストリームを生成した場合、実行結果画面でストリームを選択し、ストリームごとに結果を確認できます。
 
 ## テキストストリーム
 
@@ -17,13 +21,13 @@ description: テキストストリームとテーブルストリーム。
 const log = $channel.createTextStream('log');
 ```
 
-`createTextStream(name)`でテキスト出力用のストリームを生成します。
+`createTextStream(name)`でテキスト出力用のストリームを生成します。返り値のハンドルに対して`print()`や`println()`を呼び出すことで、そのストリームへ文字列を出力できます。
 
 ### 出力
 
 ```ts
-log.print('hello');
-log.println('world');
+const log = $channel.createTextStream('log');
+log.println('hello');
 ```
 
 ### コード例
@@ -55,6 +59,8 @@ const report = $channel.createTableStream('report', [
 
 `createTableStream(name, columns)`でテーブル出力用のストリームを生成します。
 
+テーブルストリームでは、最初に列定義を渡します。`add()`には、その列定義に対応したオブジェクトを渡します。定義した列名に基づいて、エディタ上でも補完が効きます。
+
 | プロパティ | 型 | 説明 |
 | --- | --- | --- |
 | `name` | `string` | カラム名 |
@@ -64,9 +70,13 @@ const report = $channel.createTableStream('report', [
 
 ```ts
 report.add({ id: '001', name: 'taro', age: 22 });
+report.add({ id: '002', name: 'jiro', age: 21 });
+report.add({ id: '003', name: 'hana', age: 18 });
 ```
 
 `add()`で行を追加します。定義した列に基づいて補完が効きます。
+
+出力結果は、実行結果画面でテーブルとして確認できます。
 
 ### コード例
 

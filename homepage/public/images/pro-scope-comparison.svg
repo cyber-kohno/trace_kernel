@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="520" viewBox="0 0 1120 520" role="img" aria-labelledby="title desc">
+  <title id="title">Trace Kernel standard and Pro capabilities</title>
+  <desc id="desc">Standard features read resources, run TypeScript work, and show results in the app. Pro features connect that work to external programs and transactional file system updates.</desc>
+  <defs>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrowBlue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2 2 L10 6 L2 10 Z" fill="#2861a3"/>
+    </marker>
+    <marker id="arrowTeal" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2 2 L10 6 L2 10 Z" fill="#0f766e"/>
+    </marker>
+  </defs>
+
+  <rect width="1120" height="520" rx="28" fill="#f7f9fc"/>
+
+  <text x="560" y="54" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#172033">
+    標準機能からPro機能へ広がる作業範囲
+  </text>
+  <text x="560" y="84" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="15" fill="#5c667a">
+    アプリ内で解析・確認し、必要に応じて外部プログラムや実ファイル更新へ接続する
+  </text>
+
+  <g filter="url(#softShadow)">
+    <rect x="56" y="126" width="290" height="312" rx="18" fill="#ffffff"/>
+    <rect x="56" y="126" width="290" height="54" rx="18" fill="#eaf2ff"/>
+    <path d="M56 162 H346 V180 H56 Z" fill="#eaf2ff"/>
+    <text x="82" y="160" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#234f86">
+      標準機能
+    </text>
+    <text x="82" y="206" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="700" fill="#243044">
+      アプリ内で完結する処理
+    </text>
+
+    <g transform="translate(82 235)">
+      <rect width="238" height="42" rx="10" fill="#f5f8ff" stroke="#d8e5fb"/>
+      <text x="18" y="27" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#334155">resource / datasetを読む</text>
+    </g>
+    <g transform="translate(82 291)">
+      <rect width="238" height="42" rx="10" fill="#f5f8ff" stroke="#d8e5fb"/>
+      <text x="18" y="27" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#334155">TypeScriptで解析・変換</text>
+    </g>
+    <g transform="translate(82 347)">
+      <rect width="238" height="42" rx="10" fill="#f5f8ff" stroke="#d8e5fb"/>
+      <text x="18" y="27" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#334155">GUI上で結果を確認</text>
+    </g>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="414" y="150" width="292" height="264" rx="18" fill="#ffffff"/>
+    <rect x="445" y="182" width="230" height="56" rx="12" fill="#182235"/>
+    <text x="560" y="217" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#ffffff">
+      Trace Kernel work
+    </text>
+
+    <rect x="454" y="268" width="212" height="34" rx="8" fill="#eef6ff" stroke="#cfe2fa"/>
+    <text x="560" y="290" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" fill="#334155">
+      コンテキストを補完付きで参照
+    </text>
+
+    <rect x="454" y="318" width="212" height="34" rx="8" fill="#eef6ff" stroke="#cfe2fa"/>
+    <text x="560" y="340" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" fill="#334155">
+      処理を記述・実行・確認
+    </text>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="774" y="126" width="290" height="312" rx="18" fill="#ffffff"/>
+    <rect x="774" y="126" width="290" height="54" rx="18" fill="#e8f7f4"/>
+    <path d="M774 162 H1064 V180 H774 Z" fill="#e8f7f4"/>
+    <text x="800" y="160" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#0f766e">
+      Pro機能
+    </text>
+    <text x="800" y="206" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="700" fill="#243044">
+      外部へ処理を接続する
+    </text>
+
+    <g transform="translate(800 235)">
+      <rect width="238" height="42" rx="10" fill="#f0fbf8" stroke="#ccebe5"/>
+      <text x="18" y="27" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#334155">外部プログラムを呼び出す</text>
+    </g>
+    <g transform="translate(800 291)">
+      <rect width="238" height="42" rx="10" fill="#f0fbf8" stroke="#ccebe5"/>
+      <text x="18" y="27" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#334155">FS変更をトランザクション化</text>
+    </g>
+    <g transform="translate(800 347)">
+      <rect width="238" height="42" rx="10" fill="#f0fbf8" stroke="#ccebe5"/>
+      <text x="18" y="27" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#334155">logic / Web/APIへ広げる</text>
+    </g>
+  </g>
+
+  <path d="M350 282 C376 282 388 282 410 282" stroke="#2861a3" stroke-width="3" fill="none" marker-end="url(#arrowBlue)"/>
+  <path d="M710 282 C736 282 748 282 770 282" stroke="#0f766e" stroke-width="3" fill="none" marker-end="url(#arrowTeal)"/>
+
+  <g transform="translate(378 250)">
+    <rect width="54" height="24" rx="12" fill="#ffffff" stroke="#d6e3f5"/>
+    <text x="27" y="17" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#2861a3">読む</text>
+  </g>
+  <g transform="translate(730 250)">
+    <rect width="64" height="24" rx="12" fill="#ffffff" stroke="#ccebe5"/>
+    <text x="32" y="17" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#0f766e">作用する</text>
+  </g>
+
+  <text x="560" y="468" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#64748b">
+    標準機能で確認した結果を、Pro機能で外部ツール連携やファイル更新までつなげる
+  </text>
+</svg>

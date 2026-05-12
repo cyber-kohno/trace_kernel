@@ -1,25 +1,25 @@
 ---
 title: 基本ワークフロー
-description: Trace Kernelでワークスペースを作成し、contextを登録し、workを実行するまでの流れ。
+description: Trace Kernelでワークスペースを開き、contextを登録し、workを実行して結果を確認するまでの流れ。
 ---
 
-Trace Kernelの基本ワークフローは、ワークスペースを開き、contextを登録し、workを書いて実行し、結果を確認する流れです。
+Trace Kernelの基本ワークフローは、ワークスペースに入力や設定を登録し、workにTypeScriptを書いて、その場で実行結果を確認する流れです。
 
 ```text
-1. 空白のワークスペースを開く、または保存済みの.trkファイルを開く
+1. ワークスペースを開く
 2. contextを登録する
-3. workにTypeScriptを書く
-4. 実行して結果を見る
-5. 必要な結果をコピーして使う
+3. workを追加する
+4. プログラムを書く
+5. 実行して結果を確認する
 ```
 
-![Trace Kernelの基本ワークフロー](/images/workflow-overview.png)
+![Trace Kernelの基本ワークフロー](/images/workflow-overview-v2.svg)
 
 ## 1. ワークスペースを開く
 
 ワークスペースは、Trace Kernelで扱う作業状態です。開始時は、空白のワークスペースから始めるか、保存済みの`.trk`ファイルを開いて再開します。
 
-ワークスペースには、実行するプログラムだけでなく、そのプログラムが使う入力、値、対象ファイルも含まれます。一度きりの解析のような作業では、保存せずに閉じても構いません。
+ワークスペースには、プログラムだけでなく、そのプログラムが使う入力、固定値、対象ファイル群も含まれます。一度きりの解析やリネーム前の確認のような作業では、保存せずに閉じても構いません。
 
 ```text
 workspace
@@ -27,21 +27,17 @@ workspace
 └── work
 ```
 
-同じ作業を後で再利用したい場合は、ワークスペースを`.trk`ファイルとして保存できます。
-
 ![スタート画面](/screen_shot/スタート.JPG)
 
-ワークスペースを開くと、ワークスペース管理画面に移動します。ここで、プログラムから使う入力データや固定値を `context` として登録し、実行するTypeScriptを `work` として作成します。
+ワークスペースを開くと、ワークスペース管理画面に移動します。ここで、プログラムから使う情報を`context`として登録し、実行するTypeScriptを`work`として作成します。
 
 ![ワークスペース管理画面](/screen_shot/ワークスペース管理.JPG)
 
-画面構成や要素の状態管理は、[ワークスペース](/guide/workspace/)で詳しく扱います。
+ワークスペースの考え方や保存の扱いは、[ワークスペース](/core/workspace/)で詳しく説明しています。
 
 ## 2. contextを登録する
 
-contextは、workから参照できる外部情報です。
-
-たとえば、処理対象のディレクトリ、読み込ませたいCSV、対象ファイル群、外部コマンド、再利用する処理などを、ワークスペース上で登録します。
+contextは、workから参照できる入力や設定です。Trace Kernelでは、CSV、ログ、テキスト、対象ファイル群、固定値などをGUI上で登録します。
 
 | context | 例 |
 | --- | --- |
@@ -49,72 +45,52 @@ contextは、workから参照できる外部情報です。
 | `resource` | CSV、JSON、ログ、テキスト |
 | `dataset` | 指定ディレクトリ配下のファイル群 |
 
-登録したcontextは、workの中で`$env`、`$resource`、`$dataset`のように参照します。たとえばGUIで登録したCSVの名前や列は、プログラムを書くときの補完候補としても使われます。
+登録したcontextは、workの中で`$env`、`$resource`、`$dataset`のように参照できます。GUIで登録した名前やCSVの列名は、Monacoエディタの補完候補にも反映されます。
+
+![resourceを登録する画面](/screen_shot/コンテキスト定義.JPG)
+
+## 3. workを追加する
+
+workは、実際に実行するTypeScriptプログラムです。ワークスペース上にworkを追加し、登録済みのcontextを使って処理を書きます。
+
+ひとつのワークスペースには複数のworkを持たせることができます。作業を段階ごとに分けたい場合や、同じ入力に対して別の処理を試したい場合は、workを分けて管理します。
+
+![workを追加する画面](/screen_shot/work追加時.JPG)
+
+workの設定や出力方式は、[work](/core/work/)で詳しく扱います。
+
+## 4. プログラムを書く
+
+ワークスペース管理画面でworkを選択し、右側のパネルに表示される`Open Editor`ボタンを押すことでエディタを開くことができます。ショートカットとして、workのエントリを右クリックして起動することもできます。
+
+ここにTypeScriptを記述できます。workのエディタでは、ワークスペースに登録したcontextと、Trace Kernelが提供するAPIを参照できます。
+
+![プログラムエディタ表示時](/screen_shot/プログラムエディタ表示時.JPG)
+
+たとえば、resourceとして登録したCSVは`$resource.userData`のように補完されます。入力ファイルを読み込むためのコードを書く前に、処理そのものを書き始められます。
+
+![補完参照](/screen_shot/補完参照.JPG)
 
 ```ts
-const outputDir = $env.OUTPUT_DIR;
-
-for (const row of $resource.users) {
-  $println(`${row.id}: ${row.name}`);
+for (const user of $resource.userData) {
+  $println(`${user.user_id}: ${user.name}`);
 }
 ```
 
-> **画像メモ:** resourceにCSVを登録し、その名前と列名がエディタ補完に出るところまでを見せるGIFがあるとよい。Trace Kernelでは「GUIで登録したリソースが、そのままコード補完に現れる」という点が最重要。
+## 5. 実行して結果を確認する
 
-## 3. workを書く
-
-workは、実際に実行するTypeScriptプログラムです。
-
-Trace Kernelのエディタでは、ワークスペースに登録したcontextと、Trace Kernelが提供する独自APIを参照できます。
-
-```ts
-for (const file of $dataset.workspace) {
-  const content = await file.content();
-
-  if (content.includes('TODO')) {
-    $println(file.relativePath);
-  }
-}
-```
-
-このコードでは、`$dataset.workspace`として登録されたファイル群を走査し、`TODO`を含むファイルを出力しています。
-
-![プログラムエディタ](/screen_shot/プログラムエディタ表示時.JPG)
-
-## 4. 実行して結果を見る
+エディタの`Run`ボタンを押すことで、現在のworkを実行できます。ショートカットとして、`F5`キーまたは`Alt + Enter`キーでも実行できます。
 
 workを実行すると、結果はTrace Kernel内の出力領域に表示されます。
 
 単純なテキストで確認したい場合は`$print`や`$println`を使います。複数の出力を切り替えたい場合は`$channel`、表形式で確認したい場合はテーブル出力、進捗を表示したい場合は`$state`を使います。
 
-```ts
-const progress = $state.useProgress({ max: $dataset.workspace.length });
+![プログラム実行時の出力結果](/screen_shot/プログラム実行時（出力結果）.JPG)
 
-for (const file of $dataset.workspace) {
-  const content = await file.content();
-  $println(`${file.relativePath}: ${content.length}`);
-  progress.increment();
-}
-```
+表示した結果は、必要に応じてコピーして外部のドキュメント、チャット、表計算ソフトなどに貼り付けられます。ただし、基本フローとしては「実行して結果を確認する」までで完結します。
 
-> **画像メモ:** 実行中にプログレスバーが進み、完了後に出力パネルへ結果が表示されるGIFがあるとよい。処理の開始、途中経過、結果確認が同じアプリ内で完結することを見せる。
-
-## 5. 結果をコピーして使う
-
-標準機能では、実行結果をTrace Kernel内で確認し、必要なテキストや表をコピーして利用します。
-
-ログ解析、CSV集計、HTMLからの抽出、Excelの内容確認のような作業では、画面に出した結果をそのままメモ、チャット、表計算ソフト、別のドキュメントへ貼り付けるだけで成果物になります。
-
-```ts
-$println('id,name,count');
-
-for (const row of $resource.summary) {
-  $println(`${row.id},${row.name},${row.count}`);
-}
-```
-
-> **画像メモ:** CSVを登録し、集計結果をテーブルまたはテキストで表示し、出力結果を選択してコピーするGIFがあるとよい。無料版だけで業務上の成果物を作れることを伝える。
+実行結果を次の入力として登録し、別のworkにつなげる考え方は、[work](/core/work/)で説明しています。
 
 ## 次に読むページ
 
-各context要素の詳細は、今後のFeaturesセクションで扱います。APIの使い方を確認する場合は、[API概要](/reference/api-overview/)から読み進めてください。
+workの概念や出力方式を確認する場合は、[work](/core/work/)を読んでください。contextの種類を確認する場合は、[Context概要](/context/)から読み進めてください。プログラムから使えるAPIを確認する場合は、[API概要](/reference/api-overview/)が入口になります。

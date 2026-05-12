@@ -65,4 +65,4 @@ workspace
 
 ## 次に読むページ
 
-contextの詳細は[Context概要](/context/)から確認してください。workとエディタの操作は[プログラムを書く](/guide/program/)で扱います。
+contextの詳細は[Context概要](/context/)から確認してください。workとエディタの操作は[プログラムを書く](/core/program/)で扱います。

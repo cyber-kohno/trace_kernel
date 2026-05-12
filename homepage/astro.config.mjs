@@ -41,10 +41,11 @@ export default defineConfig({
           ],
         },
         {
-          label: 'Features',
+          label: 'Core Concepts',
           items: [
-            { slug: 'guide/workspace', label: 'ワークスペース' },
-            { slug: 'guide/program', label: 'プログラムを書く' },
+            { slug: 'core/workspace', label: 'ワークスペース' },
+            { slug: 'core/work', label: 'work' },
+            { slug: 'core/program', label: 'プログラムを書く' },
           ],
         },
         {
@@ -63,7 +64,16 @@ export default defineConfig({
             { slug: 'reference/print', label: '$print / $println' },
             { slug: 'reference/channel', label: '$channel' },
             { slug: 'reference/state', label: '$state' },
-            { slug: 'reference/parser', label: '$parser' },
+            {
+              label: '$parser',
+              items: [
+                { slug: 'reference/parser', label: '概要' },
+                { slug: 'reference/parser/dom', label: 'DOM' },
+                { slug: 'reference/parser/excel', label: 'Excel' },
+                { slug: 'reference/parser/table', label: 'Table' },
+                { slug: 'reference/parser/json', label: 'JSON' },
+              ],
+            },
             { slug: 'reference/runtime', label: '$runtime' },
           ],
         },
@@ -97,7 +107,6 @@ export default defineConfig({
             {
               label: 'Context',
               items: [
-                { slug: 'pro/context', label: '概要' },
                 { slug: 'pro/context/process', label: 'process' },
                 { slug: 'pro/context/logic', label: 'logic' },
               ],

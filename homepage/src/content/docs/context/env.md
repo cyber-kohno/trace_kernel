@@ -7,6 +7,8 @@ description: パスや固定値をworkから参照する。
 
 パス、URL、固定文字列、処理条件など、プログラムに直接書き込みたくない値をGUI側で管理できます。
 
+たとえば、ファイル出力先のディレクトリをプログラムに直書きせず、`env`として定義しておくと、Windowsパスの`\`のエスケープミスを避けやすくなります。環境ごとにパスが変わる場合も、プログラムを開かずにGUI上の値だけを変更できます。
+
 ```ts
 const outputDir = $env.OUTPUT_DIR;
 $println(outputDir);
@@ -27,11 +29,10 @@ $println(outputDir);
 ## コード例
 
 ```ts
-const root = $env.ROOT_DIR;
+const fileName = 'report.txt';
+const outputPath = `${$env.DEST_DIR}\\${fileName}`;
 
-for (const file of $dataset.workspace) {
-  $println(`${root}: ${file.relativePath}`);
-}
+$println(outputPath);
 ```
 
 ## 他contextからの参照
