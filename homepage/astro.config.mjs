@@ -97,14 +97,6 @@ export default defineConfig({
             { slug: 'pro', label: 'Pro版とは' },
             { slug: 'pro/activate', label: 'アクティベート' },
             {
-              label: 'Features',
-              items: [
-                { slug: 'pro/file-system', label: 'ファイル操作' },
-                { slug: 'pro/process', label: '外部プログラム' },
-                { slug: 'pro/logic', label: '共通ロジック' },
-              ],
-            },
-            {
               label: 'Context',
               items: [
                 { slug: 'pro/context/process', label: 'process' },
