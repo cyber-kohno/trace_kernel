@@ -1,7 +1,28 @@
 import * as ts from 'typescript';
 
 namespace LogicSourceUtil {
-  const ASYNC_LIB_SOURCE = `
+  const BASIC_LIB_SOURCE = `
+interface Array<T> {
+  length: number;
+  [n: number]: T;
+  push(...items: T[]): number;
+  pop(): T | undefined;
+  slice(start?: number, end?: number): T[];
+  map<U>(callbackfn: (value: T, index: number, array: T[]) => U): U[];
+  filter(callbackfn: (value: T, index: number, array: T[]) => unknown): T[];
+  forEach(callbackfn: (value: T, index: number, array: T[]) => void): void;
+}
+interface ReadonlyArray<T> {
+  readonly length: number;
+  readonly [n: number]: T;
+  slice(start?: number, end?: number): T[];
+  map<U>(callbackfn: (value: T, index: number, array: readonly T[]) => U): U[];
+  filter(callbackfn: (value: T, index: number, array: readonly T[]) => unknown): T[];
+  forEach(callbackfn: (value: T, index: number, array: readonly T[]) => void): void;
+}
+type Record<K extends keyof any, T> = {
+  [P in K]: T;
+};
 interface PromiseLike<T> {
   then<TResult1 = T, TResult2 = never>(
     onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null,
@@ -171,7 +192,7 @@ declare var Promise: PromiseConstructor;
     const declareSource = options?.declareSource ?? '';
     const ambientFiles = new Map<string, string>([
       [FILE_NAME, source],
-      ['__logic_async_lib__.d.ts', ASYNC_LIB_SOURCE],
+      ['__logic_basic_lib__.d.ts', BASIC_LIB_SOURCE],
       ['__logic_injection__.d.ts', injectionSource],
       ['__logic_declare__.d.ts', declareSource],
     ]);

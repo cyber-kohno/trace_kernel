@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1040" viewBox="0 0 1500 1040" role="img" aria-labelledby="title desc">
+  <title id="title">Trace Kernel logo concept preview 2</title>
+  <desc id="desc">Six logo variations based on Trace Flow and TK Monogram directions.</desc>
+  <rect width="1500" height="1040" fill="#f8fafc"/>
+  <text x="80" y="88" font-family="Inter, Segoe UI, sans-serif" font-size="44" font-weight="700" fill="#0f172a">Trace Kernel logo concepts 2</text>
+  <text x="80" y="130" font-family="Inter, Segoe UI, sans-serif" font-size="22" fill="#475569">derived from Trace Flow and TK Monogram, with quieter palettes</text>
+
+  <g transform="translate(80 180)">
+    <rect width="400" height="360" rx="28" fill="#ffffff" stroke="#e2e8f0"/>
+    <image href="trace-kernel-logo-05-trace-flow-muted.svg" x="112" y="36" width="176" height="176"/>
+    <text x="36" y="258" font-family="Inter, Segoe UI, sans-serif" font-size="25" font-weight="700" fill="#0f172a">05 Muted trace flow</text>
+    <text x="36" y="296" font-family="Inter, Segoe UI, sans-serif" font-size="18" fill="#475569">地味め。処理の流れと収束を強調。</text>
+  </g>
+
+  <g transform="translate(550 180)">
+    <rect width="400" height="360" rx="28" fill="#ffffff" stroke="#e2e8f0"/>
+    <image href="trace-kernel-logo-06-trace-flow-accent.svg" x="112" y="36" width="176" height="176"/>
+    <text x="36" y="258" font-family="Inter, Segoe UI, sans-serif" font-size="25" font-weight="700" fill="#0f172a">06 Trace flow accent</text>
+    <text x="36" y="296" font-family="Inter, Segoe UI, sans-serif" font-size="18" fill="#475569">少し色あり。GUI操作点をアクセントに。</text>
+  </g>
+
+  <g transform="translate(1020 180)">
+    <rect width="400" height="360" rx="28" fill="#ffffff" stroke="#e2e8f0"/>
+    <image href="trace-kernel-logo-07-tk-muted.svg" x="112" y="36" width="176" height="176"/>
+    <text x="36" y="258" font-family="Inter, Segoe UI, sans-serif" font-size="25" font-weight="700" fill="#0f172a">07 Muted TK</text>
+    <text x="36" y="296" font-family="Inter, Segoe UI, sans-serif" font-size="18" fill="#475569">一番控えめ。長く使える記号寄り。</text>
+  </g>
+
+  <g transform="translate(80 600)">
+    <rect width="400" height="360" rx="28" fill="#ffffff" stroke="#e2e8f0"/>
+    <image href="trace-kernel-logo-08-tk-slate-teal.svg" x="112" y="36" width="176" height="176"/>
+    <text x="36" y="258" font-family="Inter, Segoe UI, sans-serif" font-size="25" font-weight="700" fill="#0f172a">08 Slate teal TK</text>
+    <text x="36" y="296" font-family="Inter, Segoe UI, sans-serif" font-size="18" fill="#475569">TKにkernelアクセント。ヘッダ向き。</text>
+  </g>
+
+  <g transform="translate(550 600)">
+    <rect width="400" height="360" rx="28" fill="#ffffff" stroke="#e2e8f0"/>
+    <image href="trace-kernel-logo-09-tk-outline.svg" x="112" y="36" width="176" height="176"/>
+    <text x="36" y="258" font-family="Inter, Segoe UI, sans-serif" font-size="25" font-weight="700" fill="#0f172a">09 Outline TK</text>
+    <text x="36" y="296" font-family="Inter, Segoe UI, sans-serif" font-size="18" fill="#475569">細め。小さい表示でも読みやすい。</text>
+  </g>
+
+  <g transform="translate(1020 600)">
+    <rect width="400" height="360" rx="28" fill="#ffffff" stroke="#e2e8f0"/>
+    <image href="trace-kernel-logo-10-flow-monogram.svg" x="112" y="36" width="176" height="176"/>
+    <text x="36" y="258" font-family="Inter, Segoe UI, sans-serif" font-size="25" font-weight="700" fill="#0f172a">10 Flow monogram</text>
+    <text x="36" y="296" font-family="Inter, Segoe UI, sans-serif" font-size="18" fill="#475569">2と3の中間。Kに流れを統合。</text>
+  </g>
+</svg>

@@ -159,6 +159,7 @@ self.onmessage = async (e: MessageEvent<MessageProps>) => {
     const injectionalObjects = ContextDataUtil.createObjects(
       injectionalData,
       cache.prepar,
+      cache.rust,
     );
 
     // ユーザーコードの return でも正常終了できるよう、done 通知は外側で行う

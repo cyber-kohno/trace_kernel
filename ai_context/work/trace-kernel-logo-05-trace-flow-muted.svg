@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Trace Kernel logo concept 05 - muted trace flow</title>
+  <desc id="desc">A muted trace flow mark with three input paths converging into a kernel point.</desc>
+  <rect width="512" height="512" rx="96" fill="#f8fafc"/>
+  <path d="M96 150c72-44 130-30 176 22 46 52 90 66 144 20" fill="none" stroke="#cbd5e1" stroke-width="22" stroke-linecap="round"/>
+  <path d="M96 256c62-48 120-48 174 0 54 48 94 48 146 0" fill="none" stroke="#334155" stroke-width="28" stroke-linecap="round"/>
+  <path d="M96 362c72 44 130 30 176-22 46-52 90-66 144-20" fill="none" stroke="#cbd5e1" stroke-width="22" stroke-linecap="round"/>
+  <g fill="#f8fafc" stroke="#475569" stroke-width="16">
+    <circle cx="96" cy="150" r="23"/>
+    <circle cx="96" cy="256" r="27"/>
+    <circle cx="96" cy="362" r="23"/>
+  </g>
+  <circle cx="416" cy="256" r="42" fill="#0f172a"/>
+  <circle cx="416" cy="256" r="16" fill="#f8fafc"/>
+</svg>

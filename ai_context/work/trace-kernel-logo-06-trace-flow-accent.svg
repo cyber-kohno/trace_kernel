@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Trace Kernel logo concept 06 - trace flow accent</title>
+  <desc id="desc">A restrained trace flow mark with a teal execution accent.</desc>
+  <rect width="512" height="512" rx="96" fill="#f8fafc"/>
+  <path d="M104 164h88c46 0 62 92 126 92h90" fill="none" stroke="#94a3b8" stroke-width="24" stroke-linecap="round"/>
+  <path d="M104 256h304" fill="none" stroke="#0f172a" stroke-width="30" stroke-linecap="round"/>
+  <path d="M104 348h88c46 0 62-92 126-92h90" fill="none" stroke="#94a3b8" stroke-width="24" stroke-linecap="round"/>
+  <g fill="#f8fafc" stroke="#334155" stroke-width="15">
+    <circle cx="104" cy="164" r="22"/>
+    <circle cx="104" cy="256" r="25"/>
+    <circle cx="104" cy="348" r="22"/>
+  </g>
+  <rect x="374" y="222" width="68" height="68" rx="18" fill="#14b8a6"/>
+  <path d="M396 256h24M408 244v24" stroke="#f8fafc" stroke-width="12" stroke-linecap="round"/>
+</svg>

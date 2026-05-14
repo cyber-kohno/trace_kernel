@@ -10,8 +10,10 @@ import WorkerInvoke from './worker-invoke';
 import type StoreEnv from '../../../../store/store-env';
 import type StoreWorkspace from '../../../../store/store-workspace';
 import StoreLicense from '../../../../store/store-license';
-import LogicSourceUtil from '../../logic/util/logic-source-util';
 import TypescriptUtil from '../../../../util/typescript-util';
+import DclParser from './parser/dcl-parser';
+import DeclareUtil from './declare-util';
+import LogicSignatureCache from '../../logic/util/logic-signature-cache';
 
 namespace ContextDataUtil {
   export type Props = {
@@ -52,6 +54,7 @@ namespace ContextDataUtil {
   export const createObjects = (
     data: Props,
     prepar: RuntimeUtil.PreparCache,
+    rustCache: RuntimeUtil.RustCache,
   ) => {
     const { envs: envVars, resources, datasets, processes, logics } = data;
     const items = [
@@ -247,6 +250,7 @@ namespace ContextDataUtil {
       string,
       (...args: any[]) => any
     >;
+    const parserObject = DclParser.getObject(rustCache);
 
     logics.forEach((logic) => {
       if (logic.name === '') return;
@@ -259,6 +263,7 @@ namespace ContextDataUtil {
           '$dataset',
           '$process',
           '$logic',
+          '$parser',
           `
 const module = { exports: {} };
 const exports = module.exports;
@@ -277,6 +282,7 @@ return module.exports.default ?? exports.default;
           contextMap.$dataset,
           contextMap.$process,
           injectedLogics,
+          parserObject,
         );
 
         if (typeof exported !== 'function') {
@@ -361,23 +367,18 @@ return module.exports.default ?? exports.default;
       });
     }
     if (logics.length > 0) {
-      const ambientDefs = items.map(
-        (item) =>
-          `declare const ${item.name}: {${item.defs
-            .map((d) => d.declareDef)
-            .join(',')}}`,
-      );
+      const ambientDefs = createLogicSignatureAmbientDefs(items);
       items.push({
         name: '$logic',
         defs: logics.map((logic) => {
-          const signature = LogicSourceUtil.getSignatureInfo(logic.source, {
+          const signature = LogicSignatureCache.get({
+            source: logic.source,
             injectionDefs: ambientDefs,
           });
           const name = `${logic.name}`;
-          const declareDef =
-            signature == null
-              ? `${name}: (...args: any[]) => any`
-              : `${name}: (${signature.args.join(', ')}) => ${signature.returnType}`;
+          const declareDef = `${name}: ${LogicSignatureCache.formatFunctionType(
+            signature,
+          )}`;
           return {
             name,
             declareDef,
@@ -391,6 +392,27 @@ return module.exports.default ?? exports.default;
           .map((d) => d.declareDef)
           .join(',')}}`,
     );
+  };
+
+  export const createLogicSignatureAmbientDefs = (
+    items: {
+      name: string;
+      defs: {
+        name: string;
+        declareDef: string;
+      }[];
+    }[],
+  ) => {
+    const parserDeclare = DeclareUtil.createUtilDeclareDef('parser');
+    return [
+      `${parserDeclare.typeDec} declare const $parser: ${parserDeclare.valueDec};`,
+      ...items.map(
+        (item) =>
+          `declare const ${item.name}: {${item.defs
+            .map((d) => d.declareDef)
+            .join(',')}}`,
+      ),
+    ];
   };
 }
 export default ContextDataUtil;

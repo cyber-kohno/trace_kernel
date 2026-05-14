@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Trace Kernel logo concept 09 - outline TK</title>
+  <desc id="desc">An outlined TK monogram suited for header usage and small marks.</desc>
+  <rect width="512" height="512" rx="96" fill="#f8fafc"/>
+  <path d="M112 134h284" stroke="#0f172a" stroke-width="34" stroke-linecap="round"/>
+  <path d="M256 134v244" stroke="#0f172a" stroke-width="34" stroke-linecap="round"/>
+  <path d="M298 256l94-118" stroke="#0f172a" stroke-width="34" stroke-linecap="round"/>
+  <path d="M298 256l102 122" stroke="#0f172a" stroke-width="34" stroke-linecap="round"/>
+  <rect x="214" y="214" width="84" height="84" rx="22" fill="#f8fafc" stroke="#0f766e" stroke-width="20"/>
+  <circle cx="256" cy="256" r="11" fill="#0f766e"/>
+</svg>

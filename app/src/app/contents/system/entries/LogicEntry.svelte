@@ -3,6 +3,8 @@
   import uiStore from '../../../store/ui-store';
   import StoreWorkspace from '../../../store/store-workspace';
   import EntryRecord from './EntryRecord.svelte';
+  import workspaceValidationStore from '../../../store/workspace-validation-store';
+  import ProgramInjectionUtil from '../../maintenance/program/injection/program-injection-util';
 
   export let index: number;
 
@@ -31,6 +33,11 @@
   };
 
   $: logic = workspace.logics[index];
+  $: logicDisplay = ProgramInjectionUtil.getLogicDisplayItem(
+    logic,
+    workspace,
+    $workspaceValidationStore.disables,
+  );
 
   $: openLogic = () => {
     $uiStore.dialog = 'logic';
@@ -45,7 +52,7 @@
   target={{ cat: 'logic', index }}
 >
   <span>
-    <span class="key">{logic.name}</span>
+    <span class="key">{logicDisplay}</span>
   </span>
 </EntryRecord>
 

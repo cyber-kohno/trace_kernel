@@ -12,6 +12,8 @@
   import workspaceValidationStore from '../../../../store/workspace-validation-store';
   import { writable } from 'svelte/store';
   import LogicSourceUtil from '../util/logic-source-util';
+  import DeclareUtil from '../../program/util/declare-util';
+  import LogicSignatureCache from '../util/logic-signature-cache';
 
   let isMonacoInitDone = writable(false);
   let hasError = writable(false);
@@ -33,9 +35,16 @@
     ...injectionalData,
     logics: injectionalData.logics.filter((item) => item.name !== logic.name),
   };
-  $: injectionalDefs = ContextDataUtil.createDeclareDef(logicInjectionalData);
+  $: logicApiDefs = ['parser' as const].map((r) => {
+    const { typeDec, valueDec } = DeclareUtil.createUtilDeclareDef(r);
+    return `${typeDec} declare const $${r}: ${valueDec};`;
+  });
+  $: injectionalDefs = logicApiDefs.concat(
+    ContextDataUtil.createDeclareDef(logicInjectionalData),
+  );
   $: structureMarkers = LogicSourceUtil.validate(logic.source);
-  $: signature = LogicSourceUtil.getSignatureInfo(logic.source, {
+  $: signature = LogicSignatureCache.get({
+    source: logic.source,
     injectionDefs: injectionalDefs,
     declareSource: workspace.declare.source,
   });

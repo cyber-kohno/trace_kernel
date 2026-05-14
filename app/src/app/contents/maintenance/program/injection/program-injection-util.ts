@@ -2,6 +2,7 @@ import type StoreWork from '../../../../store/store-work';
 import type StoreWorkspace from '../../../../store/store-workspace';
 import ContextDataUtil from '../../../detail/program/util/context-data-util';
 import DeclareUtil from '../../../detail/program/util/declare-util';
+import LogicSignatureCache from '../../../detail/logic/util/logic-signature-cache';
 
 namespace ProgramInjectionUtil {
   export type ContextItem = {
@@ -34,6 +35,39 @@ namespace ProgramInjectionUtil {
     ];
   };
 
+  const getLogicApiDeclareDefs = () =>
+    ['parser' as const].map((r) => {
+      const { typeDec, valueDec } = DeclareUtil.createUtilDeclareDef(r);
+      return `${typeDec} declare const $${r}: ${valueDec};`;
+    });
+
+  export const getLogicDisplayItem = (
+    logic: StoreWorkspace.Props['logics'][number],
+    workspace: StoreWorkspace.Props,
+    disables: StoreWorkspace.Target[],
+  ) => {
+    const injectionDefs = getLogicSignatureInjectionDefs(workspace, disables);
+    const signature = LogicSignatureCache.get({
+      source: logic.source,
+      injectionDefs,
+      declareSource: workspace.declare.source,
+    });
+    return `${logic.name}: ${LogicSignatureCache.formatFunctionType(signature)}`;
+  };
+
+  const getLogicSignatureInjectionDefs = (
+    workspace: StoreWorkspace.Props,
+    disables: StoreWorkspace.Target[],
+  ) => {
+    const contexts = ContextDataUtil.getUsableData(workspace, disables);
+    return getLogicApiDeclareDefs().concat(
+      ContextDataUtil.createDeclareDef({
+        ...contexts,
+        logics: [],
+      }),
+    );
+  };
+
   export const getWorkContextItems = (
     workspace: StoreWorkspace.Props,
     disables: StoreWorkspace.Target[],
@@ -46,7 +80,7 @@ namespace ProgramInjectionUtil {
       .filter((logic, index) => !isDisable('logic', index) && logic.name !== '')
       .map((logic) => ({
         prefix: '$logic' as const,
-        item: logic.name,
+        item: getLogicDisplayItem(logic, workspace, disables),
       }));
 
     return [...getBaseContextItems(workspace, disables), ...logicItems];
@@ -73,7 +107,7 @@ namespace ProgramInjectionUtil {
       })
       .map((logic) => ({
         prefix: '$logic' as const,
-        item: logic.name,
+        item: getLogicDisplayItem(logic, workspace, disables),
       }));
 
     return [...getBaseContextItems(workspace, disables), ...logicItems];
@@ -86,7 +120,7 @@ namespace ProgramInjectionUtil {
   };
 
   export const getLogicApiItems = (): string[] => {
-    return [];
+    return ['$parser'];
   };
 }
 

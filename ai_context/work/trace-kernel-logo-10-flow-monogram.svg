@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Trace Kernel logo concept 10 - flow monogram</title>
+  <desc id="desc">A hybrid of trace flow and K-shaped execution path.</desc>
+  <rect width="512" height="512" rx="96" fill="#f8fafc"/>
+  <path d="M144 128v256" stroke="#172554" stroke-width="48" stroke-linecap="round"/>
+  <path d="M144 256h112" stroke="#172554" stroke-width="48" stroke-linecap="round"/>
+  <path d="M256 256c44-42 80-84 112-126" fill="none" stroke="#475569" stroke-width="46" stroke-linecap="round"/>
+  <path d="M256 256c48 44 84 86 116 128" fill="none" stroke="#475569" stroke-width="46" stroke-linecap="round"/>
+  <path d="M88 168c44-28 78-28 112 0" fill="none" stroke="#cbd5e1" stroke-width="18" stroke-linecap="round"/>
+  <path d="M88 344c44 28 78 28 112 0" fill="none" stroke="#cbd5e1" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="38" fill="#0f766e"/>
+  <circle cx="256" cy="256" r="13" fill="#f8fafc"/>
+</svg>

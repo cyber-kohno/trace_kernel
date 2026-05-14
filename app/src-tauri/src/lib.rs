@@ -41,9 +41,12 @@ use crate::parser::dom::dom_query;
 use crate::parser::dom::dom_query_from_node;
 use crate::parser::dom::dom_root;
 use crate::parser::excel::excel_parse_file;
+use crate::runtime::AppState;
+use crate::runtime::clear_recovery_snapshot;
+use crate::runtime::get_recovery_snapshot;
+use crate::runtime::set_recovery_snapshot;
 use crate::runtime::worker_dispose;
 use crate::runtime::worker_init;
-use crate::runtime::AppState;
 use scraper::api::load_html_from_url;
 use scraper::api::load_http;
 use stream::channel::add_channel;
@@ -65,6 +68,7 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .manage(AppState {
             workers: Mutex::new(HashMap::new()),
+            recovery_snapshot: Mutex::new(None),
         })
         .on_window_event(|window, event| {
             if let WindowEvent::DragDrop(drag_event) = event {
@@ -101,6 +105,9 @@ pub fn run() {
             load_http,
             worker_init,
             worker_dispose,
+            set_recovery_snapshot,
+            get_recovery_snapshot,
+            clear_recovery_snapshot,
             add_channel,
             append_lines,
             get_range_lines,

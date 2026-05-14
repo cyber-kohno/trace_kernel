@@ -24,6 +24,7 @@
   import type { StreamAPI } from '../output/stream-api';
   import BusyIndicator from '../../../../util/item/BusyIndicator.svelte';
   import TxDialog from './tx/ui/TxDialog.svelte';
+  import WorkspaceRecoveryUtil from '../../../../util/data/workspace-recovery-util';
 
   type Phase = 'coding' | 'prepar' | 'executing' | 'done' | 'error';
 
@@ -66,6 +67,18 @@
   $: injectionalDefs = ContextDataUtil.createDeclareDef(injectionalData);
   $: activeChannel = $channels[$activeChannelIdx];
 
+  const setRecoverySnapshot = async () => {
+    await WorkspaceRecoveryUtil.saveBeforeProgramRun({
+      workspace,
+      handlePath: $workspaceStore.handlePath,
+      savedSnapshot: $workspaceStore.snapshot,
+    });
+  };
+
+  const clearRecoverySnapshot = async () => {
+    await WorkspaceRecoveryUtil.clear();
+  };
+
   onDestroy(() => {
     $uiStore.shortcutEvent = null;
   });
@@ -100,6 +113,7 @@
           $phase = 'executing';
           break;
         case 'done':
+          await clearRecoverySnapshot();
           $phase = 'done';
           streamRef?.end();
 
@@ -109,6 +123,7 @@
           }
           break;
         case 'runtime-error': {
+          await clearRecoverySnapshot();
           $phase = 'error';
           const { sourceMap, stack } = e;
           setTimeout(() => {
@@ -156,9 +171,10 @@
     };
   });
 
-  $: cancel = () => {
+  $: cancel = async () => {
     if ($phase === 'coding' || $isDispTxDialog) return;
     terminate();
+    await clearRecoverySnapshot();
     $channels = [];
     $phase = 'coding';
     $progress = getInitialProgress();
@@ -169,13 +185,14 @@
 
   $: executeDisable = $phase !== 'coding' || $hasError;
 
-  $: runScript = () => {
+  $: runScript = async () => {
     if ($phase !== 'coding' || $hasError) return;
 
     (document.activeElement as HTMLElement)?.blur();
     document.body.focus();
 
     $phase = 'prepar';
+    await setRecoverySnapshot();
 
     const { outputText, sourceMapText } = TypescriptUtil.transpileTsToJs(
       work.source,

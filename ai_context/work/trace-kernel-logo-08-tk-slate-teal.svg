@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Trace Kernel logo concept 08 - slate teal TK</title>
+  <desc id="desc">A TK monogram using slate structure and a restrained teal kernel accent.</desc>
+  <rect width="512" height="512" rx="96" fill="#f8fafc"/>
+  <path d="M124 134h264" stroke="#172554" stroke-width="50" stroke-linecap="round"/>
+  <path d="M256 134v246" stroke="#172554" stroke-width="50" stroke-linecap="round"/>
+  <path d="M302 254l90-114" stroke="#334155" stroke-width="50" stroke-linecap="round"/>
+  <path d="M302 258l98 122" stroke="#334155" stroke-width="50" stroke-linecap="round"/>
+  <rect x="220" y="220" width="72" height="72" rx="16" fill="#14b8a6"/>
+  <path d="M244 256h24M256 244v24" stroke="#f8fafc" stroke-width="11" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Trace Kernel logo concept 02 - trace flow</title>
+  <desc id="desc">A traced path converging into a kernel execution point.</desc>
+  <defs>
+    <linearGradient id="flow" x1="72" y1="96" x2="432" y2="416" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f766e"/>
+      <stop offset="0.55" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#172554"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#f8fafc"/>
+  <path d="M100 156c72-54 141-54 208 0 44 36 76 38 104 6" fill="none" stroke="#cbd5e1" stroke-width="22" stroke-linecap="round"/>
+  <path d="M100 256c54-42 107-42 160 0 54 42 106 42 156 0" fill="none" stroke="url(#flow)" stroke-width="28" stroke-linecap="round"/>
+  <path d="M100 356c72 54 141 54 208 0 44-36 76-38 104-6" fill="none" stroke="#cbd5e1" stroke-width="22" stroke-linecap="round"/>
+  <g fill="#f8fafc" stroke="url(#flow)" stroke-width="16">
+    <circle cx="100" cy="156" r="25"/>
+    <circle cx="100" cy="256" r="25"/>
+    <circle cx="100" cy="356" r="25"/>
+    <circle cx="412" cy="162" r="25"/>
+    <circle cx="416" cy="256" r="34"/>
+    <circle cx="412" cy="350" r="25"/>
+  </g>
+  <path d="M394 256h44M416 234v44" stroke="#172554" stroke-width="16" stroke-linecap="round"/>
+</svg>

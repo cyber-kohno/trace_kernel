@@ -7,6 +7,7 @@
   import Record from '../../util/layout/RecordDiv.svelte';
   import { ask } from '@tauri-apps/plugin-dialog';
   import { relaunch } from '@tauri-apps/plugin-process';
+  import WorkspaceRecoveryUtil from '../../util/data/workspace-recovery-util';
 
   const closeWorkspace = () => {
     const exec = () => {
@@ -39,6 +40,7 @@
       },
     ).then(async (isOk) => {
       if (isOk) {
+        await WorkspaceRecoveryUtil.clear();
         if (import.meta.env.DEV) {
           window.location.reload();
         } else {

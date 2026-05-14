@@ -15,6 +15,7 @@
   import StartFrame from './contents/system/StartFrame.svelte';
   import Record from './util/layout/RecordDiv.svelte';
   import { updateDirty } from './store/dirty';
+  import WorkspaceRecoveryUtil from './util/data/workspace-recovery-util';
 
   let toastFrameRef: ToastFrame;
 
@@ -30,17 +31,17 @@
     });
 
     await FileUtil.updateAppTitle();
-    // window へ global keydown を登録
+    const isRecoveryRestored = await WorkspaceRecoveryUtil.restoreOnStartup();
+
     window.addEventListener('keydown', (e) => {
       if (e.ctrlKey && e.key === 's') {
-        e.preventDefault(); // ブラウザの「ページを保存」ダイアログをブロック
-        e.stopPropagation(); // 必要なら他のハンドラへも流れない
+        e.preventDefault();
+        e.stopPropagation();
 
         if ($workspaceStore.workspace != null) {
           FileUtil.saveWorkspace();
         }
       }
-      // リロード完全禁止
       if (
         e.key === 'F5' ||
         (e.ctrlKey && e.key === 'r') ||
@@ -57,27 +58,20 @@
 
     args = (await invoke('get_cli_args')) as string[];
 
-    if (args.length >= 2) {
+    if (!isRecoveryRestored && args.length >= 2) {
       const filePath = args[1];
       await FileUtil.loadWorkspaceFile(filePath);
     }
 
     const payload = await LicenseUtil.loadLicenseOnStartup();
-    // console.log(payload);
     if (payload != null) {
       $appStore.license = LicenseUtil.getConvertedLicenseFromPayload(payload);
       FileUtil.updateAppTitle();
     }
 
-    // グローバルに注入
     $global.toastDisp = toastFrameRef.disp;
 
     updateDirty();
-    // alert(args);
-    // // クリーンアップ（コンポーネントが破棄されるとき）
-    // return () => {
-    //   window.removeEventListener("contextmenu", handler);
-    // };
   });
 </script>
 
