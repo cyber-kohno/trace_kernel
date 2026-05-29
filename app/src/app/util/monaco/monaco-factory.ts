@@ -8,6 +8,7 @@ namespace MonacoFactory {
       target: monaco.languages.typescript.ScriptTarget.ES2020,
       module: monaco.languages.typescript.ModuleKind.ESNext,
       lib: ['es2020', 'webworker'],
+      noImplicitAny: true,
       strictNullChecks: true,
       noUnusedLocals: true,
       noUnusedParameters: true,

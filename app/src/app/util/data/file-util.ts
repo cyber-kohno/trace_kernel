@@ -9,10 +9,19 @@ import { Window } from '@tauri-apps/api/window';
 import ToastUtil from '../item/toast-util';
 import StoreWorkspace from '../../store/store-workspace';
 import { dirty, getSnapshot } from '../../store/dirty';
+import {
+  PATCH as WORKSPACE_PATCH,
+  RUNTIME_GEN as WORKSPACE_RUNTIME_GEN,
+  VERSION as WORKSPACE_VERSION,
+  WORKSPACE_GEN as WORKSPACE_SCHEMA_GEN,
+} from '../../workspace/workspace-version.js';
 
 namespace FileUtil {
-  export const VERSION = 'v1.11';
-  export const APP_NAME = `Trace Kernel ${VERSION}.0`;
+  export const WORKSPACE_GEN = WORKSPACE_SCHEMA_GEN;
+  export const RUNTIME_GEN = WORKSPACE_RUNTIME_GEN;
+  export const PATCH = WORKSPACE_PATCH;
+  export const VERSION = WORKSPACE_VERSION;
+  export const APP_NAME = `Trace Kernel ${VERSION}.${PATCH}`;
   const FILE_EXTENSION: string = `${VERSION}.trk`;
 
   export const updateAppTitle = async () => {

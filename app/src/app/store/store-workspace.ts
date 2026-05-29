@@ -9,7 +9,7 @@ import uiStore from './ui-store';
 import type StoreWork from './store-work';
 import * as WorkspaceValidation from './workspace-validation';
 import type { WorkspaceState } from './workspace-store';
-import FileUtil from '../util/data/file-util';
+import { createMinimalWorkspace } from '../workspace/workspace-fixture.js';
 
 namespace StoreWorkspace {
   export type Props = {
@@ -24,16 +24,7 @@ namespace StoreWorkspace {
   };
 
   export const getInitial = (): Props => {
-    return {
-      version: FileUtil.VERSION,
-      envs: [],
-      resources: [],
-      datasets: [],
-      processes: [],
-      logics: [],
-      declare: { source: '' },
-      works: [],
-    };
+    return createMinimalWorkspace();
   };
 
   export const getWorkspace = (state: WorkspaceState) => {
