@@ -1,4 +1,6 @@
 :root {
+  --sl-content-width: 56rem;
+  --tk-toc-width: 12.5rem;
   --sl-color-accent-low: #d7f1ed;
   --sl-color-accent: #148a80;
   --sl-color-accent-high: #083f3b;
@@ -10,6 +12,17 @@
   --sl-color-gray-5: #334155;
   --sl-color-gray-6: #1d2938;
   --sl-color-black: #101820;
+}
+
+@media (min-width: 72rem) {
+  .right-sidebar-panel .sl-container {
+    width: var(--tk-toc-width);
+    max-width: var(--tk-toc-width);
+  }
+
+  .right-sidebar-panel :where(a) {
+    line-height: 1.45;
+  }
 }
 
 :root[data-theme='light'] {

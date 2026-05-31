@@ -42,11 +42,15 @@ export const getSnapshot = async (
   };
 };
 
-export const dirty = writable(true);
+export const dirty = writable(false);
 
 export const updateDirty = () => {
   workspaceStore.subscribe(async (s) => {
-    if (!s.workspace) return;
+    if (!s.workspace) {
+      dirty.set(false);
+      FileUtil.updateAppTitle();
+      return;
+    }
     const target = get(uiStore).target;
 
     let newSnapshot = { ...s.snapshot };
@@ -61,13 +65,13 @@ export const updateDirty = () => {
           newSnapshot.env = await getHash(JSON.stringify(envs));
           break;
         case 'resource':
-          newSnapshot.env = await getHash(JSON.stringify(resources));
+          newSnapshot.resource = await getHash(JSON.stringify(resources));
           break;
         case 'dataset':
-          newSnapshot.env = await getHash(JSON.stringify(datasets));
+          newSnapshot.dataset = await getHash(JSON.stringify(datasets));
           break;
         case 'process':
-          newSnapshot.env = await getHash(JSON.stringify(processes));
+          newSnapshot.process = await getHash(JSON.stringify(processes));
           break;
         case 'logic':
           newSnapshot.logic = await getHash(JSON.stringify(logics));

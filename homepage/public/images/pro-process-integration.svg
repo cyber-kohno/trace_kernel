@@ -1,107 +1,89 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="520" viewBox="0 0 1120 520" role="img" aria-labelledby="title desc">
-  <title id="title">Trace Kernel and external tools</title>
-  <desc id="desc">Trace Kernel work and logic call external tools such as fd, rg, internal CLI, and converters, then receive stdout, stderr, and exitCode.</desc>
+  <title id="title">Trace Kernel connects external programs</title>
+  <desc id="desc">Trace Kernel registers external command line programs as callable functions, sends arguments, receives execution results, and continues processing in TypeScript.</desc>
   <defs>
-    <filter id="shadow" x="-18%" y="-18%" width="136%" height="136%">
-      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.12"/>
+    <linearGradient id="kernelGrad" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#14344f"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+    <linearGradient id="toolGrad" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f4fbff"/>
+      <stop offset="100%" stop-color="#edf7f5"/>
+    </linearGradient>
+    <filter id="softShadow" x="-16%" y="-16%" width="132%" height="132%">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#172033" flood-opacity="0.12"/>
     </filter>
-    <marker id="arrowOut" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-      <path d="M2 2 L10 6 L2 10 Z" fill="#2861a3"/>
+    <marker id="arrowBlue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2 2 L10 6 L2 10 Z" fill="#2563a8"/>
     </marker>
-    <marker id="arrowBack" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+    <marker id="arrowTeal" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
       <path d="M2 2 L10 6 L2 10 Z" fill="#0f766e"/>
     </marker>
   </defs>
 
-  <rect width="1120" height="520" rx="28" fill="#f7f9fc"/>
+  <rect width="1120" height="520" rx="30" fill="#f7f9fc"/>
+  <circle cx="140" cy="96" r="72" fill="#eaf3fb"/>
+  <circle cx="1004" cy="416" r="84" fill="#eaf7f4"/>
 
-  <text x="560" y="54" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="25" font-weight="700" fill="#172033">
-    外部ツールをTrace Kernelの作業フローに接続する
-  </text>
-  <text x="560" y="84" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="15" fill="#5c667a">
-    work / logicから既存CLIや社内ツールを呼び出し、結果を再びTypeScriptで扱う
-  </text>
+  <g transform="translate(92 126)" filter="url(#softShadow)">
+    <rect width="312" height="268" rx="24" fill="#ffffff"/>
+    <rect x="28" y="28" width="256" height="76" rx="18" fill="url(#kernelGrad)"/>
+    <text x="156" y="62" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="21" font-weight="700" fill="#ffffff">Trace Kernel</text>
+    <text x="156" y="87" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#d8f3ef">TypeScript work</text>
 
-  <g filter="url(#shadow)">
-    <rect x="78" y="166" width="232" height="188" rx="18" fill="#ffffff"/>
-    <rect x="102" y="198" width="184" height="34" rx="8" fill="#eef6ff" stroke="#d4e6fb"/>
-    <text x="194" y="220" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#334155">
-      resource / dataset
-    </text>
-    <rect x="102" y="248" width="184" height="34" rx="8" fill="#eef6ff" stroke="#d4e6fb"/>
-    <text x="194" y="270" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#334155">
-      env
-    </text>
-    <text x="194" y="319" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="15" font-weight="700" fill="#234f86">
-      Trace Kernelの入力
-    </text>
+    <rect x="34" y="134" width="244" height="36" rx="10" fill="#f4f8fc" stroke="#dce7f2"/>
+    <text x="156" y="157" text-anchor="middle" font-family="Consolas, 'SFMono-Regular', monospace" font-size="15" fill="#243447">targets.filter(...)</text>
+
+    <rect x="34" y="184" width="244" height="36" rx="10" fill="#f4f8fc" stroke="#dce7f2"/>
+    <text x="156" y="207" text-anchor="middle" font-family="Consolas, 'SFMono-Regular', monospace" font-size="15" fill="#243447">build arguments</text>
+
+    <rect x="34" y="234" width="244" height="10" rx="5" fill="#d9e9f5"/>
   </g>
 
-  <g filter="url(#shadow)">
-    <rect x="400" y="142" width="320" height="236" rx="22" fill="#ffffff"/>
-    <rect x="430" y="176" width="260" height="62" rx="14" fill="#172033"/>
-    <text x="560" y="202" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#ffffff">
-      Trace Kernel
-    </text>
-    <text x="560" y="224" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" fill="#cbd5e1">
-      work / logic
-    </text>
-
-    <rect x="442" y="268" width="236" height="36" rx="9" fill="#f5f8ff" stroke="#d8e5fb"/>
-    <text x="560" y="291" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#334155">
-      $process.tool(args)
-    </text>
-    <rect x="442" y="316" width="236" height="36" rx="9" fill="#f0fbf8" stroke="#ccebe5"/>
-    <text x="560" y="339" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#334155">
-      結果を整形・次の処理へ
-    </text>
+  <g transform="translate(454 164)" filter="url(#softShadow)">
+    <rect width="232" height="192" rx="24" fill="#ffffff"/>
+    <circle cx="116" cy="66" r="42" fill="#eef8f6" stroke="#cce8e2" stroke-width="2"/>
+    <path d="M98 60 h36 M98 72 h28" stroke="#0f766e" stroke-width="5" stroke-linecap="round"/>
+    <path d="M132 51 l16 15 -16 15" fill="none" stroke="#2563a8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="116" y="132" text-anchor="middle" font-family="Consolas, 'SFMono-Regular', monospace" font-size="17" font-weight="700" fill="#172033">$process.tool()</text>
+    <text x="116" y="158" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" fill="#64748b">registered function</text>
   </g>
 
-  <g filter="url(#shadow)">
-    <rect x="812" y="118" width="230" height="306" rx="18" fill="#ffffff"/>
-    <text x="927" y="154" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="17" font-weight="700" fill="#0f766e">
-      外部プログラム
-    </text>
+  <g transform="translate(744 92)" filter="url(#softShadow)">
+    <rect width="284" height="336" rx="24" fill="#ffffff"/>
+    <text x="142" y="48" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#172033">External programs</text>
 
-    <g transform="translate(840 184)">
-      <rect width="174" height="40" rx="10" fill="#f0fbf8" stroke="#ccebe5"/>
-      <text x="87" y="26" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#334155">fd</text>
+    <g transform="translate(32 78)">
+      <rect width="220" height="52" rx="14" fill="url(#toolGrad)" stroke="#cae4de"/>
+      <circle cx="28" cy="26" r="12" fill="#0f766e"/>
+      <text x="55" y="32" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="15" font-weight="650" fill="#243447">Rust binary tool</text>
     </g>
-    <g transform="translate(840 238)">
-      <rect width="174" height="40" rx="10" fill="#f0fbf8" stroke="#ccebe5"/>
-      <text x="87" y="26" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#334155">rg</text>
+
+    <g transform="translate(32 146)">
+      <rect width="220" height="52" rx="14" fill="url(#toolGrad)" stroke="#cae4de"/>
+      <circle cx="28" cy="26" r="12" fill="#2563a8"/>
+      <text x="55" y="32" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="15" font-weight="650" fill="#243447">Python / Node CLI</text>
     </g>
-    <g transform="translate(840 292)">
-      <rect width="174" height="40" rx="10" fill="#f0fbf8" stroke="#ccebe5"/>
-      <text x="87" y="26" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#334155">社内CLI</text>
-    </g>
-    <g transform="translate(840 346)">
-      <rect width="174" height="40" rx="10" fill="#f0fbf8" stroke="#ccebe5"/>
-      <text x="87" y="26" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#334155">変換ツール</text>
+
+    <g transform="translate(32 214)">
+      <rect width="220" height="52" rx="14" fill="url(#toolGrad)" stroke="#cae4de"/>
+      <circle cx="28" cy="26" r="12" fill="#6b7280"/>
+      <text x="55" y="32" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="15" font-weight="650" fill="#243447">Specialized analyzer</text>
     </g>
   </g>
 
-  <path d="M314 260 H392" stroke="#2861a3" stroke-width="3" fill="none" marker-end="url(#arrowOut)"/>
-  <text x="353" y="244" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#2861a3">
-    入力
-  </text>
+  <path d="M410 220 C426 218 438 216 448 212" stroke="#2563a8" stroke-width="4" fill="none" marker-end="url(#arrowBlue)"/>
+  <text x="430" y="196" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" fill="#2563a8">args</text>
 
-  <path d="M724 236 C758 218 776 207 806 204" stroke="#2861a3" stroke-width="3" fill="none" marker-end="url(#arrowOut)"/>
-  <path d="M724 282 C758 282 776 262 806 258" stroke="#2861a3" stroke-width="3" fill="none" marker-end="url(#arrowOut)"/>
-  <path d="M724 328 C758 346 776 366 806 366" stroke="#2861a3" stroke-width="3" fill="none" marker-end="url(#arrowOut)"/>
-  <text x="764" y="238" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#2861a3">
-    呼び出し
-  </text>
+  <path d="M690 226 C710 210 724 194 738 180" stroke="#2563a8" stroke-width="4" fill="none" marker-end="url(#arrowBlue)"/>
+  <path d="M690 260 C710 260 724 254 738 250" stroke="#2563a8" stroke-width="4" fill="none" marker-end="url(#arrowBlue)"/>
+  <path d="M690 294 C710 314 724 332 738 350" stroke="#2563a8" stroke-width="4" fill="none" marker-end="url(#arrowBlue)"/>
 
-  <path d="M806 406 C744 458 642 456 588 384" stroke="#0f766e" stroke-width="3" fill="none" marker-end="url(#arrowBack)"/>
-  <text x="700" y="462" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" fill="#0f766e">
-    stdout / stderr / exitCode
-  </text>
+  <path d="M744 404 C632 470 480 452 382 404" stroke="#0f766e" stroke-width="4" fill="none" marker-end="url(#arrowTeal)"/>
+  <text x="563" y="470" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="650" fill="#0f766e">stdout / stderr / exit code</text>
 
-  <g transform="translate(326 426)">
-    <rect width="468" height="46" rx="23" fill="#ffffff" stroke="#dfe7f2"/>
-    <text x="234" y="29" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#475569">
-      外部ツールは単体で保ち、呼び出し順序や結果整形をTrace Kernel側で記述する
-    </text>
+  <g transform="translate(440 408)">
+    <rect width="240" height="42" rx="21" fill="#ffffff" stroke="#dce7f2"/>
+    <text x="120" y="27" text-anchor="middle" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#475569">continue processing in TypeScript</text>
   </g>
 </svg>

@@ -12,10 +12,24 @@
   "app": {
     "windows": [
       {
+        "label": "main",
+        "title": "Trace Kernel",
+        "visible": false,
         "width": 1024,
         "height": 768,
         "minWidth": 1024,
         "minHeight": 768
+      },
+      {
+        "label": "splashscreen",
+        "title": "Trace Kernel",
+        "url": "splashscreen.html",
+        "width": 460,
+        "height": 300,
+        "center": true,
+        "decorations": false,
+        "resizable": false,
+        "skipTaskbar": true
       }
     ],
     "security": {
