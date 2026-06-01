@@ -37,7 +37,7 @@ export type KeyValue = {
 export type TextEncoding = 'utf8' | 'sjis';
 export type FileRequest = {
   filePath: string;
-  encoding: TextEncoding;
+  encoding?: TextEncoding;
 };
 
 export type DirBelong = {

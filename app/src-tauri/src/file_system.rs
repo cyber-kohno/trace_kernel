@@ -9,6 +9,8 @@ use std::fs::File;
 use std::io;
 use std::io::BufReader;
 use std::io::Read;
+use std::io::Seek;
+use std::io::SeekFrom;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::command;
@@ -17,10 +19,18 @@ use tauri::command;
 #[serde(rename_all = "camelCase")] // ここでキャメルケースに変換
 pub struct FileRequest {
     file_path: String,
-    encoding: Encoding,
+    encoding: Option<Encoding>,
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct TailFileRequest {
+    file_path: String,
+    line_count: usize,
+    encoding: Option<Encoding>,
+}
+
+#[derive(Clone, Copy, Deserialize, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum Encoding {
     Utf8,
@@ -73,7 +83,7 @@ pub fn read_binary(file_path: String) -> Result<ByteBuf, String> {
 #[command]
 pub fn read_file(req: FileRequest) -> String {
     // println!("{}", req.file_path);
-    let content = match read_file_to_string(req.file_path, req.encoding) {
+    let content = match read_file_to_string(req.file_path, req.encoding.unwrap_or(Encoding::Utf8)) {
         Ok(text) => text,
         Err(err) => err.to_string(),
     };
@@ -97,6 +107,69 @@ pub fn read_file_to_string<P: AsRef<std::path::Path>>(
     let mut s = String::new();
     decoder.read_to_string(&mut s)?;
     Ok(s)
+}
+
+const TAIL_CHUNK_SIZE: usize = 64 * 1024;
+const TAIL_MAX_BYTES: usize = 50 * 1024 * 1024;
+
+fn decode_bytes(bytes: &[u8], encoding: Encoding) -> String {
+    let (text, _, _) = encoding.to_rs_encoding().decode(bytes);
+    text.into_owned()
+}
+
+#[command]
+pub fn read_tail_file(req: TailFileRequest) -> Result<String, String> {
+    if req.line_count == 0 {
+        return Ok(String::new());
+    }
+
+    let encoding = req.encoding.unwrap_or(Encoding::Utf8);
+    let mut file = File::open(&req.file_path).map_err(|e| e.to_string())?;
+    let metadata = file.metadata().map_err(|e| e.to_string())?;
+
+    if !metadata.is_file() {
+        return Err(format!("tailText() target is not a file: {}", req.file_path));
+    }
+
+    let mut position = metadata.len();
+    if position == 0 {
+        return Ok(String::new());
+    }
+
+    let mut buffer = Vec::new();
+
+    while position > 0 {
+        let read_size = TAIL_CHUNK_SIZE.min(position as usize);
+        position -= read_size as u64;
+
+        file.seek(SeekFrom::Start(position))
+            .map_err(|e| e.to_string())?;
+
+        let mut chunk = vec![0; read_size];
+        file.read_exact(&mut chunk).map_err(|e| e.to_string())?;
+
+        let mut next = Vec::with_capacity(chunk.len() + buffer.len());
+        next.extend_from_slice(&chunk);
+        next.extend_from_slice(&buffer);
+        buffer = next;
+
+        if buffer.len() > TAIL_MAX_BYTES {
+            return Err(format!(
+                "tailText() cannot return more than 50.0 MB of text. lineCount may be too large. Path: {}",
+                req.file_path
+            ));
+        }
+
+        let text = decode_bytes(&buffer, encoding);
+        if text.lines().count() > req.line_count {
+            break;
+        }
+    }
+
+    let text = decode_bytes(&buffer, encoding);
+    let lines: Vec<&str> = text.lines().collect();
+    let start = lines.len().saturating_sub(req.line_count);
+    Ok(lines[start..].join("\n"))
 }
 
 #[derive(Debug, Serialize)]

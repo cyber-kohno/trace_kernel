@@ -3,10 +3,17 @@ import PathUtil from '../../../../../util/data/path-util';
 import WorkerInvoke from '../worker-invoke';
 
 export namespace RealFSWriter {
+  const TEXT_READ_LIMIT_BYTES = 50 * 1024 * 1024;
+
   const assertAbsolutePath = (path: string, label: string) => {
     if (!PathUtil.isAbsolute(path)) {
       throw new Error(`${label} must be absolute path.`);
     }
+  };
+
+  const formatBytes = (bytes: number) => {
+    const mib = bytes / 1024 / 1024;
+    return `${mib.toFixed(1)} MB`;
   };
 
   export const readBinary = async (filePath: string) => {
@@ -21,6 +28,27 @@ export namespace RealFSWriter {
   export const stat = async (path: string) => {
     const stat = await WorkerInvoke.call<FileStat>('stat', { path });
     return stat;
+  };
+
+  export const assertTextReadSize = async (filePath: string, apiName: string) => {
+    assertAbsolutePath(filePath, 'filePath');
+    const fileStat = await stat(filePath);
+
+    if (!fileStat.isFile) {
+      throw new Error(`${apiName}() target is not a file: ${filePath}`);
+    }
+
+    if (fileStat.size > TEXT_READ_LIMIT_BYTES) {
+      throw new Error(
+        `${apiName}() cannot read files larger than ${formatBytes(
+          TEXT_READ_LIMIT_BYTES,
+        )}. ` +
+          `File size: ${formatBytes(fileStat.size)}. ` +
+          `Path: ${filePath}`,
+      );
+    }
+
+    return fileStat;
   };
 
   export const saveText = async (path: string, content: string) => {

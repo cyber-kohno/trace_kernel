@@ -14,7 +14,7 @@ namespace DclFSTransaction {
     deleteDir: (dirPath: string) => void;
     openText: (
       filePath: string,
-      encorde: 'utf8' | 'sjis',
+      encoding?: 'utf8' | 'sjis',
     ) => Promise<{ token: RuntimeUtil.FileToken; content: string }>;
     saveText: (filePath: string, content: string) => void;
     updateText: (token: RuntimeUtil.FileToken, content: string) => void;

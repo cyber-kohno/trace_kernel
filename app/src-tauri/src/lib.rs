@@ -19,6 +19,7 @@ use file_system::make_dir;
 use file_system::read_binary;
 use file_system::read_dir;
 use file_system::read_file;
+use file_system::read_tail_file;
 use file_system::rename;
 use file_system::save_binary;
 use file_system::save_text;
@@ -90,6 +91,7 @@ pub fn run() {
             glob_path,
             read_binary,
             read_file,
+            read_tail_file,
             read_dir,
             copy_file,
             make_dir,

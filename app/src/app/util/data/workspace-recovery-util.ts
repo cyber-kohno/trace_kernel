@@ -60,7 +60,7 @@ namespace WorkspaceRecoveryUtil {
     if (recoverySnapshot == null) return false;
 
     const shouldRestore = confirm(
-      'アプリが不正な終わり方をしました。前回の最終セッションのワークスペースを復元しますか？',
+      'The application did not close correctly. Do you want to restore the workspace from the last session?',
     );
     let isRestored = false;
     if (shouldRestore) {
@@ -69,7 +69,7 @@ namespace WorkspaceRecoveryUtil {
         isRestored = true;
       } catch (err) {
         console.error(err);
-        alert('ワークスペースの復元に失敗しました。');
+        alert('Failed to restore the workspace.');
       }
     }
 

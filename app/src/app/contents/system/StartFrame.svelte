@@ -4,6 +4,7 @@
   import StoreWorkspace from '../../store/store-workspace';
   import FileUtil from '../../util/data/file-util';
   import RecordDiv from '../../util/layout/RecordDiv.svelte';
+  import { CURRENT_GEN } from '../../workspace/workspace-version.js';
 
   const createBlank = async () => {
     $workspaceStore.workspace = StoreWorkspace.getInitial();
@@ -17,6 +18,11 @@
 
 <RecordDiv surplus={24}>
   <div class="wrap">
+    <div class="version-info">
+      <div>{`version ${FileUtil.VERSION}`}</div>
+      <div>{`workspace gen: ${CURRENT_GEN.workspace}`}</div>
+      <div>{`api gen: ${CURRENT_GEN.api}`}</div>
+    </div>
     <div class="record">
       <RecordDiv align={'center'} height={65}>
         <span class="emphasis">{'Start a workspace or open a .trk file.'}</span>
@@ -36,6 +42,7 @@
 <style>
   .wrap {
     display: flex;
+    position: relative;
     align-items: center; /* 縦中央 */
     justify-content: center; /* 横中央 */
 
@@ -47,6 +54,20 @@
     border: 2px solid rgba(255, 255, 255, 0.031);
     border-radius: 4px;
     box-sizing: border-box;
+  }
+  .version-info {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    color: rgba(255, 255, 255, 0.546);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 18px;
+    text-align: left;
+    user-select: none;
+    background-color: rgba(255, 255, 255, 0.11);
+    padding: 4px 16px;
+    border-radius: 8px;
   }
   .record {
     padding: 14px 12px;

@@ -49,7 +49,8 @@ type FileStat = {
 
 | メソッド | 説明 |
 | --- | --- |
-| `readText(filePath, encoding?)` | テキストデータを読み込みます。encoding省略時は`utf8`です。 |
+| `readText(filePath, encoding?)` | テキストデータを読み込みます。encoding省略時は`utf8`です。通常サイズのテキスト向けで、50MBを超えるファイルはランタイムエラーになります。 |
+| `tailText(filePath, lineCount, encoding?)` | ファイル末尾から指定行数を読み込み、元の行順で文字列として返します。encoding省略時は`utf8`です。 |
 | `saveText(filePath, content)` | テキストファイルを作成または上書き保存します。 |
 | `copyFile(src, dest)` | ファイルをバイナリコピーします。 |
 
@@ -66,7 +67,14 @@ type FileStat = {
 ### コード例
 
 ```ts
-const content = await $fs.readText(`${$env.ROOT}\\file.txt`, 'utf8');
+const content = await $fs.readText(`${$env.ROOT}\\file.txt`);
+
+const recentLog = await $fs.tailText(`${$env.LOG_DIR}\\app.log`, 500);
+for (const line of recentLog.split('\n')) {
+  if (line.includes('ERROR')) {
+    $println(line);
+  }
+}
 
 const exists = await $fs.exists(`${$env.OUTPUT}\\result.csv`);
 
@@ -98,7 +106,7 @@ const tx = $fs.useTransaction();
 | --- | --- |
 | `makeDir(dirPath)` | ディレクトリ作成を予約します。 |
 | `deleteDir(dirPath)` | 空ディレクトリ削除を予約します。 |
-| `openText(filePath, encoding?)` | テキストを読み込み、チェックアウト状態にします。 |
+| `openText(filePath, encoding?)` | テキストを読み込み、チェックアウト状態にします。encoding省略時は`utf8`です。通常サイズのテキスト向けで、50MBを超えるファイルはランタイムエラーになります。 |
 | `updateText(token, content)` | `openText`で得たtokenを使って更新オーダーを積みます。 |
 | `saveText(filePath, content)` | 新規テキストファイル作成を予約します。 |
 | `copyFile(from, dest)` | ファイルコピーを予約します。 |
@@ -119,7 +127,7 @@ const tx = $fs.useTransaction();
 ```ts
 const tx = $fs.useTransaction();
 
-const { token, content } = await tx.openText(`${$env.DIR}\\target.txt`, 'utf8');
+const { token, content } = await tx.openText(`${$env.DIR}\\target.txt`);
 
 const newContent = content.replace(/old/g, 'new');
 tx.updateText(token, newContent);
@@ -159,7 +167,7 @@ VFS上の論理チェックは、同じトランザクション内で矛盾し�
 `openText()`は、ファイル本文とtokenを返します。
 
 ```ts
-const { token, content } = await tx.openText(filePath, 'utf8');
+const { token, content } = await tx.openText(filePath);
 ```
 
 このtokenは、チェックアウトしたファイルを変更するためのハンドルです。`openText()`したファイルに対して、パス指定の`deleteFile()`、`renameFile()`、`copyFile()`を使うとエラーになります。

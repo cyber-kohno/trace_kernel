@@ -10,7 +10,12 @@ namespace DclFileSystem {
     glob: (pattern: string) => Promise<string[]>;
     stat: (path: string) => Promise<FileStat>;
     readDir: (dir: string) => Promise<{ name: string; isDir: boolean }[]>;
-    readText: (filePath: string, encoding: 'utf8' | 'sjis') => Promise<string>;
+    readText: (filePath: string, encoding?: 'utf8' | 'sjis') => Promise<string>;
+    tailText: (
+      filePath: string,
+      lineCount: number,
+      encoding?: 'utf8' | 'sjis',
+    ) => Promise<string>;
     saveText: (filePath: string, content: string) => Promise<void>;
     copyFile: (src: string, dest: string) => Promise<void>;
     makeDir: (dirPath: string) => Promise<void>;
@@ -34,7 +39,7 @@ namespace DclFileSystem {
         type TransactionAPI = {
             makeDir: (dirPath: string) => void;
             deleteDir: (dirPath: string) => void;
-            openText: (filePath: string, encorde?: "utf8" | "sjis") => Promise<{ token: FileToken; content: string; }>;
+            openText: (filePath: string, encoding?: "utf8" | "sjis") => Promise<{ token: FileToken; content: string; }>;
             saveText: (filePath: string, content: string) => void;
             updateText: (token: FileToken, content: string) => void;
             copyFile: (from: string, dest: string) => void;
@@ -50,6 +55,7 @@ namespace DclFileSystem {
             stat: (path: string) => Promise<FileStat>,
             readDir: (dir: string) => Promise<{ name: string; isDir: boolean; }[]>,
             readText: (filePath: string, encoding?: 'utf8' | 'sjis') => Promise<string>;
+            tailText: (filePath: string, lineCount: number, encoding?: 'utf8' | 'sjis') => Promise<string>;
             saveText: (filePath: string, content: string) => Promise<void>;
             copyFile: (src: string, dest: string) => Promise<void>;
             makeDir: (dirPath: string) => Promise<void>;
@@ -79,8 +85,22 @@ namespace DclFileSystem {
         return WorkerInvoke.call('read_dir', { dir });
       },
       readText: async (filePath: string, encoding?: 'utf8' | 'sjis') => {
+        await RealFSWriter.assertTextReadSize(filePath, 'readText');
         const req: FileRequest = { filePath, encoding: encoding ?? 'utf8' };
         return WorkerInvoke.call<string>('read_file', { req });
+      },
+      tailText: async (
+        filePath: string,
+        lineCount: number,
+        encoding?: 'utf8' | 'sjis',
+      ) => {
+        if (!Number.isInteger(lineCount) || lineCount < 0) {
+          throw new Error('tailText() lineCount must be a non-negative integer.');
+        }
+
+        return WorkerInvoke.call<string>('read_tail_file', {
+          req: { filePath, lineCount, encoding: encoding ?? 'utf8' },
+        });
       },
       saveText: async (filePath: string, content: string) => {
         return RealFSWriter.saveText(filePath, content);

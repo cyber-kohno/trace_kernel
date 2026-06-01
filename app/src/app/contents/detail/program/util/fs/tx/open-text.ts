@@ -22,14 +22,16 @@ export namespace OpenText {
     }
 
     // 実FSから読む
+    const { modifiedAt, size } = await RealFSWriter.assertTextReadSize(
+      filePath,
+      'openText',
+    );
     const binary = await RealFSWriter.readBinary(filePath);
     const text = DataUtil.decodeBinary(binary, encoding);
 
     // token 作成
     const token = RuntimeUtil.createFileToken();
     pathIndex.set(filePath, token);
-
-    const { modifiedAt, size } = await RealFSWriter.stat(filePath);
 
     fileTable.set(token, {
       path: filePath,
