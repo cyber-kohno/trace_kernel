@@ -1,0 +1,83 @@
+{
+  "gen": {
+    "workspace": "0",
+    "api": "0"
+  },
+  "envs": [
+    {
+      "varName": "ENV_SAMPLE",
+      "value": "C:/sample"
+    }
+  ],
+  "resources": [
+    {
+      "varName": "RESOURCE_SAMPLE",
+      "source": "sample resource text"
+    }
+  ],
+  "datasets": [
+    {
+      "varName": "DATASET_SAMPLE",
+      "rootPath": "C:/sample-root",
+      "encoding": "utf8",
+      "scanOption": {
+        "dirConds": [
+          {
+            "pattern": "node_modules",
+            "isExclude": true
+          }
+        ],
+        "fileConds": [
+          {
+            "pattern": "*.txt",
+            "isExclude": false
+          }
+        ]
+      },
+      "targets": [
+        "docs/readme.txt"
+      ]
+    }
+  ],
+  "processes": [
+    {
+      "funcName": "processSample",
+      "prgPath": "C:/Windows/System32/cmd.exe",
+      "scriptArgs": [
+        {
+          "name": "arg0",
+          "type": "string"
+        }
+      ],
+      "cmdArgs": [
+        "/C",
+        "echo",
+        "__arg0__"
+      ],
+      "cwd": "",
+      "stdin": "",
+      "timeout": 3000,
+      "encoding": {
+        "stdin": "utf8",
+        "stdout": "utf8",
+        "stderr": "utf8"
+      }
+    }
+  ],
+  "logics": [
+    {
+      "name": "logicSample",
+      "source": "export default function () {}"
+    }
+  ],
+  "declare": {
+    "source": ""
+  },
+  "works": [
+    {
+      "name": "workSample",
+      "method": "plain",
+      "source": ""
+    }
+  ]
+}

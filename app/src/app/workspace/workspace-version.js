@@ -1,4 +1,6 @@
 export const WORKSPACE_GEN = '0';
-export const RUNTIME_GEN = '0';
-export const PATCH = '0';
-export const VERSION = `v${WORKSPACE_GEN}.${RUNTIME_GEN}`;
+export const API_GEN = '0';
+export const CURRENT_GEN = {
+  workspace: WORKSPACE_GEN,
+  api: API_GEN,
+};

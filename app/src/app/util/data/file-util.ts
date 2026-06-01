@@ -9,19 +9,11 @@ import { Window } from '@tauri-apps/api/window';
 import ToastUtil from '../item/toast-util';
 import StoreWorkspace from '../../store/store-workspace';
 import { dirty, getSnapshot } from '../../store/dirty';
-import {
-  PATCH as WORKSPACE_PATCH,
-  RUNTIME_GEN as WORKSPACE_RUNTIME_GEN,
-  VERSION as WORKSPACE_VERSION,
-  WORKSPACE_GEN as WORKSPACE_SCHEMA_GEN,
-} from '../../workspace/workspace-version.js';
+import { CURRENT_GEN } from '../../workspace/workspace-version.js';
 
 namespace FileUtil {
-  export const WORKSPACE_GEN = WORKSPACE_SCHEMA_GEN;
-  export const RUNTIME_GEN = WORKSPACE_RUNTIME_GEN;
-  export const PATCH = WORKSPACE_PATCH;
-  export const VERSION = WORKSPACE_VERSION;
-  export const APP_NAME = `Trace Kernel ${VERSION}.${PATCH}`;
+  export const VERSION = `v${0}.${0}.${1}`;
+  export const APP_NAME = `Trace Kernel ${VERSION}`;
   const FILE_EXTENSION: string = `${VERSION}.trk`;
 
   export const updateAppTitle = async () => {
@@ -122,10 +114,17 @@ namespace FileUtil {
     }
   };
 
-  const validateVersion = (fileVersion: string) => {
-    if (fileVersion !== VERSION) {
+  const validateWorkspaceGen = (fileGen: StoreWorkspace.Gen | undefined) => {
+    if (fileGen == undefined) {
+      alert('Workspace generation data is missing.');
+      return false;
+    }
+    if (
+      fileGen.workspace !== CURRENT_GEN.workspace ||
+      fileGen.api !== CURRENT_GEN.api
+    ) {
       alert(
-        `Version mismatch detected. File version: ${fileVersion}, App version: ${VERSION}.`,
+        `Workspace generation mismatch detected. File workspace/api: ${fileGen.workspace}/${fileGen.api}, App workspace/api: ${CURRENT_GEN.workspace}/${CURRENT_GEN.api}.`,
       );
       return false;
     }
@@ -144,8 +143,7 @@ namespace FileUtil {
     if (res != null) {
       const workspaceSrc = await getWorkspaceFile(res);
       const workspace: StoreWorkspace.Props = JSON.parse(workspaceSrc);
-      const fileVersion = workspace.version;
-      if (!validateVersion(fileVersion)) return;
+      if (!validateWorkspaceGen(workspace.gen)) return;
       const snapshot = await getSnapshot(workspace);
       workspaceStore.update((v) => {
         return {
@@ -168,9 +166,8 @@ namespace FileUtil {
 
   export const loadWorkspaceFile = async (filePath: string) => {
     const workspaceSrc = await getWorkspaceFile(filePath);
-    const workspace = JSON.parse(workspaceSrc);
-    const fileVersion = workspace.version;
-    if (!validateVersion(fileVersion)) return;
+    const workspace: StoreWorkspace.Props = JSON.parse(workspaceSrc);
+    if (!validateWorkspaceGen(workspace.gen)) return;
     const snapshot = await getSnapshot(workspace);
     workspaceStore.update((curr) => {
       curr.workspace = workspace;
