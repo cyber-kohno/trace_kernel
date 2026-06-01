@@ -12,8 +12,13 @@ import type { WorkspaceState } from './workspace-store';
 import { createMinimalWorkspace } from '../workspace/workspace-fixture.js';
 
 namespace StoreWorkspace {
+  export type Gen = {
+    workspace: string;
+    api: string;
+  };
+
   export type Props = {
-    version: string;
+    gen: Gen;
     envs: StoreEnv.Props[];
     resources: StoreResource.Props[];
     datasets: StoreDataset.Props[];
