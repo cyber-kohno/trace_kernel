@@ -1,7 +1,7 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { invoke } from '@tauri-apps/api/core';
   import OperationButton from '../../../../../util/button/OperationButton.svelte';
-  import ToastUtil from '../../../../../util/item/toast-util';
+  import ToastService from '../../../../../service/toast-service';
   import type DclChannel from '../../util/channel/dcl-channel';
   import Record from '../../../../../util/layout/RecordDiv.svelte';
   import DataUtil from '../../../../../util/data/data-util';
@@ -25,7 +25,7 @@
       const json = JSON.parse(`[${lines.join(',')}]`);
       const csvStr = DataUtil.convertJsonToTable(json, 'csv');
       navigator.clipboard.writeText(csvStr);
-      ToastUtil.disp({
+      ToastService.show({
         text: 'Copied the output to the clipboard!',
       });
     }}

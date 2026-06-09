@@ -1,19 +1,19 @@
-<script lang="ts">
-  import workspaceStore from '../../../../../store/workspace-store';
-  import workspaceValidationStore from '../../../../../store/workspace-validation-store';
-  import StoreWorkspace from '../../../../../store/store-workspace';
+﻿<script lang="ts">
+  import { validationStore } from '../../../../../state/store';
+  import WorkspaceState from '../../../../../state/model/workspace/workspace-state';
   import Record from '../../../../../util/layout/RecordDiv.svelte';
   import Wrap from '../../../../../util/layout/Wrap.svelte';
   import InjectionItem from './ContextInjectionItem.svelte';
   import ProgramInjectionUtil from '../program-injection-util';
+  import { workspaceStore } from '../../../../../state/store';
 
   export let logicName = '';
 
-  $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
+  $: workspace = WorkspaceState.getWorkspace($workspaceStore);
 
   $: items = ProgramInjectionUtil.getLogicContextItems(
     workspace,
-    $workspaceValidationStore.disables,
+    $validationStore.disables,
     { excludeName: logicName },
   );
 </script>

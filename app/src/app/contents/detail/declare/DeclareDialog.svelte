@@ -1,14 +1,13 @@
-<script>
+﻿<script>
   import { onMount } from 'svelte';
-  import workspaceStore from '../../../store/workspace-store';
-  import uiStore from '../../../store/ui-store';
-  import StoreWorkspace from '../../../store/store-workspace';
+  import { uiStore, workspaceStore } from '../../../state/store';
+  import WorkspaceState from '../../../state/model/workspace/workspace-state';
   import RecordDiv from '../../../util/layout/RecordDiv.svelte';
   import Wrap from '../../../util/layout/Wrap.svelte';
   import DeclareEditor from '../../../util/monaco/DeclareEditor.svelte';
   import DialogHeader from '../DialogHeader.svelte';
 
-  $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
+  $: workspace = WorkspaceState.getWorkspace($workspaceStore);
 
   onMount(async () => {
     $uiStore.shortcutEvent = (e) => {

@@ -1,4 +1,4 @@
-import type { FileStat } from '../../../../../store/types';
+﻿import type TauriDto from '../../../../../infra/tauri/tauri-dto';
 import PathUtil from '../../../../../util/data/path-util';
 import WorkerInvoke from '../worker-invoke';
 
@@ -26,7 +26,7 @@ export namespace RealFSWriter {
     return WorkerInvoke.call<boolean>('exists_path', { path });
   };
   export const stat = async (path: string) => {
-    const stat = await WorkerInvoke.call<FileStat>('stat', { path });
+    const stat = await WorkerInvoke.call<TauriDto.FileStat>('stat', { path });
     return stat;
   };
 

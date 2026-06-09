@@ -1,9 +1,9 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import loader from '@monaco-editor/loader';
   import * as Monaco from 'monaco-editor';
   import { get, writable } from 'svelte/store';
-  import appStore from '../../store/app-store';
+  import { appStore } from '../../state/store';
   import MonacoFactory from './monaco-factory';
 
   let editorDiv: HTMLDivElement | null = null;
@@ -56,7 +56,7 @@
       value,
     );
 
-    // 🟦 テーマ定義
+    // 🟦 チE�Eマ定義
     monaco.editor.defineTheme(themeName, {
       base: 'vs-dark',
       inherit: true,

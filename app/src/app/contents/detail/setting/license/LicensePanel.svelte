@@ -6,7 +6,7 @@
   import OperationButton from '../../../../util/button/OperationButton.svelte';
   import LicenseUtil from './license-util';
   import Record from '../../../../util/layout/RecordDiv.svelte';
-  import appStore from '../../../../store/app-store';
+  import { appStore } from '../../../../state/store';
   import FileUtil from '../../../../util/data/file-util';
 
   let productKey = writable<string | null>(null);

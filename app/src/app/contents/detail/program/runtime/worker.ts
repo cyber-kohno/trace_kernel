@@ -1,6 +1,6 @@
-import type StoreDataset from '../../../../store/store-dataset';
-import type StoreWork from '../../../../store/store-work';
-import type { ScanRequest } from '../../../../store/types';
+﻿import type DatasetState from '../../../../state/model/workspace/dataset-state';
+import type WorkState from '../../../../state/model/workspace/work-state';
+import type TauriDto from '../../../../infra/tauri/tauri-dto';
 import DataUtil from '../../../../util/data/data-util';
 import WorkerAdapter from '../ui/worker-adapter';
 import DeclareUtil from '../util/declare-util';
@@ -16,7 +16,7 @@ export interface MessageProps {
   sourceMapText: string;
   injectionalData: ContextDataUtil.Props;
   usableUtils: DeclareUtil.ReserveDef[];
-  outputMethod: StoreWork.OutputMethod;
+  outputMethod: WorkState.OutputMethod;
 }
 
 export interface StateMessage {
@@ -109,19 +109,19 @@ self.onmessage = async (e: MessageEvent<MessageProps>) => {
     const tasks = injectionalData.datasets
       .filter((d) => d.targets == null)
       .map(async (ds) => {
-        const req: ScanRequest = {
+        const req: TauriDto.ScanRequest = {
           rootPath: DataUtil.getAppliedEnvValue(
             ds.rootPath,
             injectionalData.envs,
           ),
           ...ds.scanOption,
         };
-        const res = await WorkerInvoke.call<StoreDataset.ScanResponse>(
+        const res = await WorkerInvoke.call<DatasetState.ScanResponse>(
           'scan_directory',
           { req },
         );
         const list: string[] = [];
-        const rec = (node: StoreDataset.PayloadNode, curPath: string) => {
+        const rec = (node: DatasetState.PayloadNode, curPath: string) => {
           const nextPath = `${curPath}\\${node.name}`;
           // 相対パスの先頭がルートのディレクトリと重複するので間引く
           if (node.children == null)

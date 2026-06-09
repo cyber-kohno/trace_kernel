@@ -1,8 +1,8 @@
-<script lang="ts">
-  import type StoreDataset from '../../../store/store-dataset';
+﻿<script lang="ts">
+  import type DatasetState from '../../../state/model/workspace/dataset-state';
   import Wrap from '../../../util/layout/Wrap.svelte';
 
-  export let dataset: StoreDataset.Props;
+  export let dataset: DatasetState.Props;
 
   const targets = (() => {
     if (dataset.targets == null) throw new Error();

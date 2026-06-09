@@ -1,26 +1,26 @@
-<script lang="ts">
+﻿<script lang="ts">
   import TextInput from '../../util/form/TextInput.svelte';
   import LabelRecord from '../../util/item/LabelRecord.svelte';
   import Record from '../../util/layout/RecordDiv.svelte';
   import Wrap from '../../util/layout/Wrap.svelte';
-  import StoreWorkspace from '../../store/store-workspace';
-  import workspaceStore from '../../store/workspace-store';
-  import uiStore from '../../store/ui-store';
+  import WorkspaceState from '../../state/model/workspace/workspace-state';
+  import { workspaceStore } from '../../state/store';
+  import { uiStore } from '../../state/store';
   import NumberInput from '../../util/form/NumberInput.svelte';
   import AddDelButton from '../system/AddDelButton.svelte';
   import Column from '../../util/layout/Column.svelte';
   import OperationSwitch from '../../util/button/OperationSwitch.svelte';
-  import ToastUtil from '../../util/item/toast-util';
+  import ToastService from '../../service/toast-service';
   import PathState from '../../util/form/validation/PathState.svelte';
   import Textarea from '../../util/form/Textarea.svelte';
   import { writable } from 'svelte/store';
   import { onMount } from 'svelte';
   import DataUtil from '../../util/data/data-util';
-  import type { TextEncoding } from '../../store/types';
+  import type TauriDto from '../../infra/tauri/tauri-dto';
   import ItemLabel from '../../util/item/ItemLabel.svelte';
   import { commitWorkspace, getTargetEntry } from './maintenance-helpers';
 
-  $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
+  $: workspace = WorkspaceState.getWorkspace($workspaceStore);
 
   $: process = getTargetEntry($uiStore.target, 'process', workspace.processes);
   $: if (process.cwd == undefined) {
@@ -83,7 +83,7 @@
 
   $: createSetEncodingCallback = (
     target: 'stdin' | 'stdout' | 'stderr',
-    encoding: TextEncoding,
+    encoding: TauriDto.TextEncoding,
   ) => {
     return () => {
       process.encoding[target] = encoding;
@@ -161,7 +161,7 @@
               oncontextmenu={() => {
                 const value = `__${arg.name}__`;
                 navigator.clipboard.writeText(value);
-                ToastUtil.disp({
+                ToastService.show({
                   text: `Copied the script argument "${value}".`,
                 });
               }}

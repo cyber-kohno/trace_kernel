@@ -1,7 +1,6 @@
-<script lang="ts">
-  import workspaceStore from '../../../../store/workspace-store';
-  import workspaceValidationStore from '../../../../store/workspace-validation-store';
-  import uiStore from '../../../../store/ui-store';
+﻿<script lang="ts">
+  import { validationStore } from '../../../../state/store';
+  import { uiStore } from '../../../../state/store';
   import Wrap from '../../../../util/layout/Wrap.svelte';
   import ScriptEditor from '../../../../util/monaco/ScriptEditor.svelte';
   import OperationButton from '../../../../util/button/OperationButton.svelte';
@@ -9,7 +8,8 @@
   import { onDestroy, onMount } from 'svelte';
   import { writable } from 'svelte/store';
   import Record from '../../../../util/layout/RecordDiv.svelte';
-  import StoreWorkspace from '../../../../store/store-workspace';
+  import WorkspaceState from '../../../../state/model/workspace/workspace-state';
+  import { workspaceStore } from '../../../../state/store';
   import DeclareUtil from '../util/declare-util';
   import DialogHeader from '../../DialogHeader.svelte';
   import ProgressBar from './ProgressBar.svelte';
@@ -51,10 +51,10 @@
 
   let monacoRef: ScriptEditor;
 
-  $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
+  $: workspace = WorkspaceState.getWorkspace($workspaceStore);
   $: injectionalData = ContextDataUtil.getUsableData(
     workspace,
-    $workspaceValidationStore.disables,
+    $validationStore.disables,
   );
 
   $: work = (() => {
@@ -161,7 +161,7 @@
     init();
 
     $uiStore.shortcutEvent = (e) => {
-      if (e.altKey && e.key === 'ArrowLeft') {
+      if (e.altKey && e.key === 'ArrowLeft' && $phase !== 'coding') {
         cancel();
       } else if (e.key === 'Escape') {
         $uiStore.dialog = null;
@@ -259,7 +259,9 @@
                     <RuntimeErrorFrame bind:this={errorFrameRef} />
                   {/if}
                   {#if $progress.total !== -1}
-                    <ProgressBar rate={($progress.cur / $progress.total) * 100} />
+                    <ProgressBar
+                      rate={($progress.cur / $progress.total) * 100}
+                    />
                   {/if}
                   {#each $monitorLines as m}
                     <div class="monitor">{m}</div>
@@ -313,9 +315,15 @@
               <Record surplus={work.method === 'channel' ? 30 : 0}>
                 {#if activeChannel != undefined}
                   {#if activeChannel.view === 'text'}
-                    <TextStreamView bind:this={streamRef} channel={activeChannel} />
+                    <TextStreamView
+                      bind:this={streamRef}
+                      channel={activeChannel}
+                    />
                   {:else if activeChannel.view === 'table'}
-                    <TableStreamView bind:this={streamRef} channel={activeChannel} />
+                    <TableStreamView
+                      bind:this={streamRef}
+                      channel={activeChannel}
+                    />
                   {/if}
                 {/if}
               </Record>
@@ -329,7 +337,7 @@
             isLineup
             width={150}
             isDisable={$phase === 'coding'}
-            tooltip={'Ctrl + ArrowLeft'}
+            tooltip={'Alt + ArrowLeft'}
           />
           {#if $txCache != null}
             <OperationButton

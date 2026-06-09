@@ -1,7 +1,8 @@
-<script lang="ts">
-  import { dirty } from '../../store/dirty';
-  import uiStore from '../../store/ui-store';
-  import workspaceStore from '../../store/workspace-store';
+﻿<script lang="ts">
+  import { dirtyStore } from '../../state/store';
+  import { uiStore } from '../../state/store';
+  import WorkspaceState from '../../state/model/workspace/workspace-state';
+  import { workspaceStore } from '../../state/store';
   import OperationButton from '../../util/button/OperationButton.svelte';
   import FileUtil from '../../util/data/file-util';
   import Record from '../../util/layout/RecordDiv.svelte';
@@ -17,7 +18,7 @@
       $uiStore.dialog = null;
       FileUtil.updateAppTitle();
     };
-    if (!$dirty) {
+    if (!$dirtyStore) {
       exec();
     } else {
       ask('There is unsaved data. Can I delete it?', {
@@ -59,7 +60,7 @@
 <Record height={30} align="left" padding={'0 0 0 4px'} bgColor="#334">
   <OperationButton
     name={'Save'}
-    isDisable={!isOpenProject || !$dirty}
+    isDisable={!isOpenProject || !$dirtyStore}
     callback={saveProject}
     isLineup
   />

@@ -1,36 +1,39 @@
-<script lang="ts">
-  import workspaceStore from '../../store/workspace-store';
-  import uiStore from '../../store/ui-store';
-  import StoreProcess from '../../store/store-process';
-  import StoreDataset from '../../store/store-dataset';
-  import StoreLogic from '../../store/store-logic';
-  import StoreWorkspace from '../../store/store-workspace';
-  import StoreResource from '../../store/store-resource';
-  import StoreWork from '../../store/store-work';
+﻿<script lang="ts">
+  import { uiStore } from '../../state/store';
+  import ProcessState from '../../state/model/workspace/process-state';
+  import DatasetState from '../../state/model/workspace/dataset-state';
+  import LogicState from '../../state/model/workspace/logic-state';
+  import WorkspaceState from '../../state/model/workspace/workspace-state';
+  import { workspaceStore } from '../../state/store';
+  import ResourceState from '../../state/model/workspace/resource-state';
+  import WorkState from '../../state/model/workspace/work-state';
   import EntrySection from './EntrySection.svelte';
   import ProcessEntry from './entries/ProcessEntry.svelte';
   import EnvEntry from './entries/EnvEntry.svelte';
+  import ValidationService from '../../service/validation-service';
+  import type ValidationState from '../../state/model/validation-state';
+
   import ResourceEntry from './entries/ResourceEntry.svelte';
   import WorkEntry from './entries/WorkEntry.svelte';
   import LogicEntry from './entries/LogicEntry.svelte';
-  import storeLicense from '../../store/store-license';
+  import LicenseState from '../../state/model/license-state';
   import DatasetEntry from './entries/DatasetEntry.svelte';
 
-  $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
-  $: validate = (target: StoreWorkspace.Target) => {
-    StoreWorkspace.validate(target);
+  $: workspace = WorkspaceState.getWorkspace($workspaceStore);
+  $: validate = (target: ValidationState.Target) => {
+    ValidationService.validate(target);
   };
 
-  const commitAddedEntry = (target: StoreWorkspace.Target) => {
+  const commitAddedEntry = (target: ValidationState.Target) => {
     validate(target);
     $workspaceStore.workspace = { ...workspace };
     $uiStore.target = target;
   };
 
-  const addEntry = <T,>(cat: StoreWorkspace.Category, items: T[], entry: T) => {
+  const addEntry = <T,>(cat: ValidationState.Category, items: T[], entry: T) => {
     items.push(entry);
     const nextItems = items.slice();
-    const target: StoreWorkspace.Target = {
+    const target: ValidationState.Target = {
       cat,
       index: nextItems.length - 1,
     };
@@ -66,22 +69,22 @@
     });
 
   const addResource = () =>
-    addEntry('resource', workspace.resources, StoreResource.getInitial(''));
+    addEntry('resource', workspace.resources, ResourceState.getInitial(''));
 
   const addDataset = () =>
-    addEntry('dataset', workspace.datasets, StoreDataset.getInitial(''));
+    addEntry('dataset', workspace.datasets, DatasetState.getInitial(''));
 
   const addProcess = () =>
-    addEntry('process', workspace.processes, StoreProcess.getInitial());
+    addEntry('process', workspace.processes, ProcessState.getInitial());
 
   const addLogic = () =>
-    addEntry('logic', workspace.logics, StoreLogic.getInitial());
+    addEntry('logic', workspace.logics, LogicState.getInitial());
 
   const addWork = () =>
     addEntry(
       'work',
       workspace.works,
-      StoreWork.getInitial(`work${workspace.works.length}`),
+      WorkState.getInitial(`work${workspace.works.length}`),
     );
 
   $: openDeclare = () => {
@@ -112,7 +115,7 @@
     entryComponent={DatasetEntry}
     add={addDataset}
   />
-  {#if storeLicense.isPro()}
+  {#if LicenseState.isPro()}
     <EntrySection
       label={'-process'}
       items={workspace.processes}
@@ -130,7 +133,7 @@
 </div>
 
 <div class="indent">
-  {#if storeLicense.isPro()}
+  {#if LicenseState.isPro()}
     <EntrySection
       label={'-logic'}
       items={workspace.logics}

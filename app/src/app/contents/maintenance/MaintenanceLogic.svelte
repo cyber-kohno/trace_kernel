@@ -1,15 +1,16 @@
-<script lang="ts">
+﻿<script lang="ts">
   import TextInput from '../../util/form/TextInput.svelte';
   import LabelRecord from '../../util/item/LabelRecord.svelte';
   import Wrap from '../../util/layout/Wrap.svelte';
-  import StoreWorkspace from '../../store/store-workspace';
-  import workspaceStore from '../../store/workspace-store';
+  import WorkspaceState from '../../state/model/workspace/workspace-state';
+  import { uiStore, workspaceStore } from '../../state/store';
+  import UiState from '../../state/model/ui-state';
   import { commitWorkspace, getTargetEntry } from './maintenance-helpers';
 
-  $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
+  $: workspace = WorkspaceState.getWorkspace($workspaceStore);
 
   $: logic = getTargetEntry(
-    StoreWorkspace.getTarget(),
+    UiState.getTarget($uiStore),
     'logic',
     workspace.logics,
   );

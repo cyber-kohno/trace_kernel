@@ -1,17 +1,17 @@
-<script lang="ts">
-  import workspaceStore from '../../../../../store/workspace-store';
-  import workspaceValidationStore from '../../../../../store/workspace-validation-store';
-  import StoreWorkspace from '../../../../../store/store-workspace';
+﻿<script lang="ts">
+  import { workspaceStore } from '../../../../../state/store';
+  import { validationStore } from '../../../../../state/store';
+  import WorkspaceState from '../../../../../state/model/workspace/workspace-state';
   import Record from '../../../../../util/layout/RecordDiv.svelte';
   import Wrap from '../../../../../util/layout/Wrap.svelte';
   import InjectionItem from './ContextInjectionItem.svelte';
   import ProgramInjectionUtil from '../../../program/injection/program-injection-util';
 
-  $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
+  $: workspace = WorkspaceState.getWorkspace($workspaceStore);
 
   $: items = ProgramInjectionUtil.getWorkContextItems(
     workspace,
-    $workspaceValidationStore.disables,
+    $validationStore.disables,
   );
 </script>
 

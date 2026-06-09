@@ -1,12 +1,12 @@
-<script lang="ts">
-  import type StoreDataset from '../../../../store/store-dataset';
-  import StoreInvalidate from '../../../../store/store-invalidate';
+﻿<script lang="ts">
+  import type DatasetState from '../../../../state/model/workspace/dataset-state';
+  import InvalidateState from '../../../../state/model/invalidate-state';
   import TextInput from '../../../../util/form/TextInput.svelte';
 
-  export let scanOption: StoreDataset.ScanOption;
+  export let scanOption: DatasetState.ScanOption;
   $: fileConds = scanOption.fileConds;
   $: invalidate = () => {
-    StoreInvalidate.invalidate('dataset');
+    InvalidateState.invalidate('dataset');
   };
 
   /**

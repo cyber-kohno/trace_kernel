@@ -1,18 +1,21 @@
-import Pako from 'pako';
+﻿import Pako from 'pako';
 import { get } from 'svelte/store';
-import appStore from '../../store/app-store';
-import workspaceStore from '../../store/workspace-store';
-import { open, save } from '@tauri-apps/plugin-dialog';
-import type { FileRequest } from '../../store/types';
+import { ask, open, save } from '@tauri-apps/plugin-dialog';
+import type TauriDto from '../../infra/tauri/tauri-dto';
 import { invoke } from '@tauri-apps/api/core';
 import { Window } from '@tauri-apps/api/window';
-import ToastUtil from '../item/toast-util';
-import StoreWorkspace from '../../store/store-workspace';
-import { dirty, getSnapshot } from '../../store/dirty';
-import { CURRENT_GEN } from '../../workspace/workspace-version.js';
+import ToastService from '../../service/toast-service';
+import WorkspaceState from '../../state/model/workspace/workspace-state';
+import DirtyUtil from '../../service/dirty/dirty-util';
+import MigrationFlow from '../../gen/migration-flow';
+import { CURRENT_GEN } from '../../gen/gen-version.js';
+import createApiWarningState from '../../gen/api-warning';
+import checkWorkspaceCompatibility from '../../gen/check-workspace-compatibility';
+import ValidationService from '../../service/validation-service';
+import { appStore, dirtyStore, workspaceStore } from '../../state/store';
 
 namespace FileUtil {
-  export const VERSION = `v${0}.${0}.${1}`;
+  export const VERSION = `v${0}.${0}.${2}`;
   export const APP_NAME = `Trace Kernel ${VERSION}`;
   const FILE_EXTENSION: string = `${VERSION}.trk`;
 
@@ -26,7 +29,7 @@ namespace FileUtil {
       if (handlePath != null) {
         fileName = getFileNameFromPath(handlePath);
       }
-      fileDisp = `${fileName}${get(dirty) ? '*' : ''} - `;
+      fileDisp = `${fileName}${get(dirtyStore) ? '*' : ''} - `;
     }
     const win = Window.getCurrent();
     const pro = get(appStore).license == null ? '' : ' @Professional';
@@ -38,20 +41,20 @@ namespace FileUtil {
   };
 
   /**
-   * 文字列を圧縮する
-   * @param baseStr 圧縮前の文字列
-   * @returns 圧縮後の文字列
+   * 譁・ｭ怜・繧貞悸邵ｮ縺吶ｋ
+   * @param baseStr 蝨ｧ邵ｮ蜑阪・譁・ｭ怜・
+   * @returns 蝨ｧ邵ｮ蠕後・譁・ｭ怜・
    */
   const gZip = (baseStr: string) => {
-    const encoder = new TextEncoder(); // 文字列をUint8Arrayにエンコードするために使用
+    const encoder = new TextEncoder(); // 譁・ｭ怜・繧旦int8Array縺ｫ繧ｨ繝ｳ繧ｳ繝ｼ繝峨☆繧九◆繧√↓菴ｿ逕ｨ
     const textUint8Array = encoder.encode(baseStr);
 
-    // gzip圧縮
-    const compressed = Pako.gzip(textUint8Array); // Uint8Array を Base64 文字列に変換
+    // gzip蝨ｧ邵ｮ
+    const compressed = Pako.gzip(textUint8Array); // Uint8Array 繧・Base64 譁・ｭ怜・縺ｫ螟画鋤
     const compressedBase64 = uint8ArrayToBase64(compressed);
     return compressedBase64;
   };
-  // Uint8Array を Base64 にエンコードするヘルパー関数
+  // Uint8Array 繧・Base64 縺ｫ繧ｨ繝ｳ繧ｳ繝ｼ繝峨☆繧九・繝ｫ繝代・髢｢謨ｰ
   const uint8ArrayToBase64 = (buffer: Uint8Array) => {
     let binary = '';
     const bytes = new Uint8Array(buffer);
@@ -63,12 +66,11 @@ namespace FileUtil {
   };
 
   /**
-   * 圧縮された文字列を複号する
-   * @param baseStr 圧縮された文字列
-   * @returns 複号後の文字列
+   * 蝨ｧ邵ｮ縺輔ｌ縺滓枚蟄怜・繧定､・捷縺吶ｋ
+   * @param baseStr 蝨ｧ邵ｮ縺輔ｌ縺滓枚蟄怜・
+   * @returns 隍・捷蠕後・譁・ｭ怜・
    */
   export const unZip = (baseStr: string) => {
-    // Base64 文字列を Uint8Array に戻す
     const compressedFromBase64 = Uint8Array.from(atob(baseStr), (c) =>
       c.charCodeAt(0),
     );
@@ -85,8 +87,7 @@ namespace FileUtil {
   };
 
   export const saveWorkspace = async () => {
-    // 変更がなければセーブしない。
-    if (!get(dirty)) return;
+    if (!get(dirtyStore)) return;
 
     const lastStore = get(workspaceStore);
 
@@ -107,29 +108,13 @@ namespace FileUtil {
       const path = currentWorkspaceState.handlePath;
       await invoke('save_text', { path, content });
       if (!isCreate) {
-        ToastUtil.disp({ text: 'File saving successful.' });
+        ToastService.show({ text: 'File saving successful.' });
       }
-      const snapshot = await getSnapshot(workspace);
+      const snapshot = await DirtyUtil.getSnapshot(workspace);
       workspaceStore.update((v) => ({ ...v, snapshot }));
     }
   };
 
-  const validateWorkspaceGen = (fileGen: StoreWorkspace.Gen | undefined) => {
-    if (fileGen == undefined) {
-      alert('Workspace generation data is missing.');
-      return false;
-    }
-    if (
-      fileGen.workspace !== CURRENT_GEN.workspace ||
-      fileGen.api !== CURRENT_GEN.api
-    ) {
-      alert(
-        `Workspace generation mismatch detected. File workspace/api: ${fileGen.workspace}/${fileGen.api}, App workspace/api: ${CURRENT_GEN.workspace}/${CURRENT_GEN.api}.`,
-      );
-      return false;
-    }
-    return true;
-  };
   export const loadWorkspaceChoose = async () => {
     const res = await open({
       multiple: false,
@@ -142,9 +127,53 @@ namespace FileUtil {
     });
     if (res != null) {
       const workspaceSrc = await getWorkspaceFile(res);
-      const workspace: StoreWorkspace.Props = JSON.parse(workspaceSrc);
-      if (!validateWorkspaceGen(workspace.gen)) return;
-      const snapshot = await getSnapshot(workspace);
+      const workspace: WorkspaceState.Props = JSON.parse(workspaceSrc);
+      const compatibility = checkWorkspaceCompatibility({
+        currentGen: CURRENT_GEN,
+        fileGen: workspace.gen,
+      });
+      let apiWarning:
+        | Extract<
+            import('../../gen/check-workspace-compatibility').WorkspaceCompatibilityResult,
+            { status: 'warn-api' }
+          >
+        | null = null;
+      switch (compatibility.status) {
+        case 'ok':
+          break;
+        case 'warn-api':
+          apiWarning = compatibility;
+          break;
+        case 'needs-workspace-migration':
+          appStore.update((curr) => ({
+            ...curr,
+            migration: MigrationFlow.create({
+              handlePath: res,
+              workspace,
+              diff: compatibility.workspaceDiff,
+            }),
+          }));
+          return;
+        case 'reject-missing-gen':
+        case 'reject-workspace-ahead':
+        case 'reject-api-ahead':
+          alert(compatibility.message);
+          return;
+      }
+      const snapshot = await DirtyUtil.getSnapshot(workspace);
+      if (apiWarning != null) {
+        const state = await createApiWarningState({
+          handlePath: res,
+          workspace,
+          snapshot,
+          apiDiff: apiWarning.apiDiff,
+        });
+        appStore.update((curr) => ({
+          ...curr,
+          apiWarning: state,
+        }));
+        return;
+      }
       workspaceStore.update((v) => {
         return {
           ...v,
@@ -153,12 +182,12 @@ namespace FileUtil {
           snapshot,
         };
       });
-      StoreWorkspace.validateAll();
+      ValidationService.validateAll();
     }
   };
 
   const getWorkspaceFile = async (filePath: string) => {
-    const req: FileRequest = { filePath, encoding: 'sjis' };
+    const req: TauriDto.FileRequest = { filePath, encoding: 'sjis' };
     const fileContent = await invoke<string>('read_file', { req });
     const jsonStr = FileUtil.unZip(fileContent);
     return jsonStr;
@@ -166,17 +195,61 @@ namespace FileUtil {
 
   export const loadWorkspaceFile = async (filePath: string) => {
     const workspaceSrc = await getWorkspaceFile(filePath);
-    const workspace: StoreWorkspace.Props = JSON.parse(workspaceSrc);
-    if (!validateWorkspaceGen(workspace.gen)) return;
-    const snapshot = await getSnapshot(workspace);
+    const workspace: WorkspaceState.Props = JSON.parse(workspaceSrc);
+    const compatibility = checkWorkspaceCompatibility({
+      currentGen: CURRENT_GEN,
+      fileGen: workspace.gen,
+    });
+    let apiWarning:
+      | Extract<
+          import('../../gen/check-workspace-compatibility').WorkspaceCompatibilityResult,
+          { status: 'warn-api' }
+        >
+      | null = null;
+    switch (compatibility.status) {
+      case 'ok':
+        break;
+      case 'warn-api':
+        apiWarning = compatibility;
+        break;
+      case 'needs-workspace-migration':
+        appStore.update((curr) => ({
+          ...curr,
+          migration: MigrationFlow.create({
+            handlePath: filePath,
+            workspace,
+            diff: compatibility.workspaceDiff,
+          }),
+        }));
+        return;
+      case 'reject-missing-gen':
+      case 'reject-workspace-ahead':
+      case 'reject-api-ahead':
+        alert(compatibility.message);
+        return;
+    }
+    const snapshot = await DirtyUtil.getSnapshot(workspace);
+    if (apiWarning != null) {
+      const state = await createApiWarningState({
+        handlePath: filePath,
+        workspace,
+        snapshot,
+        apiDiff: apiWarning.apiDiff,
+      });
+      appStore.update((curr) => ({
+        ...curr,
+        apiWarning: state,
+      }));
+      return;
+    }
     workspaceStore.update((curr) => {
       curr.workspace = workspace;
       curr.handlePath = filePath;
       curr.snapshot = snapshot;
       return curr;
     });
-    StoreWorkspace.validateAll();
-    ToastUtil.disp({ text: 'Project loaded successfully.' });
+    ValidationService.validateAll();
+    ToastService.show({ text: 'Project loaded successfully.' });
   };
 }
 export default FileUtil;

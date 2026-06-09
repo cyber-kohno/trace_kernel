@@ -1,29 +1,31 @@
-<script lang="ts">
+﻿<script lang="ts">
   import TextInput from '../../../util/form/TextInput.svelte';
   import LabelRecord from '../../../util/item/LabelRecord.svelte';
   import Record from '../../../util/layout/RecordDiv.svelte';
   import Wrap from '../../../util/layout/Wrap.svelte';
-  import StoreWorkspace from '../../../store/store-workspace';
-  import cacheStore from '../../../store/cache-store';
-  import workspaceStore from '../../../store/workspace-store';
-  import uiStore from '../../../store/ui-store';
+  import WorkspaceState from '../../../state/model/workspace/workspace-state';
+  import {
+    cacheStore,
+    uiStore,
+    workspaceStore,
+  } from '../../../state/store';
   import OperationSwitch from '../../../util/button/OperationSwitch.svelte';
   import DatasetScanPane from './scan/DatasetScanPane.svelte';
   import { onDestroy } from 'svelte';
-  import StoreInvalidate from '../../../store/store-invalidate';
+  import InvalidateState from '../../../state/model/invalidate-state';
   import DatasetChoosePane from './choose/DatasetChoosePane.svelte';
-  import type StoreResource from '../../../store/store-resource';
-  import StoreCache from '../../../store/store-cache';
+  import type ResourceState from '../../../state/model/workspace/resource-state';
+  import CacheState from '../../../state/model/cache-state';
   import { writable } from 'svelte/store';
-  import type StoreDataset from '../../../store/store-dataset';
+  import type DatasetState from '../../../state/model/workspace/dataset-state';
   import DatasetTargetListPane from './DatasetTargetListPane.svelte';
   import PathState from '../../../util/form/validation/PathState.svelte';
   import DataUtil from '../../../util/data/data-util';
   import { commitWorkspace, getTargetEntry } from '../maintenance-helpers';
 
-  let datasetPhase = writable<StoreDataset.DatasetPhase>('scan');
+  let datasetPhase = writable<DatasetState.DatasetPhase>('scan');
 
-  $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
+  $: workspace = WorkspaceState.getWorkspace($workspaceStore);
 
   $: datasetTarget = (() => {
     const target = $uiStore.target;
@@ -44,26 +46,26 @@
     invalidate();
   };
 
-  const setPhase = (phase: StoreDataset.DatasetPhase) => {
+  const setPhase = (phase: DatasetState.DatasetPhase) => {
     $datasetPhase = phase;
   };
 
   $: {
-    StoreInvalidate.set({ key: 'dataset', callback: invalidate });
+    InvalidateState.set({ key: 'dataset', callback: invalidate });
   }
 
   onDestroy(() => {
-    StoreInvalidate.remove('dataset');
+    InvalidateState.remove('dataset');
   });
 
   $: hasTree = (() => {
     $cacheStore.cacheMap;
-    return StoreCache.getDatasetChoose(itemIndex);
+    return CacheState.getDatasetChoose(itemIndex);
   })();
 
   $: directoryTree = (() => {
-    $cacheStore.cacheMap; // 値変更を検知するために記述
-    const value = StoreCache.getDatasetChoose(itemIndex);
+    $cacheStore.cacheMap; // 蛟､螟画峩繧呈､懃衍縺吶ｋ縺溘ａ縺ｫ險倩ｿｰ
+    const value = CacheState.getDatasetChoose(itemIndex);
     return value;
   })();
 
@@ -76,14 +78,14 @@
     invalidate();
   };
 
-  $: setEncoding = (v: StoreResource.Encoding) => {
+  $: setEncoding = (v: ResourceState.Encoding) => {
     dataset.encoding = v;
     invalidate();
   };
 
   $: switchAll = () => {
     if (directoryTree != null) {
-      StoreCache.remove({ type: 'dataset-choose', index: itemIndex });
+      CacheState.remove({ type: 'dataset-choose', index: itemIndex });
     }
     dataset.targets = null;
     setPhase('scan');
@@ -105,7 +107,7 @@
     width={'calc(100% - 4px)'}
     requied
   />
-  <!-- ルートパス -->
+  <!-- 繝ｫ繝ｼ繝医ヱ繧ｹ -->
   <LabelRecord name="root_path" />
   <TextInput
     value={dataset.rootPath}

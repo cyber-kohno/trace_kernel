@@ -1,10 +1,10 @@
-import type StoreDataset from '../../../../store/store-dataset';
+﻿import type DatasetState from '../../../../state/model/workspace/dataset-state';
 
 namespace DatasetChooseUtil {
   export const getDispRecords = (
-    root: StoreDataset.UsableNode,
+    root: DatasetState.UsableNode,
     isFlat: boolean,
-  ): StoreDataset.NodeDispProps[] => {
+  ): DatasetState.NodeDispProps[] => {
     return !isFlat ? buildTreeChooser(root) : buildFlatChooser(root);
   };
 
@@ -14,12 +14,12 @@ namespace DatasetChooseUtil {
    * @returns
    */
   const buildTreeChooser = (
-    root: StoreDataset.UsableNode,
-  ): StoreDataset.NodeDispProps[] => {
-    const masterList: StoreDataset.NodeDispProps[] = [];
+    root: DatasetState.UsableNode,
+  ): DatasetState.NodeDispProps[] => {
+    const masterList: DatasetState.NodeDispProps[] = [];
     const rec = (
-      node: StoreDataset.UsableNode,
-      indents: StoreDataset.NodeIndent[],
+      node: DatasetState.UsableNode,
+      indents: DatasetState.NodeIndent[],
       isOpen: boolean,
     ): [number, number] => {
       let [fileCnt, selectCnt] = [0, 0];
@@ -32,7 +32,7 @@ namespace DatasetChooseUtil {
         [child.fileCnt, child.selectCnt] = [0, 0];
         const nodes = node.child.nodes;
         nodes.forEach((n, i) => {
-          const nextIndents: StoreDataset.NodeIndent[] = indents.slice();
+          const nextIndents: DatasetState.NodeIndent[] = indents.slice();
           // 自身がlastの場合、子要素はnoneにする
           if (nextIndents[nextIndents.length - 1] === 'last')
             nextIndents[nextIndents.length - 1] = 'none';
@@ -80,10 +80,10 @@ namespace DatasetChooseUtil {
    * @param root
    * @returns
    */
-  const buildFlatChooser = (root: StoreDataset.UsableNode) => {
-    const list: StoreDataset.NodeDispProps[] = [];
+  const buildFlatChooser = (root: DatasetState.UsableNode) => {
+    const list: DatasetState.NodeDispProps[] = [];
 
-    const rec = (node: StoreDataset.UsableNode) => {
+    const rec = (node: DatasetState.UsableNode) => {
       if (node.child == undefined) {
         list.push({
           indents: [],
@@ -100,10 +100,10 @@ namespace DatasetChooseUtil {
     return list;
   };
 
-  export const getSelectedFiles = (root: StoreDataset.UsableNode) => {
+  export const getSelectedFiles = (root: DatasetState.UsableNode) => {
     const list: string[] = [];
 
-    const rec = (node: StoreDataset.UsableNode) => {
+    const rec = (node: DatasetState.UsableNode) => {
       if (node.child == undefined) {
         // 選択中のアイテムのみ追加
         if (node.isSelected) {

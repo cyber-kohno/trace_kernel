@@ -1,7 +1,7 @@
-<script lang="ts">
-  import workspaceValidationStore from '../../../store/workspace-validation-store';
-  import uiStore from '../../../store/ui-store';
-  import StoreProject from '../../../store/store-workspace';
+﻿<script lang="ts">
+  import { validationStore } from '../../../state/store';
+  import { uiStore } from '../../../state/store';
+  import type ValidationState from '../../../state/model/validation-state';
   import Cover from '../../../util/layout/Cover.svelte';
   import Hover from '../../../util/layout/Hover.svelte';
   import Record from '../../../util/layout/RecordDiv.svelte';
@@ -13,7 +13,7 @@
   export let del: () => void;
   export let contextmenu: () => void = () => {};
 
-  export let target: StoreProject.Target;
+  export let target: ValidationState.Target;
 
   $: onclick = () => {
     if (!isFocus) focus();
@@ -26,7 +26,7 @@
 
   $: isDisable = (() => {
     return (
-      $workspaceValidationStore.disables.find(
+      $validationStore.disables.find(
         (d) => d.cat === target.cat && d.index === target.index,
       ) != undefined
     );

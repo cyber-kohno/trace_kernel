@@ -1,8 +1,8 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { writable } from 'svelte/store';
   import Record from '../../layout/RecordDiv.svelte';
   import { invoke } from '@tauri-apps/api/core';
-  import type { FileStat } from '../../../store/types';
+  import type TauriDto from '../../../infra/tauri/tauri-dto';
   import { onMount } from 'svelte';
 
   export let isDir: boolean;
@@ -25,7 +25,7 @@
       $msg = 'Checking...';
       $status = 'idol';
       timerId = setTimeout(() => {
-        invoke<FileStat>('stat', { path })
+        invoke<TauriDto.FileStat>('stat', { path })
           .then((res) => {
             if (isDir !== res.isDir) {
               $msg = `The path must be a ${isDir ? 'directory' : 'file'}.`;

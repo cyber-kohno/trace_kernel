@@ -1,19 +1,20 @@
-<script lang="ts">
+﻿<script lang="ts">
   import TextInput from '../../util/form/TextInput.svelte';
   import LabelRecord from '../../util/item/LabelRecord.svelte';
   import Record from '../../util/layout/RecordDiv.svelte';
   import Wrap from '../../util/layout/Wrap.svelte';
-  import storeWorkspace from '../../store/store-workspace';
-  import workspaceStore from '../../store/workspace-store';
-  import type StoreEnv from '../../store/store-env';
+  import workspaceState from '../../state/model/workspace/workspace-state';
+  import { uiStore, workspaceStore } from '../../state/store';
+  import UiState from '../../state/model/ui-state';
+  import EnvState from '../../state/model/workspace/env-state';
   import OperationSwitch from '../../util/button/OperationSwitch.svelte';
   import PathState from '../../util/form/validation/PathState.svelte';
   import ValidateUtil from '../../util/data/validate-util';
   import { commitWorkspace, getTargetEntry } from './maintenance-helpers';
 
-  $: workspace = storeWorkspace.getWorkspace($workspaceStore);
+  $: workspace = workspaceState.getWorkspace($workspaceStore);
 
-  $: env = getTargetEntry(storeWorkspace.getTarget(), 'env', workspace.envs);
+  $: env = getTargetEntry(UiState.getTarget($uiStore), 'env', workspace.envs);
 
   $: setKey = (v: string) => {
     env.varName = v;
@@ -24,7 +25,7 @@
     commitWorkspace(workspace);
   };
 
-  $: getTogglePurposeCallback = (purpose: StoreEnv.Purpose) => {
+  $: getTogglePurposeCallback = (purpose: EnvState.Purpose) => {
     return () => {
       if (env.purpose === purpose) {
         delete env.purpose;

@@ -1,8 +1,6 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { onMount } from 'svelte';
-  import appStore from './store/app-store';
-  import uiStore from './store/ui-store';
-  import workspaceStore from './store/workspace-store';
+  import { appStore, dirtyStore, uiStore, workspaceStore } from './state/store';
   import FileUtil from './util/data/file-util';
   import { invoke } from '@tauri-apps/api/core';
   import { listen } from '@tauri-apps/api/event';
@@ -14,13 +12,12 @@
   import DialogManager from './contents/detail/DialogManager.svelte';
   import LicenseUtil from './contents/detail/setting/license/license-util';
   import ToastFrame from './util/item/ToastFrame.svelte';
-  import { global } from './global';
   import StartFrame from './contents/system/StartFrame.svelte';
+  import ApiWarningScreen from './contents/system/ApiWarningScreen.svelte';
+  import WorkspaceMigrationScreen from './contents/system/WorkspaceMigrationScreen.svelte';
   import Record from './util/layout/RecordDiv.svelte';
-  import { dirty, updateDirty } from './store/dirty';
+  import updateDirty from './service/dirty/update-dirty';
   import WorkspaceRecoveryUtil from './util/data/workspace-recovery-util';
-
-  let toastFrameRef: ToastFrame;
 
   let args: string[] | null = null;
   let isClosing = false;
@@ -73,7 +70,7 @@
       await mainWindow.onCloseRequested(async (event) => {
         if (isClosing) return;
         if (get(workspaceStore).workspace == null) return;
-        if (!get(dirty)) return;
+        if (!get(dirtyStore)) return;
 
         event.preventDefault();
 
@@ -104,8 +101,6 @@
         FileUtil.updateAppTitle();
       }
 
-      $global.toastDisp = toastFrameRef.disp;
-
       updateDirty();
     } catch (e) {
       console.error(e);
@@ -118,12 +113,16 @@
 {#if args != null}
   <SystemMenu />
   <Record surplus={30}>
-    {#if $workspaceStore.workspace != null}
+    {#if $appStore.migration != null}
+      <WorkspaceMigrationScreen />
+    {:else if $appStore.apiWarning != null}
+      <ApiWarningScreen />
+    {:else if $workspaceStore.workspace != null}
       <WorkspaceSplitView />
     {:else}
       <StartFrame />
     {/if}
   </Record>
   <DialogManager />
-  <ToastFrame bind:this={toastFrameRef} />
+  <ToastFrame />
 {/if}

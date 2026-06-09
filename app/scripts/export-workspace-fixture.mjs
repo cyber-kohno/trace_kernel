@@ -1,11 +1,11 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
-import { createWorkspaceSchemaFixture } from '../src/app/workspace/workspace-fixture.js';
-import { WORKSPACE_GEN } from '../src/app/workspace/workspace-version.js';
+import { createWorkspaceSchemaFixture } from '../src/app/gen/workspace-fixture.js';
+import { WORKSPACE_GEN } from '../src/app/gen/gen-version.js';
 
 const outputPath = resolve(
   process.cwd(),
-  `src/app/workspace/schema/v${WORKSPACE_GEN}.schema.json`,
+  `src/app/gen/schema/v${WORKSPACE_GEN}.schema.json`,
 );
 
 await mkdir(dirname(outputPath), { recursive: true });

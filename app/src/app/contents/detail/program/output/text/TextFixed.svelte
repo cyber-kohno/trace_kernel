@@ -1,7 +1,7 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { invoke } from '@tauri-apps/api/core';
   import OperationButton from '../../../../../util/button/OperationButton.svelte';
-  import ToastUtil from '../../../../../util/item/toast-util';
+  import ToastService from '../../../../../service/toast-service';
 
   export let channelId: string;
   export let total: number;
@@ -18,7 +18,7 @@
       to: total,
     });
     navigator.clipboard.writeText(lines.join('\n'));
-    ToastUtil.disp({
+    ToastService.show({
       text: 'Copied the output to the clipboard!',
     });
   }}

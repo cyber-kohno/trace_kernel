@@ -1,8 +1,8 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { invoke } from '@tauri-apps/api/core';
-  import type StoreDataset from '../../../../store/store-dataset';
+  import type DatasetState from '../../../../state/model/workspace/dataset-state';
 
-  export let item: StoreDataset.NodeDispProps;
+  export let item: DatasetState.NodeDispProps;
   export let dir: string | null = null;
 
   export let invalidate: () => void;
@@ -22,7 +22,7 @@
   $: toggleUse = () => {
     const child = item.node.child;
     if (child == undefined) throw new Error();
-    const rec = (node: StoreDataset.UsableNode, isSelect: boolean) => {
+    const rec = (node: DatasetState.UsableNode, isSelect: boolean) => {
       if (node.child == undefined) node.isSelected = isSelect;
       else node.child.nodes.forEach((n) => rec(n, isSelect));
     };

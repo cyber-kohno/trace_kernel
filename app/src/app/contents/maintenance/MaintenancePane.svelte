@@ -1,15 +1,15 @@
-<script lang="ts">
+﻿<script lang="ts">
   import MaintenanceProcess from './MaintenanceProcess.svelte';
   import MaintenanceEnv from './MaintenanceEnv.svelte';
   import MaintenanceLogic from './program/MaintenanceLogic.svelte';
   import MaintenanceResource from './resource/MaintenanceResource.svelte';
   import MaintenanceWork from './program/MaintenanceWork.svelte';
-  import type storeWorkspace from '../../store/store-workspace';
+  import type ValidationState from '../../state/model/validation-state';
   import MaintenanceDataset from './dataset/MaintenanceDataset.svelte';
 
-  export let target: storeWorkspace.Target;
+  export let target: ValidationState.Target;
 
-  const componentByCategory: Record<storeWorkspace.Category, any> = {
+  const componentByCategory: Record<ValidationState.Category, any> = {
     env: MaintenanceEnv,
     resource: MaintenanceResource,
     dataset: MaintenanceDataset,

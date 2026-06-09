@@ -1,7 +1,7 @@
-import type StoreDataset from '../../../../store/store-dataset';
+﻿import type DatasetState from '../../../../state/model/workspace/dataset-state';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import type { ScanRequest } from '../../../../store/types';
+import type TauriDto from '../../../../infra/tauri/tauri-dto';
 import PathUtil from '../../../../util/data/path-util';
 
 namespace DatasetScanUtil {
@@ -12,8 +12,8 @@ namespace DatasetScanUtil {
     setCouner: (n: number) => void;
     setScanningDispDir: (s: string[]) => void;
     setSearch: (b: boolean) => void;
-    scanRequest: ScanRequest;
-    endProc: (res: StoreDataset.UsableNode) => void;
+    scanRequest: TauriDto.ScanRequest;
+    endProc: (res: DatasetState.UsableNode) => void;
   }) => {
     // Rustからの進捗イベントを受信
     const unlisten = await listen<any>('progress', (event) => {
@@ -36,15 +36,15 @@ namespace DatasetScanUtil {
     });
 
     try {
-      const res: StoreDataset.ScanResponse = await invoke('scan_directory', {
+      const res: DatasetState.ScanResponse = await invoke('scan_directory', {
         req: props.scanRequest,
       });
       const rec = (
-        n: StoreDataset.PayloadNode,
+        n: DatasetState.PayloadNode,
         path: string,
-      ): StoreDataset.UsableNode => {
+      ): DatasetState.UsableNode => {
         const curPath = path + '\\' + n.name;
-        let child: StoreDataset.ChildProps | undefined = undefined;
+        let child: DatasetState.ChildProps | undefined = undefined;
         if (n.children != null) {
           const nodes = n.children.map((c) => rec(c, curPath));
           child = {

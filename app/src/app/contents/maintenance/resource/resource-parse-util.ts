@@ -1,12 +1,12 @@
-import type StoreResource from '../../../store/store-resource';
+import type ResourceState from '../../../state/model/workspace/resource-state';
 import DataUtil from '../../../util/data/data-util';
 
-export const clearParseValidation = (resource: StoreResource.Props) => {
+export const clearParseValidation = (resource: ResourceState.Props) => {
   delete resource.parseValidated;
 };
 
 export const setResourceSource = (
-  resource: StoreResource.Props,
+  resource: ResourceState.Props,
   source: string,
 ) => {
   resource.source = source;
@@ -16,14 +16,14 @@ export const setResourceSource = (
 };
 
 export const setResourceParseMethod = (
-  resource: StoreResource.Props,
-  parse: StoreResource.ParseMethod | undefined,
+  resource: ResourceState.Props,
+  parse: ResourceState.ParseMethod | undefined,
 ) => {
   resource.parse = parse;
   clearParseValidation(resource);
 };
 
-export const validateResourceParse = (resource: StoreResource.Props) => {
+export const validateResourceParse = (resource: ResourceState.Props) => {
   if (resource.parse == undefined) {
     throw new Error('Parse method is not selected.');
   }
@@ -32,7 +32,7 @@ export const validateResourceParse = (resource: StoreResource.Props) => {
 };
 
 export const createParsePreview = (
-  parseMethod: StoreResource.ParseMethod | undefined,
+  parseMethod: ResourceState.ParseMethod | undefined,
   records: Record<string, any>[],
 ) => {
   if (parseMethod == undefined) {

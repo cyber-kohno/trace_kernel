@@ -1,11 +1,9 @@
-import { invoke } from '@tauri-apps/api/core';
-import workspaceStore, {
-  createInitialSnapshot,
-  type SnapshotLog,
-} from '../../store/workspace-store';
-import type StoreWorkspace from '../../store/store-workspace';
-import StoreWorkspaceApi from '../../store/store-workspace';
+﻿import { invoke } from '@tauri-apps/api/core';
+import type WorkspaceState from '../../state/model/workspace/workspace-state';
+import WorkspaceStateApi from '../../state/model/workspace/workspace-state';
 import FileUtil from './file-util';
+import ValidationService from '../../service/validation-service';
+import { workspaceStore } from '../../state/store';
 
 namespace WorkspaceRecoveryUtil {
   export type RecoverySnapshot = {
@@ -17,9 +15,9 @@ namespace WorkspaceRecoveryUtil {
   };
 
   export const saveBeforeProgramRun = async (props: {
-    workspace: StoreWorkspace.Props;
+    workspace: WorkspaceState.Props;
     handlePath: string | null;
-    savedSnapshot: SnapshotLog;
+    savedSnapshot: WorkspaceStateApi.SnapshotLog;
   }) => {
     await invoke('set_recovery_snapshot', {
       snapshot: {
@@ -39,10 +37,11 @@ namespace WorkspaceRecoveryUtil {
   const restoreSnapshot = async (recoverySnapshot: RecoverySnapshot) => {
     const workspace = JSON.parse(
       recoverySnapshot.workspaceJson,
-    ) as StoreWorkspace.Props;
-    const snapshot: SnapshotLog = recoverySnapshot.savedSnapshotJson
+    ) as WorkspaceState.Props;
+    const snapshot: WorkspaceStateApi.SnapshotLog =
+      recoverySnapshot.savedSnapshotJson
       ? JSON.parse(recoverySnapshot.savedSnapshotJson)
-      : createInitialSnapshot();
+      : WorkspaceStateApi.createInitialSnapshot();
 
     workspaceStore.update((curr) => ({
       ...curr,
@@ -50,7 +49,7 @@ namespace WorkspaceRecoveryUtil {
       handlePath: recoverySnapshot.handlePath,
       snapshot,
     }));
-    StoreWorkspaceApi.validateAll();
+    ValidationService.validateAll();
     await FileUtil.updateAppTitle();
   };
 

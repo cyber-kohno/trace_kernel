@@ -1,5 +1,5 @@
 <script lang="ts">
-  import uiStore from '../../store/ui-store';
+  import { uiStore } from '../../state/store';
   import HalfPanel from '../../util/layout/HalfPanel.svelte';
   import Record from '../../util/layout/RecordDiv.svelte';
   import Wrap from '../../util/layout/Wrap.svelte';

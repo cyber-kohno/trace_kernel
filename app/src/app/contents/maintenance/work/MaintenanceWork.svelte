@@ -1,24 +1,24 @@
-<script lang="ts">
+﻿<script lang="ts">
   import TextInput from '../../../util/form/TextInput.svelte';
   import LabelRecord from '../../../util/item/LabelRecord.svelte';
   import Record from '../../../util/layout/RecordDiv.svelte';
   import Wrap from '../../../util/layout/Wrap.svelte';
-  import StoreWorkspace from '../../../store/store-workspace';
-  import workspaceStore from '../../../store/workspace-store';
-  import uiStore from '../../../store/ui-store';
+  import WorkspaceState from '../../../state/model/workspace/workspace-state';
+  import { uiStore, workspaceStore } from '../../../state/store';
   import OperationButton from '../../../util/button/OperationButton.svelte';
   import OperationSwitch from '../../../util/button/OperationSwitch.svelte';
-  import type StoreWork from '../../../store/store-work';
+  import type WorkState from '../../../state/model/workspace/work-state';
   import ContextInjectionFrame from './injection/container/ContextInjectionFrame.svelte';
   import ApiInjectionFrame from './injection/api/ApiInjectionFrame.svelte';
   import { commitWorkspace, getTargetEntry } from '../maintenance-helpers';
+  import ValidationService from '../../../service/validation-service';
 
-  $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
+  $: workspace = WorkspaceState.getWorkspace($workspaceStore);
 
   $: hasDisable = (() => {
     const target = $uiStore.target;
     if (target != null) {
-      return StoreWorkspace.hasDisable(target);
+      return ValidationService.hasDisable(target);
     }
     return false;
   })();
@@ -30,7 +30,7 @@
     commitWorkspace(workspace);
   };
 
-  $: setMethod = (method: StoreWork.OutputMethod) => {
+  $: setMethod = (method: WorkState.OutputMethod) => {
     work.method = method;
     commitWorkspace(workspace, { validate: false });
   };
@@ -63,12 +63,12 @@
       />
     </Record>
     <!-- <LabelRecord name={"utilities"} /> -->
-    <!-- 予約関数の使い方表示 -->
+    <!-- 予紁E��数の使ぁE��表示 -->
     <!-- <UsageFrame method={work.method} />  -->
     <LabelRecord name={'api_injections'} />
     <ApiInjectionFrame method={work.method} />
     <LabelRecord name={'context_injections'} />
-    <!-- 予約関数の使い方表示 -->
+    <!-- 予紁E��数の使ぁE��表示 -->
     <ContextInjectionFrame />
   </Record>
   <Record align="right">

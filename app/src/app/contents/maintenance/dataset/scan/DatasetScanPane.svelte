@@ -1,26 +1,25 @@
-<script lang="ts">
+﻿<script lang="ts">
   import DirectoryFilterConditions from './DirectoryFilterConditions.svelte';
   import { writable } from 'svelte/store';
   import FileFilterConditions from './FileFilterConditions.svelte';
   import NumberInput from '../../../../util/form/NumberInput.svelte';
   import OperationButton from '../../../../util/button/OperationButton.svelte';
-  import workspaceStore from '../../../../store/workspace-store';
-  import uiStore from '../../../../store/ui-store';
+  import { uiStore, workspaceStore } from '../../../../state/store';
   import LabelRecord from '../../../../util/item/LabelRecord.svelte';
-  import type StoreDataset from '../../../../store/store-dataset';
+  import type DatasetState from '../../../../state/model/workspace/dataset-state';
   import Record from '../../../../util/layout/RecordDiv.svelte';
-  import StoreCache from '../../../../store/store-cache';
+  import CacheState from '../../../../state/model/cache-state';
   import DatasetScanUtil from './dataset-scan-util';
-  import StoreWorkspace from '../../../../store/store-workspace';
-  import ToastUtil from '../../../../util/item/toast-util';
+  import WorkspaceState from '../../../../state/model/workspace/workspace-state';
+  import ToastService from '../../../../service/toast-service';
   import DatasetChooseUtil from '../choose/dataset-choose-util';
 
   let count = writable<number>(-1);
   let isSearch = writable(false);
   let scanningDispDir = writable<string[]>([]);
 
-  export let dataset: StoreDataset.Props;
-  export let setPhase: (phase: StoreDataset.DatasetPhase) => void;
+  export let dataset: DatasetState.Props;
+  export let setPhase: (phase: DatasetState.DatasetPhase) => void;
   export let validate: () => void;
 
   $: scanOption = (() => {
@@ -48,7 +47,7 @@
     dataset.targets = [];
     validate();
 
-    const workspace = StoreWorkspace.getWorkspace($workspaceStore);
+    const workspace = WorkspaceState.getWorkspace($workspaceStore);
     const newFilePath = workspace.envs.reduce(
       (ret, cur) => ret.replaceAll(`%${cur.varName}%`, cur.value),
       dataset.rootPath,
@@ -62,19 +61,19 @@
       endProc: (res) => {
         const fileCnt = DatasetChooseUtil.getDispRecords(res, true).length;
         if (fileCnt === 0) {
-          ToastUtil.disp({ text: 'No matching files found.' });
+          ToastService.show({ text: 'No matching files found.' });
           return;
         }
-        StoreCache.addDatasetChoose($uiStore.target?.index ?? -1, res);
+        CacheState.addDatasetChoose($uiStore.target?.index ?? -1, res);
         setPhase('choose');
       },
     });
   };
 </script>
 
-<!-- リクエストフレーム -->
+<!-- 繝ｪ繧ｯ繧ｨ繧ｹ繝医ヵ繝ｬ繝ｼ繝 -->
 <div class="list-frame">
-  <!-- 走査階層の上限（どこまで深くスキャンするか） -->
+  <!-- 襍ｰ譟ｻ髫主ｱ､縺ｮ荳企剞・医←縺薙∪縺ｧ豺ｱ縺上せ繧ｭ繝｣繝ｳ縺吶ｋ縺具ｼ・-->
   <LabelRecord name="limit_depth" />
   <NumberInput
     min={0}
@@ -86,10 +85,10 @@
     }}
     optional
   />
-  <!-- ディレクトリ名の抽出条件 -->
+  <!-- 繝・ぅ繝ｬ繧ｯ繝医Μ蜷阪・謚ｽ蜃ｺ譚｡莉ｶ -->
   <LabelRecord name="directory_filter_conditions" sub={'depth and pattern'} />
   <DirectoryFilterConditions {scanOption} />
-  <!-- ファイル名の抽出条件 -->
+  <!-- 繝輔ぃ繧､繝ｫ蜷阪・謚ｽ蜃ｺ譚｡莉ｶ -->
   <LabelRecord name="file_filter_conditions" />
   <FileFilterConditions {scanOption} />
 </div>

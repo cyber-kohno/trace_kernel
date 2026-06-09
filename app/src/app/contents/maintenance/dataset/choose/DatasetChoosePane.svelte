@@ -1,25 +1,24 @@
-<script lang="ts">
+﻿<script lang="ts">
   import DatasetChooseRow from './DatasetChooseRow.svelte';
   import { writable } from 'svelte/store';
   import DatasetChooseUtil from './dataset-choose-util';
   import OperationButton from '../../../../util/button/OperationButton.svelte';
-  import workspaceStore from '../../../../store/workspace-store';
-  import uiStore from '../../../../store/ui-store';
-  import StoreDataset from '../../../../store/store-dataset';
-  import StoreCache from '../../../../store/store-cache';
+  import { uiStore, workspaceStore } from '../../../../state/store';
+  import DatasetState from '../../../../state/model/workspace/dataset-state';
+  import CacheState from '../../../../state/model/cache-state';
   import Record from '../../../../util/layout/RecordDiv.svelte';
-  import StoreWorkspace from '../../../../store/store-workspace';
-  import ToastUtil from '../../../../util/item/toast-util';
+  import WorkspaceState from '../../../../state/model/workspace/workspace-state';
+  import ToastService from '../../../../service/toast-service';
 
   let ref: HTMLDivElement | undefined = undefined;
 
-  export let dataset: StoreDataset.Props;
-  export let setPhase: (phase: StoreDataset.DatasetPhase) => void;
+  export let dataset: DatasetState.Props;
+  export let setPhase: (phase: DatasetState.DatasetPhase) => void;
   export let validate: () => void;
 
-  let root = writable<StoreDataset.UsableNode>(
+  let root = writable<DatasetState.UsableNode>(
     (() => {
-      const ret = StoreCache.getDatasetChoose($uiStore.target?.index ?? -1);
+      const ret = CacheState.getDatasetChoose($uiStore.target?.index ?? -1);
       if (ret == null) throw new Error();
       return ret;
     })(),
@@ -43,7 +42,7 @@
 
     const rect = ref.getBoundingClientRect();
     const start = Math.floor(scrollTop / ITEM_HEIGHT);
-    const count = Math.ceil(rect.height / ITEM_HEIGHT) + 1; // 余白1行
+    const count = Math.ceil(rect.height / ITEM_HEIGHT) + 1;
     const end = Math.min(start + count, baseRecords.length);
 
     return baseRecords.slice(start, end);
@@ -51,7 +50,7 @@
 
   $: cancel = () => {
     setPhase('scan');
-    StoreCache.remove({
+    CacheState.remove({
       type: 'dataset-choose',
       index: $uiStore.target?.index ?? -1,
     });
@@ -63,39 +62,37 @@
   };
 
   /**
-   * ルートからの差分パスに変換して、選択リストに転送
-   */
+   * 繝ｫ繝ｼ繝医°繧峨・蟾ｮ蛻・ヱ繧ｹ縺ｫ螟画鋤縺励※縲・∈謚槭Μ繧ｹ繝医↓霆｢騾・   */
   $: transfer = () => {
     const selectedNodes = DatasetChooseUtil.getDispRecords($root, true)
-      // 選択中の要素でフィルター
+      // 驕ｸ謚樔ｸｭ縺ｮ隕∫ｴ縺ｧ繝輔ぅ繝ｫ繧ｿ繝ｼ
       .filter((r) => r.node.isSelected);
 
-    const workspace = StoreWorkspace.getWorkspace($workspaceStore);
-    // 環境件数を加味した正式なルートパスを取得
+    const workspace = WorkspaceState.getWorkspace($workspaceStore);
     const rootPath = workspace.envs.reduce(
       (ret, cur) => ret.replaceAll(`%${cur.varName}%`, cur.value),
       dataset.rootPath,
     );
-    // スキャン後にルートパスが変更されていないかチェック
+    // 繧ｹ繧ｭ繝｣繝ｳ蠕後↓繝ｫ繝ｼ繝医ヱ繧ｹ縺悟､画峩縺輔ｌ縺ｦ縺・↑縺・°繝√ぉ繝・け
     const isPathCheck = selectedNodes.some((r) => {
       if (r.node.path.indexOf(rootPath) === -1) return false;
       return true;
     });
     if (!isPathCheck) {
-      ToastUtil.disp({
+      ToastService.show({
         text: 'The root path has changed since the scan. Please try scanning again.',
       });
       return;
     }
     dataset.targets = selectedNodes
-      // 絶対パスからルートパスを除いて差分パスに変換
+      // 邨ｶ蟇ｾ繝代せ縺九ｉ繝ｫ繝ｼ繝医ヱ繧ｹ繧帝勁縺・※蟾ｮ蛻・ヱ繧ｹ縺ｫ螟画鋤
       .map((r) => r.node.path.replace(rootPath, ''));
     setPhase('list');
     validate();
     $workspaceStore = { ...$workspaceStore };
   };
 
-  $: getDir = (item: StoreDataset.NodeDispProps) => {
+  $: getDir = (item: DatasetState.NodeDispProps) => {
     let ret: string | null = null;
     if ($isFlat) {
       ret = item.node.path

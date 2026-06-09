@@ -1,13 +1,13 @@
-import { invoke } from '@tauri-apps/api/core';
+﻿import { invoke } from '@tauri-apps/api/core';
 import type TxPlanUtil from './tx-plan-util';
-import type { TextEncoding } from '../../../../../../store/types';
+import type TauriDto from '../../../../../../infra/tauri/tauri-dto';
 import DataUtil from '../../../../../../util/data/data-util';
 
 namespace TxCommitRunner {
   export const saveText = async (
     path: string,
     content: string,
-    encoding: TextEncoding,
+    encoding: TauriDto.TextEncoding,
   ): Promise<TxPlanUtil.CommitResult> => {
     const bytes = DataUtil.encodeText(content, encoding);
     try {

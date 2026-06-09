@@ -1,17 +1,18 @@
-<script lang="ts">
-  import workspaceStore from '../../../store/workspace-store';
-  import uiStore from '../../../store/ui-store';
-  import StoreProject from '../../../store/store-workspace';
-  import ToastUtil from '../../../util/item/toast-util';
+﻿<script lang="ts">
+  import { uiStore, workspaceStore } from '../../../state/store';
+  import UiState from '../../../state/model/ui-state';
+  import WorkspaceState from '../../../state/model/workspace/workspace-state';
+  import ToastService from '../../../service/toast-service';
   import EntryRecord from './EntryRecord.svelte';
+  import ValidationService from '../../../service/validation-service';
 
   export let index: number;
 
-  $: workspace = StoreProject.getWorkspace($workspaceStore);
+  $: workspace = WorkspaceState.getWorkspace($workspaceStore);
 
   $: validate = () => {
-    const target = StoreProject.getTarget();
-    StoreProject.validate(target);
+    const target = UiState.getTarget($uiStore);
+    ValidationService.validate(target);
   };
 
   $: isFocus = (() => {
@@ -34,10 +35,10 @@
   $: works = workspace.works[index];
 
   $: openProgram = () => {
-    const target = StoreProject.getTarget();
-    const hasDisable = StoreProject.hasDisable(target);
+    const target = UiState.getTarget($uiStore);
+    const hasDisable = ValidationService.hasDisable(target);
     if (hasDisable)
-      ToastUtil.disp({ text: 'This work has an error and cannot be opened.' });
+      ToastService.show({ text: 'This work has an error and cannot be opened.' });
     else $uiStore.dialog = 'program';
   };
 </script>

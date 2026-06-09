@@ -1,4 +1,4 @@
-import type { FileRequest, FileStat } from '../../../../../store/types';
+﻿import type TauriDto from '../../../../../infra/tauri/tauri-dto';
 import type RuntimeUtil from '../../runtime/runtime-util';
 import WorkerInvoke from '../worker-invoke';
 import RealFSWriter from './real-fs-writer';
@@ -8,7 +8,7 @@ namespace DclFileSystem {
   type FileSystemAPI = {
     exists: (path: string) => Promise<boolean>;
     glob: (pattern: string) => Promise<string[]>;
-    stat: (path: string) => Promise<FileStat>;
+    stat: (path: string) => Promise<TauriDto.FileStat>;
     readDir: (dir: string) => Promise<{ name: string; isDir: boolean }[]>;
     readText: (filePath: string, encoding?: 'utf8' | 'sjis') => Promise<string>;
     tailText: (
@@ -86,7 +86,7 @@ namespace DclFileSystem {
       },
       readText: async (filePath: string, encoding?: 'utf8' | 'sjis') => {
         await RealFSWriter.assertTextReadSize(filePath, 'readText');
-        const req: FileRequest = { filePath, encoding: encoding ?? 'utf8' };
+        const req: TauriDto.FileRequest = { filePath, encoding: encoding ?? 'utf8' };
         return WorkerInvoke.call<string>('read_file', { req });
       },
       tailText: async (

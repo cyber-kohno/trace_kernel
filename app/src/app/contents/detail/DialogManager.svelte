@@ -1,5 +1,5 @@
 <script lang="ts">
-  import uiStore from '../../store/ui-store';
+  import { uiStore } from '../../state/store';
   import Record from '../../util/layout/RecordDiv.svelte';
   import DeclareDialog from './declare/DeclareDialog.svelte';
   import LogicDialog from './logic/ui/LogicDialog.svelte';

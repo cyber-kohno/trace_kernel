@@ -1,20 +1,21 @@
-<script lang="ts">
+﻿<script lang="ts">
   import TextInput from '../../../util/form/TextInput.svelte';
   import LabelRecord from '../../../util/item/LabelRecord.svelte';
   import Record from '../../../util/layout/RecordDiv.svelte';
   import Wrap from '../../../util/layout/Wrap.svelte';
-  import StoreWorkspace from '../../../store/store-workspace';
-  import workspaceStore from '../../../store/workspace-store';
-  import uiStore from '../../../store/ui-store';
+  import WorkspaceState from '../../../state/model/workspace/workspace-state';
+  import { uiStore } from '../../../state/store';
+  import UiState from '../../../state/model/ui-state';
   import OperationButton from '../../../util/button/OperationButton.svelte';
   import { commitWorkspace, getTargetEntry } from '../maintenance-helpers';
   import LogicContextInjectionFrame from './injection/container/LogicContextInjectionFrame.svelte';
   import LogicApiInjectionFrame from './injection/api/LogicApiInjectionFrame.svelte';
+  import { workspaceStore } from '../../../state/store';
 
-  $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
+  $: workspace = WorkspaceState.getWorkspace($workspaceStore);
 
   $: logic = getTargetEntry(
-    StoreWorkspace.getTarget(),
+    UiState.getTarget($uiStore),
     'logic',
     workspace.logics,
   );

@@ -1,15 +1,16 @@
-import type StoreProcess from '../../../../store/store-process';
-import type StoreDataset from '../../../../store/store-dataset';
-import type StoreLogic from '../../../../store/store-logic';
-import type StoreResource from '../../../../store/store-resource';
-import type { FileRequest } from '../../../../store/types';
+﻿import type ProcessState from '../../../../state/model/workspace/process-state';
+import type DatasetState from '../../../../state/model/workspace/dataset-state';
+import type LogicState from '../../../../state/model/workspace/logic-state';
+import type ResourceState from '../../../../state/model/workspace/resource-state';
+import type TauriDto from '../../../../infra/tauri/tauri-dto';
 import DataUtil from '../../../../util/data/data-util';
 import FileUtil from '../../../../util/data/file-util';
 import type RuntimeUtil from '../runtime/runtime-util';
 import WorkerInvoke from './worker-invoke';
-import type StoreEnv from '../../../../store/store-env';
-import type StoreWorkspace from '../../../../store/store-workspace';
-import StoreLicense from '../../../../store/store-license';
+import type EnvState from '../../../../state/model/workspace/env-state';
+import type WorkspaceState from '../../../../state/model/workspace/workspace-state';
+import type ValidationState from '../../../../state/model/validation-state';
+import LicenseState from '../../../../state/model/license-state';
 import TypescriptUtil from '../../../../util/typescript-util';
 import DclParser from './parser/dcl-parser';
 import DeclareUtil from './declare-util';
@@ -17,23 +18,23 @@ import LogicSignatureCache from '../../logic/util/logic-signature-cache';
 
 namespace ContextDataUtil {
   export type Props = {
-    envs: StoreEnv.Props[];
-    resources: StoreResource.Props[];
-    datasets: StoreDataset.Props[];
-    processes: StoreProcess.Props[];
-    logics: StoreLogic.Props[];
+    envs: EnvState.Props[];
+    resources: ResourceState.Props[];
+    datasets: DatasetState.Props[];
+    processes: ProcessState.Props[];
+    logics: LogicState.Props[];
   };
 
   export const getUsableData = (
-    workspace: StoreWorkspace.Props,
-    disables: StoreWorkspace.Target[],
+    workspace: WorkspaceState.Props,
+    disables: ValidationState.Target[],
   ) => {
-    const isDisable = (cat: StoreWorkspace.Category, i: number) =>
+    const isDisable = (cat: ValidationState.Category, i: number) =>
       disables.find((d) => d.cat === cat && d.index === i) != undefined;
 
-    let processes: StoreProcess.Props[] = [];
-    let logics: StoreLogic.Props[] = [];
-    if (StoreLicense.isPro()) {
+    let processes: ProcessState.Props[] = [];
+    let logics: LogicState.Props[] = [];
+    if (LicenseState.isPro()) {
       processes = workspace.processes.filter(
         (_, i) => !isDisable('process', i),
       );
@@ -58,7 +59,7 @@ namespace ContextDataUtil {
   ) => {
     const { envs: envVars, resources, datasets, processes, logics } = data;
     const items = [
-      // 迺ｰ蠅・､画焚
+      // 霑ｺ・ｰ陟・・・､逕ｻ辟・
       {
         name: '$env',
         objects: envVars.map((env) => {
@@ -68,7 +69,7 @@ namespace ContextDataUtil {
           };
         }),
       },
-      // 蝗ｺ螳壹Μ繧ｽ繝ｼ繧ｹ
+      // 陜暦ｽｺ陞ｳ螢ｹﾎ懃ｹｧ・ｽ郢晢ｽｼ郢ｧ・ｹ
       {
         name: '$resource',
         objects: resources.map((r) => {
@@ -81,7 +82,7 @@ namespace ContextDataUtil {
           return { name: varName, value };
         }),
       },
-      // 繝輔ぃ繧､繝ｫ縺斐→
+      // 郢晁ｼ斐＜郢ｧ・､郢晢ｽｫ邵ｺ譁絶・
       {
         name: '$dataset',
         objects: datasets.map((ds) => {
@@ -102,7 +103,7 @@ namespace ContextDataUtil {
               const absolutePath = fixedRootPath + t;
               const relativePath = t;
               const content = async () => {
-                const req: FileRequest = { filePath: absolutePath, encoding };
+                const req: TauriDto.FileRequest = { filePath: absolutePath, encoding };
                 const text = await WorkerInvoke.call<string>('read_file', {
                   req,
                 });
@@ -118,7 +119,7 @@ namespace ContextDataUtil {
           };
         }),
       },
-      // 繝励Ο繧ｻ繧ｹ
+      // 郢晏干ﾎ溽ｹｧ・ｻ郢ｧ・ｹ
       {
         name: '$process',
         objects: processes.map((process) => {
@@ -143,14 +144,14 @@ namespace ContextDataUtil {
             const scriptKV = scriptArgValues.map((arg, i) => {
               const def = scriptArgs[i];
 
-              // 蝙九メ繧ｧ繝・け
+              // 陜吩ｹ昴Γ郢ｧ・ｧ郢昴・縺・
               if (typeof arg !== def.type) {
                 throw new Error(
                   `Argument types do not match definition. [${arg}]`,
                 );
               }
               const value = String(arg);
-              // 遨ｺ譁・ｭ励メ繧ｧ繝・け
+              // 驕ｨ・ｺ隴√・・ｭ蜉ｱ繝｡郢ｧ・ｧ郢昴・縺・
               if (value === '')
                 throw new Error(
                   'Command line arguments do not allow empty strings.',
@@ -306,7 +307,7 @@ return module.exports.default ?? exports.default;
       }[];
     }[] = [];
 
-    // 迺ｰ蠅・､画焚
+    // 霑ｺ・ｰ陟・・・､逕ｻ辟・
     if (envVars.length > 0) {
       items.push({
         name: '$env',
@@ -316,7 +317,7 @@ return module.exports.default ?? exports.default;
         }),
       });
     }
-    // 蝗ｺ螳壹Μ繧ｽ繝ｼ繧ｹ
+    // 陜暦ｽｺ陞ｳ螢ｹﾎ懃ｹｧ・ｽ郢晢ｽｼ郢ｧ・ｹ
     if (resources.length > 0) {
       items.push({
         name: '$resource',
@@ -333,7 +334,7 @@ return module.exports.default ?? exports.default;
         }),
       });
     }
-    // 繝・・繧ｿ繧ｻ繝・ヨ
+    // 郢昴・繝ｻ郢ｧ・ｿ郢ｧ・ｻ郢昴・繝ｨ
     if (datasets.length > 0) {
       items.push({
         name: '$dataset',
@@ -352,7 +353,7 @@ return module.exports.default ?? exports.default;
         }),
       });
     }
-    // 繝励Ο繧ｻ繧ｹ
+    // 郢晏干ﾎ溽ｹｧ・ｻ郢ｧ・ｹ
     if (processes.length > 0) {
       items.push({
         name: '$process',

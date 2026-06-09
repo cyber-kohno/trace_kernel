@@ -1,11 +1,11 @@
-<script lang="ts">
-  import type StoreWork from '../../../../../store/store-work';
+﻿<script lang="ts">
+  import type WorkState from '../../../../../state/model/workspace/work-state';
   import Record from '../../../../../util/layout/RecordDiv.svelte';
   import Wrap from '../../../../../util/layout/Wrap.svelte';
   import ApiInjectionItem from './ApiInjectionItem.svelte';
   import ProgramInjectionUtil from '../program-injection-util';
 
-  export let method: StoreWork.OutputMethod;
+  export let method: WorkState.OutputMethod;
 
   $: apis = ProgramInjectionUtil.getWorkApiItems(method);
 </script>

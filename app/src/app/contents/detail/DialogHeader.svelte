@@ -1,5 +1,5 @@
-<script lang="ts">
-  import uiStore from '../../store/ui-store';
+﻿<script lang="ts">
+  import { uiStore } from '../../state/store';
   import OperationButton from '../../util/button/OperationButton.svelte';
   import Column from '../../util/layout/Column.svelte';
   import Record from '../../util/layout/RecordDiv.svelte';
@@ -18,7 +18,7 @@
     <span>{title}</span>
   </Column>
   <Column width={CloseButtonAreaWidth}>
-    <OperationButton name={'×'} callback={close} isLineup bgColor={'#faa'} />
+    <OperationButton name={'X'} callback={close} isLineup bgColor={'#faa'} />
   </Column>
 </Record>
 

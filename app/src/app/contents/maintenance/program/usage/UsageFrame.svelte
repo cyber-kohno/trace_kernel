@@ -1,11 +1,11 @@
-<script lang="ts">
-  import type StoreWork from '../../../../store/store-work';
+﻿<script lang="ts">
+  import type WorkState from '../../../../state/model/workspace/work-state';
   import Record from '../../../../util/layout/RecordDiv.svelte';
   import Wrap from '../../../../util/layout/Wrap.svelte';
   import DeclareUtil from '../../../detail/program/util/declare-util';
   import UsageItem from './UsageItem.svelte';
 
-  export let method: StoreWork.OutputMethod;
+  export let method: WorkState.OutputMethod;
 
   $: list = DeclareUtil.getUsableReserveList({
     method,

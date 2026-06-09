@@ -1,9 +1,9 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import loader from '@monaco-editor/loader';
   import * as Monaco from 'monaco-editor';
   import { get, writable } from 'svelte/store';
-  import appStore from '../../store/app-store';
+  import { appStore } from '../../state/store';
   import MonacoFactory from './monaco-factory';
   import { restrictedGlobals } from './restricted-globals';
 
@@ -43,6 +43,17 @@
   let analysisModel: any;
   let runtimeDecorations: string[] = [];
   const unusedTag = Monaco.MarkerTag.Unnecessary;
+  const MAX_NAVIGATION_HISTORY = 50;
+
+  type NavigationEntry = {
+    model: Monaco.editor.ITextModel;
+    selection: Monaco.Selection;
+    scrollTop: number;
+    scrollLeft: number;
+  };
+
+  const navigationHistory: NavigationEntry[] = [];
+  let pendingCtrlClickNavigationEntry: NavigationEntry | null = null;
 
   const toMarkerSeverity = (diagnostic: any) => {
     if (diagnostic.reportsUnnecessary) {
@@ -151,6 +162,81 @@
     runtimeDecorations = editor.deltaDecorations(runtimeDecorations, []);
   };
 
+  const getNavigationEntry = (): NavigationEntry | null => {
+    const model = editor.getModel();
+    const selection = editor.getSelection();
+    if (model == null || selection == null) return null;
+
+    return {
+      model,
+      selection,
+      scrollTop: editor.getScrollTop(),
+      scrollLeft: editor.getScrollLeft(),
+    };
+  };
+
+  const isSameNavigationEntry = (
+    a: NavigationEntry | null,
+    b: NavigationEntry | null,
+  ) => {
+    if (a == null || b == null) return false;
+    return (
+      a.model.uri.toString() === b.model.uri.toString() &&
+      a.selection.equalsSelection(b.selection)
+    );
+  };
+
+  const pushNavigationHistory = (entry: NavigationEntry) => {
+    const current = navigationHistory[navigationHistory.length - 1] ?? null;
+    if (isSameNavigationEntry(current, entry)) return;
+
+    navigationHistory.push(entry);
+    if (navigationHistory.length > MAX_NAVIGATION_HISTORY) {
+      navigationHistory.shift();
+    }
+  };
+
+  const restoreNavigationEntry = (entry: NavigationEntry | undefined) => {
+    if (entry == null || entry.model.isDisposed()) return;
+
+    if (editor.getModel() !== entry.model) {
+      editor.setModel(entry.model);
+    }
+
+    editor.setSelection(entry.selection);
+    editor.revealRangeInCenterIfOutsideViewport(entry.selection);
+    editor.setScrollPosition({
+      scrollTop: entry.scrollTop,
+      scrollLeft: entry.scrollLeft,
+    });
+    editor.focus();
+  };
+
+  const pushNavigationHistoryIfMoved = (before: NavigationEntry | null) => {
+    if (before == null) return;
+
+    const after = getNavigationEntry();
+    if (!isSameNavigationEntry(before, after)) {
+      pushNavigationHistory(before);
+    }
+  };
+
+  const scheduleNavigationHistoryCheck = (
+    before: NavigationEntry | null,
+    delays: number[] = [100],
+  ) => {
+    let pushed = false;
+    delays.forEach((delay) => {
+      setTimeout(() => {
+        if (pushed) return;
+
+        const lengthBefore = navigationHistory.length;
+        pushNavigationHistoryIfMoved(before);
+        pushed = navigationHistory.length > lengthBefore;
+      }, delay);
+    });
+  };
+
   onMount(async () => {
     if (!editorDiv) return;
 
@@ -198,7 +284,7 @@
       value,
     );
 
-    // 🟦 テーマ定義
+    // 洶 繝・・繝槫ｮ夂ｾｩ
     monaco.editor.defineTheme(themeName, {
       base: 'vs-dark',
       inherit: true,
@@ -225,7 +311,7 @@
     });
 
     editor.onDidChangeModelContent(() => {
-      // ランタイムエラーのマーカー削除
+      // 繝ｩ繝ｳ繧ｿ繧､繝繧ｨ繝ｩ繝ｼ縺ｮ繝槭・繧ｫ繝ｼ蜑企勁
       clearRuntimeMarkers();
 
       const code = userModel.getValue();
@@ -236,6 +322,31 @@
 
     editor.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.Enter, () => {
       executeAction();
+    });
+    editor.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.LeftArrow, () => {
+      restoreNavigationEntry(navigationHistory.pop());
+    });
+    editor.onKeyDown((e) => {
+      if (e.keyCode !== monaco.KeyCode.F12) return;
+
+      const before = getNavigationEntry();
+      scheduleNavigationHistoryCheck(before);
+    });
+    editor.onMouseDown((e) => {
+      if (!e.event.leftButton) return;
+      if (!e.event.ctrlKey && !e.event.metaKey) return;
+      if (e.target.position == null) return;
+
+      pendingCtrlClickNavigationEntry = getNavigationEntry();
+    });
+    editor.onMouseUp((e) => {
+      if (!e.event.leftButton) return;
+      if (pendingCtrlClickNavigationEntry == null) return;
+
+      scheduleNavigationHistoryCheck(pendingCtrlClickNavigationEntry, [
+        100, 300, 800,
+      ]);
+      pendingCtrlClickNavigationEntry = null;
     });
 
     const service = await MonacoFactory.getService(monaco, analysisModel.uri);
@@ -309,7 +420,6 @@
       await runDiagnostics();
     });
 
-    // Monaco Editor初期化完了時の処理
     initDone();
   });
 

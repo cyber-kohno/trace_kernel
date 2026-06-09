@@ -1,5 +1,5 @@
-import { invoke } from '@tauri-apps/api/core';
-import type { FileStat } from '../../../../../../store/types';
+﻿import { invoke } from '@tauri-apps/api/core';
+import type TauriDto from '../../../../../../infra/tauri/tauri-dto';
 import PathUtil from '../../../../../../util/data/path-util';
 import type TxExecuter from './tx-executer';
 
@@ -9,7 +9,7 @@ namespace TxVerifyUtil {
   };
 
   export const stat = (path: string) => {
-    return invoke<FileStat>('stat', { path });
+    return invoke<TauriDto.FileStat>('stat', { path });
   };
 
   export const checkCopyFile = async (

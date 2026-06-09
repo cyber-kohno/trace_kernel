@@ -1,7 +1,7 @@
-import type StoreEnv from '../../store/store-env';
-import type StoreResource from '../../store/store-resource';
+﻿import type EnvState from '../../state/model/workspace/env-state';
+import type ResourceState from '../../state/model/workspace/resource-state';
 import Encoding from 'encoding-japanese';
-import type { TextEncoding } from '../../store/types';
+import type TauriDto from '../../infra/tauri/tauri-dto';
 
 namespace DataUtil {
   export type ColumnDef = {
@@ -14,7 +14,7 @@ namespace DataUtil {
    */
   // export const convertTableToJson = (
   //     source: string,
-  //     parseMethod: StoreResource.ParseMethod
+  //     parseMethod: ResourceState.ParseMethod
   // ): Record<string, any>[] => {
   //     if (!source) return [];
 
@@ -57,7 +57,7 @@ namespace DataUtil {
   // };
   export const convertTableToJson = (
     source: string,
-    parseMethod: StoreResource.ParseMethod,
+    parseMethod: ResourceState.ParseMethod,
   ): Record<string, any>[] => {
     if (!source) return [];
 
@@ -179,7 +179,7 @@ namespace DataUtil {
   function parseTsvRow(row: string): string[] {
     return row.split('\t');
   }
-  function parseRow(row: string, method: StoreResource.ParseMethod): string[] {
+  function parseRow(row: string, method: ResourceState.ParseMethod): string[] {
     return method === 'csv' ? parseCsvRow(row) : parseTsvRow(row);
   }
 
@@ -188,7 +188,7 @@ namespace DataUtil {
    */
   export const convertTableToColDefs = (
     source: string,
-    parseMethod: StoreResource.ParseMethod,
+    parseMethod: ResourceState.ParseMethod,
   ): ColumnDef[] => {
     if (!source) return [];
 
@@ -209,7 +209,7 @@ namespace DataUtil {
   const inferColumnTypes = (
     header: string[],
     dataRows: string[],
-    parseMethod: StoreResource.ParseMethod,
+    parseMethod: ResourceState.ParseMethod,
   ): ColumnDef[] => {
     return header.map((name, colIdx) => {
       if (parseMethod === 'tsv' || dataRows.length === 0) {
@@ -251,7 +251,7 @@ namespace DataUtil {
 
   export const convertJsonToTable = (
     obj: any[],
-    parseMethod: StoreResource.ParseMethod,
+    parseMethod: ResourceState.ParseMethod,
   ): string => {
     if (!obj.length) return '';
 
@@ -314,7 +314,7 @@ namespace DataUtil {
   };
 
   /** 環境変数を適用した値を返す */
-  export const getAppliedEnvValue = (base: string, envs: StoreEnv.Props[]) => {
+  export const getAppliedEnvValue = (base: string, envs: EnvState.Props[]) => {
     return envs.reduce(
       (ret, cur) => ret.replaceAll(`%${cur.varName}%`, cur.value),
       base,
@@ -323,7 +323,7 @@ namespace DataUtil {
 
   export const decodeBinary = (
     binary: Uint8Array,
-    encoding: TextEncoding,
+    encoding: TauriDto.TextEncoding,
   ): string => {
     const decoder = new TextDecoder(
       encoding === 'utf8' ? 'utf-8' : 'shift_jis',
@@ -333,7 +333,7 @@ namespace DataUtil {
 
   export const encodeText = (
     text: string,
-    encoding: TextEncoding,
+    encoding: TauriDto.TextEncoding,
   ): Uint8Array => {
     if (encoding === 'utf8') {
       return new TextEncoder().encode(text);

@@ -1,15 +1,14 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-  import workspaceStore from '../../../../store/workspace-store';
-  import uiStore from '../../../../store/ui-store';
+  import { uiStore, workspaceStore } from '../../../../state/store';
   import Wrap from '../../../../util/layout/Wrap.svelte';
   import ScriptEditor from '../../../../util/monaco/ScriptEditor.svelte';
   import Record from '../../../../util/layout/RecordDiv.svelte';
-  import StoreWorkspace from '../../../../store/store-workspace';
+  import WorkspaceState from '../../../../state/model/workspace/workspace-state';
   import DialogHeader from '../../DialogHeader.svelte';
   import ContextDataUtil from '../../program/util/context-data-util';
   import BusyIndicator from '../../../../util/item/BusyIndicator.svelte';
-  import workspaceValidationStore from '../../../../store/workspace-validation-store';
+  import { validationStore } from '../../../../state/store';
   import { writable } from 'svelte/store';
   import LogicSourceUtil from '../util/logic-source-util';
   import DeclareUtil from '../../program/util/declare-util';
@@ -18,11 +17,11 @@
   let isMonacoInitDone = writable(false);
   let hasError = writable(false);
 
-  $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
+  $: workspace = WorkspaceState.getWorkspace($workspaceStore);
   $: currentTarget = $uiStore.target;
   $: injectionalData = ContextDataUtil.getUsableData(
     workspace,
-    $workspaceValidationStore.disables,
+    $validationStore.disables,
   );
   $: logic = (() => {
     if (currentTarget?.cat === 'logic') {

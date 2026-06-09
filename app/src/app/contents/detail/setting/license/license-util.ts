@@ -1,15 +1,13 @@
-import * as ed from '@noble/ed25519';
+﻿import * as ed from '@noble/ed25519';
 import { sha512 } from '@noble/hashes/sha2.js';
 import { Store } from '@tauri-apps/plugin-store';
-import type StoreLicense from '../../../../store/store-license';
+import type LicenseState from '../../../../state/model/license-state';
 
 namespace LicenseUtil {
-  // noble 設定
   ed.hashes.sha512 = sha512;
 
   export type Payload = { i: string; n: string; p: string; f: string[] };
 
-  // アプリに埋め込む公開鍵（base64）
   const PUBLIC_KEY_BASE64 = 'vci3pYW/kOt3mut40G/IrL+u6zECsQr5w3wN6sROyys=';
   // v1.eyJ2IjoxLCJuIjoiZmo2ODA2ZXgjMzc0OSIsInAiOiJ0ayIsImYiOlsiY29yZSIsImFkdmFuY2VkIl0sImkiOjE3NjgzOTQ1Mjl9.UPNg-ZBzIOa4sk4ZwrEd5-MzeKDB3RBV8BwTaw4jJK2k-fEymNluux2mFOCYlmTYvuf2IzyhdJ7um5oHzPZlDQ
   const publicKey = Uint8Array.from(atob(PUBLIC_KEY_BASE64), (c) =>
@@ -64,7 +62,7 @@ namespace LicenseUtil {
       throw new Error('Invalid license payload');
     }
 
-    // 7. 成功
+    // 7. 謌仙粥
     return payload;
   };
 
@@ -90,7 +88,7 @@ namespace LicenseUtil {
 
   export const getConvertedLicenseFromPayload = (
     payload: Payload,
-  ): StoreLicense.Props => {
+  ): LicenseState.StoreValue => {
     const displayId = payload.n;
     const dateObj = new Date(Number.parseInt(payload.i) * 1000);
     const date = dateObj.toISOString().slice(0, 10);

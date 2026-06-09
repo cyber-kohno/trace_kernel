@@ -1,13 +1,13 @@
-import DclFileSystem from './fs/dcl-file-system';
+﻿import DclFileSystem from './fs/dcl-file-system';
 import DclRuntime from './dcl-runtime';
 import DclNet from './dcl-net';
 import DclState from './dcl-state';
 import DclChannel from './channel/dcl-channel';
-import type StoreWork from '../../../../store/store-work';
-import StoreLicense from '../../../../store/store-license';
+import type WorkState from '../../../../state/model/workspace/work-state';
+import LicenseState from '../../../../state/model/license-state';
 import RuntimeUtil from '../runtime/runtime-util';
 import DclParser from './parser/dcl-parser';
-import type StoreWorkspace from '../../../../store/store-workspace';
+import type WorkspaceState from '../../../../state/model/workspace/workspace-state';
 
 namespace DeclareUtil {
   export type ReserveDef =
@@ -21,7 +21,7 @@ namespace DeclareUtil {
     | 'parser';
 
   export const getUsableReserveList = (props: {
-    method: StoreWork.OutputMethod;
+    method: WorkState.OutputMethod;
   }): ReserveDef[] => {
     const list: ReserveDef[] = [];
 
@@ -41,7 +41,7 @@ namespace DeclareUtil {
     list.push('runtime');
     list.push('state');
     list.push('parser');
-    if (StoreLicense.isPro()) {
+    if (LicenseState.isPro()) {
       list.push('fs');
       list.push('net');
     }
@@ -54,9 +54,7 @@ namespace DeclareUtil {
   ): object => {
     const scheduleFlush = (lines: string[], channelId: string) => {
       const { rust: rustCache } = workerCache;
-      // チャンネルのキューを取得
       let queue = rustCache.logQueues.get(channelId);
-      // なければ生成
       if (!queue) {
         queue = [];
         rustCache.logQueues.set(channelId, queue);

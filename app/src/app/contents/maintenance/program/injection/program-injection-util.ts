@@ -1,5 +1,6 @@
-import type StoreWork from '../../../../store/store-work';
-import type StoreWorkspace from '../../../../store/store-workspace';
+﻿import type WorkState from '../../../../state/model/workspace/work-state';
+import type WorkspaceState from '../../../../state/model/workspace/workspace-state';
+import type ValidationState from '../../../../state/model/validation-state';
 import ContextDataUtil from '../../../detail/program/util/context-data-util';
 import DeclareUtil from '../../../detail/program/util/declare-util';
 import LogicSignatureCache from '../../../detail/logic/util/logic-signature-cache';
@@ -11,8 +12,8 @@ namespace ProgramInjectionUtil {
   };
 
   const getBaseContextItems = (
-    workspace: StoreWorkspace.Props,
-    disables: StoreWorkspace.Target[],
+    workspace: WorkspaceState.Props,
+    disables: ValidationState.Target[],
   ): ContextItem[] => {
     const contexts = ContextDataUtil.getUsableData(workspace, disables);
     return [
@@ -42,9 +43,9 @@ namespace ProgramInjectionUtil {
     });
 
   export const getLogicDisplayItem = (
-    logic: StoreWorkspace.Props['logics'][number],
-    workspace: StoreWorkspace.Props,
-    disables: StoreWorkspace.Target[],
+    logic: WorkspaceState.Props['logics'][number],
+    workspace: WorkspaceState.Props,
+    disables: ValidationState.Target[],
   ) => {
     const injectionDefs = getLogicSignatureInjectionDefs(workspace, disables);
     const signature = LogicSignatureCache.get({
@@ -56,8 +57,8 @@ namespace ProgramInjectionUtil {
   };
 
   const getLogicSignatureInjectionDefs = (
-    workspace: StoreWorkspace.Props,
-    disables: StoreWorkspace.Target[],
+    workspace: WorkspaceState.Props,
+    disables: ValidationState.Target[],
   ) => {
     const contexts = ContextDataUtil.getUsableData(workspace, disables);
     return getLogicApiDeclareDefs().concat(
@@ -69,10 +70,10 @@ namespace ProgramInjectionUtil {
   };
 
   export const getWorkContextItems = (
-    workspace: StoreWorkspace.Props,
-    disables: StoreWorkspace.Target[],
+    workspace: WorkspaceState.Props,
+    disables: ValidationState.Target[],
   ): ContextItem[] => {
-    const isDisable = (cat: StoreWorkspace.Category, index: number) =>
+    const isDisable = (cat: ValidationState.Category, index: number) =>
       disables.find((item) => item.cat === cat && item.index === index) !=
       undefined;
 
@@ -87,13 +88,13 @@ namespace ProgramInjectionUtil {
   };
 
   export const getLogicContextItems = (
-    workspace: StoreWorkspace.Props,
-    disables: StoreWorkspace.Target[],
+    workspace: WorkspaceState.Props,
+    disables: ValidationState.Target[],
     options?: {
       excludeName?: string;
     },
   ): ContextItem[] => {
-    const isDisable = (cat: StoreWorkspace.Category, index: number) =>
+    const isDisable = (cat: ValidationState.Category, index: number) =>
       disables.find((item) => item.cat === cat && item.index === index) !=
       undefined;
 
@@ -113,7 +114,7 @@ namespace ProgramInjectionUtil {
     return [...getBaseContextItems(workspace, disables), ...logicItems];
   };
 
-  export const getWorkApiItems = (method: StoreWork.OutputMethod): string[] => {
+  export const getWorkApiItems = (method: WorkState.OutputMethod): string[] => {
     return DeclareUtil.getUsableReserveList({
       method,
     }).map((res) => `$${res}`);

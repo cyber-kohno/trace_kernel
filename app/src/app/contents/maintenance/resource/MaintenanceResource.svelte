@@ -1,8 +1,7 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { writable } from 'svelte/store';
-  import workspaceStore from '../../../store/workspace-store';
-  import uiStore from '../../../store/ui-store';
-  import StoreWorkspace from '../../../store/store-workspace';
+  import { uiStore, workspaceStore } from '../../../state/store';
+  import WorkspaceState from '../../../state/model/workspace/workspace-state';
   import OperationButton from '../../../util/button/OperationButton.svelte';
   import OperationSwitch from '../../../util/button/OperationSwitch.svelte';
   import Textarea from '../../../util/form/Textarea.svelte';
@@ -21,7 +20,7 @@
 
   const testData = writable<string | null>(null);
 
-  $: workspace = StoreWorkspace.getWorkspace($workspaceStore);
+  $: workspace = WorkspaceState.getWorkspace($workspaceStore);
 
   $: resource = getTargetEntry(
     $uiStore.target,

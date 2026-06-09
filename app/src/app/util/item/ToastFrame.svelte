@@ -1,23 +1,13 @@
 <script lang="ts">
-  import { writable } from 'svelte/store';
-  import type ToastUtil from './toast-util';
   import { fade } from 'svelte/transition';
+  import { toastStore } from '../../state/store';
 
-  let toast = writable<ToastUtil.Props | null>(null);
-
-  export const disp = (props: ToastUtil.Props) => {
-    $toast = props;
-    setTimeout(() => {
-      $toast = null;
-    }, $toast.sustainMs ?? 1000);
-  };
-
-  $: duration = $toast?.sustainMs ?? 1000;
+  $: duration = $toastStore?.sustainMs ?? 1000;
 </script>
 
-{#if $toast != null}
+{#if $toastStore != null}
   <div out:fade={{ duration: 1000 }}>
-    {$toast.text}
+    {$toastStore.text}
   </div>
 {/if}
 

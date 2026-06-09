@@ -1,15 +1,16 @@
-<script lang="ts">
-  import workspaceStore from '../../../store/workspace-store';
-  import uiStore from '../../../store/ui-store';
-  import StoreProject from '../../../store/store-workspace';
+﻿<script lang="ts">
+  import { uiStore, workspaceStore } from '../../../state/store';
+  import UiState from '../../../state/model/ui-state';
+  import WorkspaceState from '../../../state/model/workspace/workspace-state';
   import EntryRecord from './EntryRecord.svelte';
+  import ValidationService from '../../../service/validation-service';
 
   export let index: number;
 
-  $: workspace = StoreProject.getWorkspace($workspaceStore);
+  $: workspace = WorkspaceState.getWorkspace($workspaceStore);
   $: validate = () => {
-    const target = StoreProject.getTarget();
-    StoreProject.validate(target);
+    const target = UiState.getTarget($uiStore);
+    ValidationService.validate(target);
   };
 
   $: isFocus = (() => {

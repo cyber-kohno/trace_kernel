@@ -1,14 +1,16 @@
-<script lang="ts">
-  import { getSnapshot } from '../../store/dirty';
-  import workspaceStore from '../../store/workspace-store';
-  import StoreWorkspace from '../../store/store-workspace';
+﻿<script lang="ts">
+  import DirtyUtil from '../../service/dirty/dirty-util';
+  import WorkspaceState from '../../state/model/workspace/workspace-state';
+  import { workspaceStore } from '../../state/store';
   import FileUtil from '../../util/data/file-util';
   import RecordDiv from '../../util/layout/RecordDiv.svelte';
-  import { CURRENT_GEN } from '../../workspace/workspace-version.js';
+  import { CURRENT_GEN } from '../../gen/gen-version.js';
 
   const createBlank = async () => {
-    $workspaceStore.workspace = StoreWorkspace.getInitial();
-    $workspaceStore.snapshot = await getSnapshot($workspaceStore.workspace);
+    $workspaceStore.workspace = WorkspaceState.getInitial();
+    $workspaceStore.snapshot = await DirtyUtil.getSnapshot(
+      $workspaceStore.workspace,
+    );
     FileUtil.updateAppTitle();
   };
   $: loadFile = () => {
