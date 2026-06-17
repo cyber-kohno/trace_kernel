@@ -15,7 +15,7 @@ import ValidationService from '../../service/validation-service';
 import { appStore, dirtyStore, workspaceStore } from '../../state/store';
 
 namespace FileUtil {
-  export const VERSION = `v${0}.${0}.${2}`;
+  export const VERSION = `v${0}.${0}.${3}`;
   export const APP_NAME = `Trace Kernel ${VERSION}`;
   const FILE_EXTENSION: string = `${VERSION}.trk`;
 

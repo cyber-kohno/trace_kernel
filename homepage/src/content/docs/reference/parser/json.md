@@ -20,7 +20,7 @@ if (json.exists('users[0].name')) {
 | メソッド | 戻り値 | 説明 |
 | --- | --- | --- |
 | `root()` | `unknown` | ルート値を返します。 |
-| `query(path)` | `unknown` | パスの値を返します。存在しない場合はエラーです。 |
+| `query<T = unknown>(path)` | `T` | パスの値を返します。存在しない場合はエラーです。型指定はTypeScript上の型付けであり、実行時の型検証は行いません。 |
 | `queryString(path)` | `string` | 文字列として値を返します。型が違う場合はエラーです。 |
 | `queryNumber(path)` | `number` | 数値として値を返します。型が違う場合はエラーです。 |
 | `queryBoolean(path)` | `boolean` | 真偽値として値を返します。型が違う場合はエラーです。 |
@@ -28,11 +28,14 @@ if (json.exists('users[0].name')) {
 | `keys(path?)` | `string[]` | オブジェクトのキー一覧を返します。 |
 | `length(path?)` | `number` | 配列長、またはオブジェクトのキー数を返します。 |
 | `toObject<T>()` | `T` | JSON全体を指定型として取得します。 |
+| `toCsv()` | `string` | JSONルート配列をCSV文字列に変換します。変換できない構造の場合はエラーです。 |
+| `toTsv()` | `string` | JSONルート配列をTSV文字列に変換します。変換できない構造の場合はエラーです。 |
 
 パスは、ドットと配列インデックスで指定します。
 
 ```ts
 json.query('users[0].profile.name');
+json.query<{ id: string; name: string }>('users[0]');
 json.queryNumber('items[3].price');
 ```
 
@@ -167,6 +170,37 @@ Trace Kernel
 parser,json,reference
 ```
 
+## JSONをCSV/TSVとして取得する
+
+`toCsv()`と`toTsv()`を使うと、JSONルートがオブジェクト配列である場合に、表形式の文字列として取得できます。
+
+```ts
+const source = `[
+  { "id": "001", "name": "taro", "score": 82 },
+  { "id": "002", "name": "jiro", "score": 64 }
+]`;
+
+const json = $parser.json(source);
+
+$println(json.toCsv());
+$println(json.toTsv());
+```
+
+`toCsv()`は、文字列にカンマ、ダブルクォーテーション、改行が含まれる場合、そのセルをダブルクォーテーションで囲みます。セル内のダブルクォーテーションは`""`に変換され、改行はクォート内に保持されます。
+
+`toTsv()`は、文字列内のタブ、改行、復帰をそれぞれ`\t`、`\n`、`\r`として出力します。
+
+CSV/TSVへ変換するには、次の条件を満たす必要があります。
+
+- JSONルートが配列である
+- 配列が1件以上のレコードを持つ
+- すべてのレコードがオブジェクトである
+- すべてのレコードが1件目と同じキーを持つ
+- 値が文字列または有限の数値である
+- 1件目で判定した各キーの数値/文字列の扱いが、全レコードで一致する
+
+条件を満たさない場合は、スクリプト実行時にエラーになります。
+
 ## エラーになりやすいケース
 
 - 存在しないパスを`query()`で参照する
@@ -174,3 +208,4 @@ parser,json,reference
 - `queryString()`、`queryNumber()`、`queryBoolean()`で実際の型と違う型を要求する
 - `keys()`を配列やプリミティブ値に対して呼び出す
 - `length()`を数値や文字列など、配列でもオブジェクトでもない値に対して呼び出す
+- `toCsv()`、`toTsv()`を変換できないJSON構造に対して呼び出す

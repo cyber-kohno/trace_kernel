@@ -2,16 +2,17 @@ import DataUtil from '../../../../../util/data/data-util';
 import type RuntimeUtil from '../../runtime/runtime-util';
 import DomParser from './dom-parser';
 import ExcelParser from './excel-parser';
-import Inspector from './inspector';
+import JsonInspector from './inspector/json-inspector';
+import TableInspector from './inspector/table-inspector';
 
 namespace DclParser {
   type ParserAPI = {
     xml: (source: string) => Promise<DomParser.DomController>;
     html: (source: string) => Promise<DomParser.DomController>;
     excel: (filePath: string) => Promise<ExcelParser.Book>;
-    csv: (source: string) => Inspector.TableInspector;
-    tsv: (source: string) => Inspector.TableInspector;
-    json: (source: string) => Inspector.JsonInspector;
+    csv: (source: string) => TableInspector.Instance;
+    tsv: (source: string) => TableInspector.Instance;
+    json: (source: string) => JsonInspector.Instance;
   };
 
   export const getTypeDeclare = () => `
@@ -54,10 +55,23 @@ namespace DclParser {
             address: string;
             value: string;
         };
+        type TableRow = {
+            get(key: string): unknown;
+            getString(key: string): string;
+            getNumber(key: string): number;
+            has(key: string): boolean;
+            keys(): string[];
+        };
+        type TableInspector = {
+            rowCount(): number;
+            colCount(): number;
+            columns(): string[];
+            row(index: number): TableRow;
+            toObject<T = any>(): T[];
+        };
         type JsonInspector = {
-            kind: "json";
             root(): unknown;
-            query(path: string): unknown;
+            query<T = unknown>(path: string): T;
             queryString(path: string): string;
             queryNumber(path: string): number;
             queryBoolean(path: string): boolean;
@@ -65,13 +79,15 @@ namespace DclParser {
             keys(path?: string): string[];
             length(path?: string): number;
             toObject<T = any>(): T;
+            toCsv(): string;
+            toTsv(): string;
         };
         type ParserAPI = {
             xml: (source: string) => Promise<DomController>;
             html: (source: string) => Promise<DomController>;
             excel: (filePath: string) => Promise<Book>;
-            csv: (source: string) => Inspector.TableInspector;
-            tsv: (source: string) => Inspector.TableInspector;
+            csv: (source: string) => TableInspector;
+            tsv: (source: string) => TableInspector;
             json: (source: string) => JsonInspector;
         };
     `;
@@ -85,15 +101,15 @@ namespace DclParser {
       excel: (filePath: string) => ExcelParser.parse(filePath),
       csv: (source: string) => {
         const data = DataUtil.convertTableToJson(source, 'csv');
-        return Inspector.createTableInspector(data);
+        return TableInspector.create(data);
       },
       tsv: (source: string) => {
         const data = DataUtil.convertTableToJson(source, 'tsv');
-        return Inspector.createTableInspector(data);
+        return TableInspector.create(data);
       },
       json: (source: string) => {
         const data = JSON.parse(source);
-        return Inspector.createJsonInspector(data);
+        return JsonInspector.create(data);
       },
     };
   };
