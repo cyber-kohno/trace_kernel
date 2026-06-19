@@ -296,6 +296,28 @@
         'input.background': '#252526',
         'input.foreground': '#ffffff',
         'input.border': '#3c3c3c',
+        'list.foreground': '#e6edf3',
+        'list.activeSelectionBackground': '#094771',
+        'list.activeSelectionForeground': '#ffffff',
+        'list.inactiveSelectionBackground': '#37373d',
+        'list.inactiveSelectionForeground': '#e6edf3',
+        'list.hoverBackground': '#2a2d2e',
+        'list.hoverForeground': '#ffffff',
+        'list.focusBackground': '#094771',
+        'list.focusForeground': '#ffffff',
+        'peekView.border': '#2aa3ff',
+        'peekViewTitle.background': '#1e1e1e',
+        'peekViewTitleLabel.foreground': '#ffffff',
+        'peekViewTitleDescription.foreground': '#cccccc',
+        'peekViewResult.background': '#252526',
+        'peekViewResult.fileForeground': '#ffffff',
+        'peekViewResult.lineForeground': '#d4d4d4',
+        'peekViewResult.selectionBackground': '#094771',
+        'peekViewResult.selectionForeground': '#ffffff',
+        'peekViewResult.matchHighlightBackground': '#613214',
+        'peekViewEditor.background': '#001010',
+        'peekViewEditorGutter.background': '#002b3d',
+        'peekViewEditor.matchHighlightBackground': '#613214',
       },
     });
 
@@ -451,5 +473,8 @@
     color: var(--vscode-input-foreground);
     caret-color: var(--vscode-input-foreground);
     background-color: var(--vscode-input-background);
+  }
+  :global(.monaco-editor .reference-zone-widget .ref-tree) {
+    font-size: 13px;
   }
 </style>
