@@ -33,22 +33,30 @@
     $uiStore.dialog = 'setting';
   };
 
+  const executeRestart = async () => {
+    await WorkspaceRecoveryUtil.clear();
+    if (import.meta.env.DEV) {
+      window.location.reload();
+    } else {
+      await relaunch();
+    }
+  };
+
   const restart = async () => {
-    ask(
-      'The application will restart. Any unsaved changes will be lost. Do you want to continue?',
+    if (!$workspaceStore.workspace || !$dirtyStore) {
+      await executeRestart();
+      return;
+    }
+
+    const isOk = await ask(
+      'There are unsaved changes. Do you want to restart Trace Kernel?',
       {
-        title: 'Confirm Restart',
+        title: 'Unsaved Changes',
+        kind: 'warning',
       },
-    ).then(async (isOk) => {
-      if (isOk) {
-        await WorkspaceRecoveryUtil.clear();
-        if (import.meta.env.DEV) {
-          window.location.reload();
-        } else {
-          await relaunch();
-        }
-      }
-    });
+    );
+
+    if (isOk) await executeRestart();
   };
 
   $: isOpenProject = $workspaceStore.workspace != null;

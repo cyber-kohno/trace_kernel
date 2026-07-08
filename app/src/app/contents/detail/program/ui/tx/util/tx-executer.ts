@@ -49,6 +49,7 @@ namespace TxExecuter {
     const reserveDirs: string[] = [];
     for (const row of rows) {
       const { order, status } = row;
+
       switch (order.type) {
         case 'create_dir':
           const result = await TxVerifyUtil.checkCreateDir(order.path);

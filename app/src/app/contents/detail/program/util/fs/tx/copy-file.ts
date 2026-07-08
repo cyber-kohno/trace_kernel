@@ -1,5 +1,6 @@
 import PathUtil from '../../../../../../util/data/path-util';
 import RuntimeUtil from '../../../runtime/runtime-util';
+import TxPathValidate from './tx-path-validate';
 
 namespace CopyFile {
   export const byPath = (
@@ -58,6 +59,9 @@ namespace CopyFile {
     from: string,
     dest: string,
   ): void => {
+    TxPathValidate.windowsPath(from);
+    TxPathValidate.windowsPath(dest);
+
     const { pathIndex, reservedPaths, copyOps, dirTable } = vfs;
 
     let existVirtualDir = false;

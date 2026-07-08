@@ -1,4 +1,8 @@
 namespace PathUtil {
+  export type ValidationResult =
+    | { valid: true }
+    | { valid: false; message: string };
+
   export function joinPath(...parts: string[]): string {
     if (parts.length === 0) return '';
 
@@ -157,6 +161,100 @@ namespace PathUtil {
     const nextChar = descendant.charAt(ancestor.length);
     return nextChar === '/' || nextChar === '\\';
   };
+
+  const WINDOWS_INVALID_NAME_CHARS = /[<>:"/\\|?*\x00-\x1f]/;
+  const WINDOWS_RESERVED_NAMES =
+    /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i;
+
+  export function validateWindowsFileName(name: string): ValidationResult {
+    if (name.length === 0) {
+      return { valid: false, message: 'File name must not be empty.' };
+    }
+
+    if (name === '.' || name === '..') {
+      return {
+        valid: false,
+        message: `File name is reserved: ${name}`,
+      };
+    }
+
+    const invalid = name.match(WINDOWS_INVALID_NAME_CHARS)?.[0];
+    if (invalid != null) {
+      return {
+        valid: false,
+        message: `File name contains invalid Windows character "${formatInvalidChar(invalid)}": ${name}`,
+      };
+    }
+
+    if (/[. ]$/.test(name)) {
+      return {
+        valid: false,
+        message: `File name cannot end with a dot or space: ${name}`,
+      };
+    }
+
+    if (WINDOWS_RESERVED_NAMES.test(name)) {
+      return {
+        valid: false,
+        message: `File name is reserved on Windows: ${name}`,
+      };
+    }
+
+    return { valid: true };
+  }
+
+  export function validateWindowsPath(path: string): ValidationResult {
+    if (path.trim().length === 0) {
+      return { valid: false, message: 'Path must not be empty.' };
+    }
+
+    const normalized = normalize(path);
+    const withoutPrefix = stripWindowsPathPrefix(normalized);
+    const segments = withoutPrefix.split(/[\\/]+/).filter((seg) => seg !== '');
+
+    for (const segment of segments) {
+      const result = validateWindowsFileName(segment);
+      if (!result.valid) {
+        return {
+          valid: false,
+          message: `${result.message} Path: ${path}`,
+        };
+      }
+    }
+
+    return { valid: true };
+  }
+
+  function stripWindowsPathPrefix(path: string): string {
+    const normalized = path.replace(/\//g, '\\');
+
+    if (/^[A-Za-z]:\\?/.test(normalized)) {
+      return normalized.slice(2);
+    }
+
+    if (normalized.startsWith('\\\\?\\')) {
+      const withoutExtendedPrefix = normalized.slice(4);
+      if (/^[A-Za-z]:\\?/.test(withoutExtendedPrefix)) {
+        return withoutExtendedPrefix.slice(2);
+      }
+      return withoutExtendedPrefix.replace(/^UNC\\[^\\]+\\[^\\]+\\?/, '');
+    }
+
+    if (normalized.startsWith('\\\\')) {
+      const parts = normalized.split('\\').filter((part) => part !== '');
+      return parts.slice(2).join('\\');
+    }
+
+    return normalized;
+  }
+
+  function formatInvalidChar(char: string): string {
+    const code = char.charCodeAt(0);
+    if (code < 32) {
+      return `0x${code.toString(16).padStart(2, '0')}`;
+    }
+    return char;
+  }
 }
 
 export default PathUtil;

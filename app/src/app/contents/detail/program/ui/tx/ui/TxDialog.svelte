@@ -21,7 +21,10 @@
   const orders = TxPlanNormalize.convertVfsToOrder(vfs);
 
   const orderRows = writable<TxExecuter.OrderRow[]>(
-    orders.map((order) => ({ order, status: {} })),
+    orders.map((order) => ({
+      order,
+      status: {},
+    })),
   );
 
   let progress = writable<number>(0);

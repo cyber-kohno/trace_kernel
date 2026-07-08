@@ -1,5 +1,6 @@
 import PathUtil from '../../../../../../util/data/path-util';
 import RuntimeUtil from '../../../runtime/runtime-util';
+import TxPathValidate from './tx-path-validate';
 
 namespace SaveFile {
   export const execute = (
@@ -7,6 +8,8 @@ namespace SaveFile {
     filePath: string,
     content: string,
   ): void => {
+    TxPathValidate.windowsPath(filePath);
+
     const { pathIndex, fileTable, dirTable, reservedPaths } = vfs;
 
     // 既にこのパスに何らかの履歴がある場合はエラー

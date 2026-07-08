@@ -1,6 +1,7 @@
 import DataUtil from '../../../../../../util/data/data-util';
 import RuntimeUtil from '../../../runtime/runtime-util';
 import RealFSWriter from '../real-fs-writer';
+import TxPathValidate from './tx-path-validate';
 
 export namespace OpenText {
   export const execute = async (
@@ -8,6 +9,8 @@ export namespace OpenText {
     filePath: string,
     encoding: 'utf8' | 'sjis',
   ) => {
+    TxPathValidate.windowsPath(filePath);
+
     const { pathIndex, fileTable } = vfs;
 
     // ❗ 既に履歴があるなら即エラー

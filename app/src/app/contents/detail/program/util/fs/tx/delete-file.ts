@@ -1,4 +1,5 @@
 import RuntimeUtil from '../../../runtime/runtime-util';
+import TxPathValidate from './tx-path-validate';
 
 namespace DeleteFile {
   // ==========================
@@ -6,6 +7,8 @@ namespace DeleteFile {
   // ==========================
 
   export const byPath = (vfs: RuntimeUtil.VFSState, filePath: string) => {
+    TxPathValidate.windowsPath(filePath);
+
     const { pathIndex, fileTable } = vfs;
 
     let state: RuntimeUtil.FileState | undefined;

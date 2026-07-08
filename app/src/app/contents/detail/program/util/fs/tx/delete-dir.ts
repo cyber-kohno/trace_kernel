@@ -1,8 +1,11 @@
 import PathUtil from '../../../../../../util/data/path-util';
 import RuntimeUtil from '../../../runtime/runtime-util';
+import TxPathValidate from './tx-path-validate';
 
 namespace DeleteDir {
   export const execute = (vfs: RuntimeUtil.VFSState, dirPath: string): void => {
+    TxPathValidate.windowsPath(dirPath);
+
     const { dirTable, fileTable } = vfs;
 
     // -------------------------

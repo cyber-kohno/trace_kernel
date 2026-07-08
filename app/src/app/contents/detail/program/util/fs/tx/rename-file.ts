@@ -1,4 +1,6 @@
 import RuntimeUtil from '../../../runtime/runtime-util';
+import TxPathValidate from './tx-path-validate';
+
 namespace RenameFile {
   // ==========================
   // Public API
@@ -9,9 +11,8 @@ namespace RenameFile {
     filePath: string,
     newName: string,
   ) => {
-    if (newName.includes('/') || newName.includes('\\')) {
-      throw new Error('rename cannot change directory (filename only)');
-    }
+    TxPathValidate.windowsPath(filePath);
+    TxPathValidate.windowsFileName(newName);
 
     const { pathIndex, fileTable } = vfs;
 
@@ -41,9 +42,7 @@ namespace RenameFile {
     token: RuntimeUtil.FileToken,
     newName: string,
   ) => {
-    if (newName.includes('/') || newName.includes('\\')) {
-      throw new Error('rename cannot change directory (filename only)');
-    }
+    TxPathValidate.windowsFileName(newName);
 
     const { fileTable } = vfs;
 
@@ -89,6 +88,7 @@ namespace RenameFile {
     const dir = lastSlash >= 0 ? oldPath.substring(0, lastSlash + 1) : '';
 
     const newPath = dir + newName;
+    TxPathValidate.windowsPath(newPath);
 
     if (newPath === oldPath) {
       throw new Error('new name is identical to current name');
