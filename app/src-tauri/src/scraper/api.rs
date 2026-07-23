@@ -106,10 +106,7 @@ pub async fn load_http(req: HttpRequest) -> Result<HttpResponse, LoadError> {
         builder = builder.body(body);
     }
 
-    let resp = builder
-        .send()
-        .await
-        .map_err(|_| LoadError::NetworkError)?;
+    let resp = builder.send().await.map_err(|_| LoadError::NetworkError)?;
 
     let status = resp.status();
     let content_type = resp

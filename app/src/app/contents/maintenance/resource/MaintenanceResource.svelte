@@ -75,7 +75,7 @@
     value={resource.varName}
     set={setName}
     width={'calc(100% - 4px)'}
-    requied
+    required
   />
   <LabelRecord name={'source'} />
   <Record height={150}>

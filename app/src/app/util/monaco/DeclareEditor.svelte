@@ -56,7 +56,7 @@
       value,
     );
 
-    // 🟦 チE�Eマ定義
+    // テーマ定義
     monaco.editor.defineTheme(themeName, {
       base: 'vs-dark',
       inherit: true,

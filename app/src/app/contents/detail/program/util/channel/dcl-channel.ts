@@ -88,7 +88,7 @@ namespace DclChannel {
     const addChannel = (props: Props) => {
       WorkerAdapter.post({ type: 'create_stream', props });
       WorkerInvoke.call('add_channel', {
-        workerId: workerCache.rust.workerId,
+        executionId: workerCache.rust.executionId,
         channelId: props.id,
       });
     };

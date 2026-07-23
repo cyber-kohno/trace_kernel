@@ -5,6 +5,7 @@
   let ref: HTMLDivElement;
 
   export let channelId: string;
+  export let executionId: string;
 
   export let recordHeight: number;
   export let fixedAreaHeight: number;
@@ -31,7 +32,10 @@
       return;
     }
     hasNewLine = false;
-    total = await invoke<number>('get_line_len', { workerId: 'a', channelId });
+    total = await invoke<number>('get_line_len', {
+      executionId: executionId,
+      channelId,
+    });
     if (ref == undefined) throw new Error();
     ref.scrollTop = ref.scrollHeight;
     fetchLines();
@@ -61,7 +65,7 @@
 
     // console.log(`from: ${from} - to: ${to}`);
     invoke<string[]>('get_range_lines', {
-      workerId: 'a',
+      executionId: executionId,
       channelId,
       from,
       to,

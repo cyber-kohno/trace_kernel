@@ -47,7 +47,7 @@
       value={work.name}
       set={setName}
       width={'calc(100% - 4px)'}
-      requied
+      required
     />
     <LabelRecord name={'output_method'} />
     <Record>

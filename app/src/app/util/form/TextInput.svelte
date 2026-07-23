@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let requied = false;
+  export let required = false;
   export let readonly = false;
   export let width: string = '100px';
   export let value: string;
@@ -30,7 +30,7 @@
   {readonly}
   data--readonly={readonly}
   data--error={error}
-  data--blank={requied && value === ''}
+  data--blank={required && value === ''}
 />
 
 <style>

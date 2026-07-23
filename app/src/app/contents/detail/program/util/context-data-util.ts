@@ -40,7 +40,7 @@ namespace ContextDataUtil {
       );
       logics = workspace.logics.filter((_, i) => !isDisable('logic', i));
     }
-    const injectionalData: ContextDataUtil.Props = {
+    const contextData: ContextDataUtil.Props = {
       envs: workspace.envs.filter((_, i) => !isDisable('env', i)),
       resources: workspace.resources.filter(
         (_, i) => !isDisable('resource', i),
@@ -49,17 +49,17 @@ namespace ContextDataUtil {
       processes,
       logics,
     };
-    return injectionalData;
+    return contextData;
   };
 
   export const createObjects = (
     data: Props,
-    prepar: RuntimeUtil.PreparCache,
+    preparation: RuntimeUtil.PreparationCache,
     rustCache: RuntimeUtil.RustCache,
   ) => {
     const { envs: envVars, resources, datasets, processes, logics } = data;
     const items = [
-      // 霑ｺ・ｰ陟・・・､逕ｻ辟・
+      // 環境変数
       {
         name: '$env',
         objects: envVars.map((env) => {
@@ -69,7 +69,7 @@ namespace ContextDataUtil {
           };
         }),
       },
-      // 陜暦ｽｺ陞ｳ螢ｹﾎ懃ｹｧ・ｽ郢晢ｽｼ郢ｧ・ｹ
+      // 固定リソース
       {
         name: '$resource',
         objects: resources.map((r) => {
@@ -82,7 +82,7 @@ namespace ContextDataUtil {
           return { name: varName, value };
         }),
       },
-      // 郢晁ｼ斐＜郢ｧ・､郢晢ｽｫ邵ｺ譁絶・
+      // ファイルごとのデータセット
       {
         name: '$dataset',
         objects: datasets.map((ds) => {
@@ -90,7 +90,9 @@ namespace ContextDataUtil {
           const value = (() => {
             let { encoding, rootPath, targets } = ds;
             if (targets == null) {
-              const fnd = prepar.datasetMap.find((dm) => dm.key === ds.varName);
+              const fnd = preparation.datasetMap.find(
+                (dm) => dm.key === ds.varName,
+              );
               if (fnd == undefined) throw new Error();
               targets = fnd.targets;
             }
@@ -119,7 +121,7 @@ namespace ContextDataUtil {
           };
         }),
       },
-      // 郢晏干ﾎ溽ｹｧ・ｻ郢ｧ・ｹ
+      // プロセス
       {
         name: '$process',
         objects: processes.map((process) => {
@@ -144,14 +146,14 @@ namespace ContextDataUtil {
             const scriptKV = scriptArgValues.map((arg, i) => {
               const def = scriptArgs[i];
 
-              // 陜吩ｹ昴Γ郢ｧ・ｧ郢昴・縺・
+              // 型チェック
               if (typeof arg !== def.type) {
                 throw new Error(
                   `Argument types do not match definition. [${arg}]`,
                 );
               }
               const value = String(arg);
-              // 驕ｨ・ｺ隴√・・ｭ蜉ｱ繝｡郢ｧ・ｧ郢昴・縺・
+              // 空文字チェック
               if (value === '')
                 throw new Error(
                   'Command line arguments do not allow empty strings.',
@@ -307,7 +309,7 @@ return module.exports.default ?? exports.default;
       }[];
     }[] = [];
 
-    // 霑ｺ・ｰ陟・・・､逕ｻ辟・
+    // 環境変数
     if (envVars.length > 0) {
       items.push({
         name: '$env',
@@ -317,7 +319,7 @@ return module.exports.default ?? exports.default;
         }),
       });
     }
-    // 陜暦ｽｺ陞ｳ螢ｹﾎ懃ｹｧ・ｽ郢晢ｽｼ郢ｧ・ｹ
+    // 固定リソース
     if (resources.length > 0) {
       items.push({
         name: '$resource',
@@ -334,7 +336,7 @@ return module.exports.default ?? exports.default;
         }),
       });
     }
-    // 郢昴・繝ｻ郢ｧ・ｿ郢ｧ・ｻ郢昴・繝ｨ
+    // データセット
     if (datasets.length > 0) {
       items.push({
         name: '$dataset',
@@ -353,7 +355,7 @@ return module.exports.default ?? exports.default;
         }),
       });
     }
-    // 郢晏干ﾎ溽ｹｧ・ｻ郢ｧ・ｹ
+    // プロセス
     if (processes.length > 0) {
       items.push({
         name: '$process',

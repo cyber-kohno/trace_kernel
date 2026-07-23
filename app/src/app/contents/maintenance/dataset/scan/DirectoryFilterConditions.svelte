@@ -40,7 +40,7 @@
       value={con.depth}
       set={(v) => (con.depth = v)}
       optional
-      requied={!con.isExclude}
+      required={!con.isExclude}
     />
     <!-- 含む・含まない（除外） -->
     <button
@@ -57,7 +57,7 @@
         con.pattern = v;
         invalidate();
       }}
-      requied
+      required
     />
   </div>
 {/each}

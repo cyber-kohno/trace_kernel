@@ -7,6 +7,7 @@
   import DataUtil from '../../../../../util/data/data-util';
 
   export let channelId: string;
+  export let executionId: string;
   export let total: number;
   export let columnDef: DclChannel.ColumnDef[];
 </script>
@@ -17,7 +18,7 @@
     width={140}
     callback={async () => {
       const lines = await invoke<string[]>('get_range_lines', {
-        workerId: 'a',
+        executionId: executionId,
         channelId,
         from: 0,
         to: total,

@@ -19,7 +19,7 @@
 
   $: workspace = WorkspaceState.getWorkspace($workspaceStore);
   $: currentTarget = $uiStore.target;
-  $: injectionalData = ContextDataUtil.getUsableData(
+  $: contextData = ContextDataUtil.getUsableData(
     workspace,
     $validationStore.disables,
   );
@@ -30,21 +30,21 @@
     throw new Error();
   })();
 
-  $: logicInjectionalData = {
-    ...injectionalData,
-    logics: injectionalData.logics.filter((item) => item.name !== logic.name),
+  $: logicContextData = {
+    ...contextData,
+    logics: contextData.logics.filter((item) => item.name !== logic.name),
   };
   $: logicApiDefs = ['parser' as const].map((r) => {
     const { typeDec, valueDec } = DeclareUtil.createUtilDeclareDef(r);
     return `${typeDec} declare const $${r}: ${valueDec};`;
   });
-  $: injectionalDefs = logicApiDefs.concat(
-    ContextDataUtil.createDeclareDef(logicInjectionalData),
+  $: contextDefs = logicApiDefs.concat(
+    ContextDataUtil.createDeclareDef(logicContextData),
   );
   $: structureMarkers = LogicSourceUtil.validate(logic.source);
   $: signature = LogicSignatureCache.get({
     source: logic.source,
-    injectionDefs: injectionalDefs,
+    injectionDefs: contextDefs,
     declareSource: workspace.declare.source,
   });
   $: signatureLabel =
@@ -77,7 +77,7 @@
           logic.source = v;
           $workspaceStore = { ...$workspaceStore };
         }}
-        injectionDefs={injectionalDefs}
+        injectionDefs={contextDefs}
         declareSource={workspace.declare.source}
         analysisMode={'module'}
         extraMarkers={structureMarkers}

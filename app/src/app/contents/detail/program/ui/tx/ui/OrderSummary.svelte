@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type TxExecuter from '../util/tx-executer';
+  import type TxExecutor from '../util/tx-executor';
   import TxPlanUtil from '../util/tx-plan-util';
 
-  export let rows: TxExecuter.OrderRow[];
+  export let rows: TxExecutor.OrderRow[];
 
   $: summaries = () => {
     const list: { status: TxPlanUtil.TxStatus; cnt: number }[] = [];

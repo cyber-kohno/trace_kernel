@@ -2,7 +2,7 @@ namespace RuntimeUtil {
   export const PLAIN_CHANNEL_ID = '__plain__';
   export type WorkerCache = {
     progress: ProgressProps;
-    prepar: PreparCache;
+    preparation: PreparationCache;
     vfs: VFSState | null;
     rust: RustCache;
 
@@ -10,12 +10,12 @@ namespace RuntimeUtil {
     createVFS: () => VFSState;
   };
 
-  export type PreparCache = {
+  export type PreparationCache = {
     datasetMap: { key: string; targets: string[] }[];
   };
 
   export type RustCache = {
-    workerId: string;
+    executionId: string;
     logQueues: Map<string, string[][]>;
   };
 

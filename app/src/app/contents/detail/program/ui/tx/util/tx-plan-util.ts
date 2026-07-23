@@ -1,5 +1,5 @@
 import type RuntimeUtil from '../../../runtime/runtime-util';
-import type TxExecuter from './tx-executer';
+import type TxExecutor from './tx-executor';
 
 namespace TxPlanUtil {
   export type TxPlanModel = {
@@ -8,7 +8,7 @@ namespace TxPlanUtil {
   };
 
   interface PlanState {
-    verify?: TxExecuter.VerifyResult;
+    verify?: TxExecutor.VerifyResult;
     commit?: CommitResult;
   }
   export interface FileChangeProps extends PlanState {
@@ -67,7 +67,7 @@ namespace TxPlanUtil {
     | 'commit-ok'
     | 'commit-error';
 
-  export const getStatus = (order: TxExecuter.Status): TxStatus => {
+  export const getStatus = (order: TxExecutor.Status): TxStatus => {
     if (!order.verify) return 'idle';
     if (!order.commit) {
       switch (order.verify.kind) {

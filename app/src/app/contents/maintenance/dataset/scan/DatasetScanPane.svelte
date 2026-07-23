@@ -54,7 +54,7 @@
     );
 
     DatasetScanUtil.buildDirectoryTree({
-      setCouner: (n) => ($count = n),
+      setCounter: (n) => ($count = n),
       setScanningDispDir: (s) => ($scanningDispDir = s),
       setSearch: (b) => ($isSearch = b),
       scanRequest: { rootPath: newFilePath, ...scanOption },
@@ -71,9 +71,9 @@
   };
 </script>
 
-<!-- 繝ｪ繧ｯ繧ｨ繧ｹ繝医ヵ繝ｬ繝ｼ繝 -->
+<!-- リクエストフレーム -->
 <div class="list-frame">
-  <!-- 襍ｰ譟ｻ髫主ｱ､縺ｮ荳企剞・医←縺薙∪縺ｧ豺ｱ縺上せ繧ｭ繝｣繝ｳ縺吶ｋ縺具ｼ・-->
+  <!-- 走査階層の上限（どこまで深くスキャンするか） -->
   <LabelRecord name="limit_depth" />
   <NumberInput
     min={0}
@@ -85,10 +85,10 @@
     }}
     optional
   />
-  <!-- 繝・ぅ繝ｬ繧ｯ繝医Μ蜷阪・謚ｽ蜃ｺ譚｡莉ｶ -->
+  <!-- ディレクトリ名の抽出条件 -->
   <LabelRecord name="directory_filter_conditions" sub={'depth and pattern'} />
   <DirectoryFilterConditions {scanOption} />
-  <!-- 繝輔ぃ繧､繝ｫ蜷阪・謚ｽ蜃ｺ譚｡莉ｶ -->
+  <!-- ファイル名の抽出条件 -->
   <LabelRecord name="file_filter_conditions" />
   <FileFilterConditions {scanOption} />
 </div>

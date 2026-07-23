@@ -99,14 +99,14 @@
       value={process.funcName}
       set={setName}
       width={'calc(100% - 4px)'}
-      requied
+      required
     />
     <LabelRecord name={'program_path'} />
     <TextInput
       value={process.prgPath}
       set={setProgramPath}
       width={'calc(100% - 4px)'}
-      requied
+      required
     />
     <PathState
       isDir={false}
@@ -135,7 +135,7 @@
               commitWorkspace(workspace);
             }}
             width={'calc(100% - 4px)'}
-            requied
+            required
             invalidValues={process.scriptArgs
               .map((a) => a.name)
               .filter((_, idx) => idx !== i)}
@@ -196,7 +196,7 @@
               commitWorkspace(workspace);
             }}
             width={'calc(100% - 4px)'}
-            requied
+            required
           />
         </Column>
       </Record>

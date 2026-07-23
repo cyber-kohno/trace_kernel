@@ -4,6 +4,7 @@
   import ToastService from '../../../../../service/toast-service';
 
   export let channelId: string;
+  export let executionId: string;
   export let total: number;
 </script>
 
@@ -12,7 +13,7 @@
   width={140}
   callback={async () => {
     const lines = await invoke<string[]>('get_range_lines', {
-      workerId: 'a',
+      executionId: executionId,
       channelId,
       from: 0,
       to: total,

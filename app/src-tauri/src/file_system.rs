@@ -64,7 +64,7 @@ pub fn glob_path(pattern: String) -> Result<Vec<String>, String> {
             Ok(path) => {
                 results.push(path.to_string_lossy().to_string());
             }
-            Err(e) => {
+            Err(_) => {
                 // 個別エラーは無視（UNIX glob 的挙動）
             }
         }
@@ -128,7 +128,10 @@ pub fn read_tail_file(req: TailFileRequest) -> Result<String, String> {
     let metadata = file.metadata().map_err(|e| e.to_string())?;
 
     if !metadata.is_file() {
-        return Err(format!("tailText() target is not a file: {}", req.file_path));
+        return Err(format!(
+            "tailText() target is not a file: {}",
+            req.file_path
+        ));
     }
 
     let mut position = metadata.len();

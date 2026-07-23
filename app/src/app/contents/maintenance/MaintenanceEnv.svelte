@@ -44,7 +44,7 @@
       value={env.varName}
       set={setKey}
       width={'calc(100% - 4px)'}
-      requied
+      required
       allowedPattern={ValidateUtil.UpperCase}
     />
     <LabelRecord name={'purpose'} />
@@ -65,7 +65,7 @@
       value={env.value}
       set={setValue}
       width={'calc(100% - 4px)'}
-      requied
+      required
     />
     {#if env.purpose === 'dir'}
       <PathState isDir={true} path={env.value} />

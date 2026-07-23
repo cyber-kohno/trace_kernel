@@ -64,7 +64,7 @@
   })();
 
   $: directoryTree = (() => {
-    $cacheStore.cacheMap; // 蛟､螟画峩繧呈､懃衍縺吶ｋ縺溘ａ縺ｫ險倩ｿｰ
+    $cacheStore.cacheMap; // 値変更を検知するために記述
     const value = CacheState.getDatasetChoose(itemIndex);
     return value;
   })();
@@ -105,15 +105,15 @@
     value={dataset.varName}
     set={setName}
     width={'calc(100% - 4px)'}
-    requied
+    required
   />
-  <!-- 繝ｫ繝ｼ繝医ヱ繧ｹ -->
+  <!-- ルートパス -->
   <LabelRecord name="root_path" />
   <TextInput
     value={dataset.rootPath}
     set={setRootPath}
     width={'calc(100% - 4px)'}
-    requied
+    required
   />
   <PathState
     path={DataUtil.getAppliedEnvValue(dataset.rootPath, workspace.envs)}

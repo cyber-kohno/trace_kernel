@@ -12,11 +12,14 @@ namespace WorkerInvoke {
       const id = Math.random().toString(36).substring(2);
 
       const handler = (e: MessageEvent) => {
-        if (e.data.type !== 'invoke-error' && e.data.id !== id) {
+        if (e.data.id !== id) {
           return;
         }
         if (e.data.type === 'invoke-error') {
           reject(new Error(e.data.callsiteStack));
+          self.removeEventListener('message', handler);
+          clearTimeout(timer);
+          return;
         }
 
         self.removeEventListener('message', handler);

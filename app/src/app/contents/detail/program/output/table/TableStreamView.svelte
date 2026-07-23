@@ -5,6 +5,7 @@
   import TableRecord from './TableRecord.svelte';
 
   export let channel: DclChannel.Props;
+  export let executionId: string;
 
   let streamRef: StreamReceiver;
 
@@ -17,12 +18,13 @@
 
 <StreamReceiver
   bind:this={streamRef}
+  {executionId}
   channelId={channel.id}
   recordHeight={25}
   fixedAreaHeight={60}
 >
   <svelte:fragment slot="fixed" let:total>
-    <TableFixed channelId={channel.id} {total} {columnDef} />
+    <TableFixed {executionId} channelId={channel.id} {total} {columnDef} />
   </svelte:fragment>
   <svelte:fragment slot="record" let:record let:index>
     <TableRecord recordStr={record} {index} {columnDef} />

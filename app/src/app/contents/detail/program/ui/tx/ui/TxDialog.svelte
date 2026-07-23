@@ -2,7 +2,7 @@
   import { writable } from 'svelte/store';
   import OrderRow from './row/OrderRow.svelte';
   import TxPlanNormalize from '../util/tx-plan-normalize';
-  import TxExecuter from '../util/tx-executer';
+  import TxExecutor from '../util/tx-executor';
   import type RuntimeUtil from '../../../runtime/runtime-util';
   import Blind from '../../../../../../util/layout/Blind.svelte';
   import Wrap from '../../../../../../util/layout/Wrap.svelte';
@@ -20,7 +20,7 @@
   export let close: () => void;
   const orders = TxPlanNormalize.convertVfsToOrder(vfs);
 
-  const orderRows = writable<TxExecuter.OrderRow[]>(
+  const orderRows = writable<TxExecutor.OrderRow[]>(
     orders.map((order) => ({
       order,
       status: {},
@@ -35,12 +35,12 @@
     $detail = v;
   };
 
-  let phase = writable<TxExecuter.Phase>('confirm');
+  let phase = writable<TxExecutor.Phase>('confirm');
 
   $: commit = async () => {
     $isProcessing = true;
 
-    await TxExecuter.run({
+    await TxExecutor.run({
       setPhase: (v) => ($phase = v),
       rows: $orderRows,
       progressTick: () => {

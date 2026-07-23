@@ -62,10 +62,11 @@
   };
 
   /**
-   * 繝ｫ繝ｼ繝医°繧峨・蟾ｮ蛻・ヱ繧ｹ縺ｫ螟画鋤縺励※縲・∈謚槭Μ繧ｹ繝医↓霆｢騾・   */
+   * ルートからの差分パスに変換して、選択リストに転送する
+   */
   $: transfer = () => {
     const selectedNodes = DatasetChooseUtil.getDispRecords($root, true)
-      // 驕ｸ謚樔ｸｭ縺ｮ隕∫ｴ縺ｧ繝輔ぅ繝ｫ繧ｿ繝ｼ
+      // 選択中の要素でフィルター
       .filter((r) => r.node.isSelected);
 
     const workspace = WorkspaceState.getWorkspace($workspaceStore);
@@ -73,7 +74,7 @@
       (ret, cur) => ret.replaceAll(`%${cur.varName}%`, cur.value),
       dataset.rootPath,
     );
-    // 繧ｹ繧ｭ繝｣繝ｳ蠕後↓繝ｫ繝ｼ繝医ヱ繧ｹ縺悟､画峩縺輔ｌ縺ｦ縺・↑縺・°繝√ぉ繝・け
+    // スキャン後にルートパスが変更されていないかチェック
     const isPathCheck = selectedNodes.some((r) => {
       if (r.node.path.indexOf(rootPath) === -1) return false;
       return true;
@@ -85,7 +86,7 @@
       return;
     }
     dataset.targets = selectedNodes
-      // 邨ｶ蟇ｾ繝代せ縺九ｉ繝ｫ繝ｼ繝医ヱ繧ｹ繧帝勁縺・※蟾ｮ蛻・ヱ繧ｹ縺ｫ螟画鋤
+      // 絶対パスからルートパスを除いて差分パスに変換
       .map((r) => r.node.path.replace(rootPath, ''));
     setPhase('list');
     validate();

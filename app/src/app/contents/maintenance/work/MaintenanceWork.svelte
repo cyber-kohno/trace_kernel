@@ -47,7 +47,7 @@
       value={work.name}
       set={setName}
       width={'calc(100% - 4px)'}
-      requied
+      required
     />
     <LabelRecord name={'output_method'} />
     <Record>
@@ -63,12 +63,12 @@
       />
     </Record>
     <!-- <LabelRecord name={"utilities"} /> -->
-    <!-- 予紁E��数の使ぁE��表示 -->
+    <!-- 予約関数の使用方法表示 -->
     <!-- <UsageFrame method={work.method} />  -->
     <LabelRecord name={'api_injections'} />
     <ApiInjectionFrame method={work.method} />
     <LabelRecord name={'context_injections'} />
-    <!-- 予紁E��数の使ぁE��表示 -->
+    <!-- 予約関数の使用方法表示 -->
     <ContextInjectionFrame />
   </Record>
   <Record align="right">

@@ -9,7 +9,7 @@ namespace DatasetScanUtil {
    * スキャン開始
    */
   export const buildDirectoryTree = async (props: {
-    setCouner: (n: number) => void;
+    setCounter: (n: number) => void;
     setScanningDispDir: (s: string[]) => void;
     setSearch: (b: boolean) => void;
     scanRequest: TauriDto.ScanRequest;
@@ -19,7 +19,7 @@ namespace DatasetScanUtil {
     const unlisten = await listen<any>('progress', (event) => {
       const res = event.payload;
       // console.log(res.path);
-      props.setCouner(res.counter);
+      props.setCounter(res.counter);
       const path: string = res.path;
       const rootPath = props.scanRequest.rootPath;
       const entryPath = path.replace(rootPath, PathUtil.basename(rootPath));

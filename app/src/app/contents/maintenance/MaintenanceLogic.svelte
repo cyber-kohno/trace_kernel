@@ -28,7 +28,7 @@
       value={logic.name}
       set={setName}
       width={'calc(100% - 4px)'}
-      requied
+      required
     />
   </div>
 </Wrap>

@@ -42,46 +42,45 @@ impl ChannelStore {
     }
 }
 #[tauri::command]
-pub fn add_channel(state: State<AppState>, worker_id: String, channel_id: String) {
-    let mut workers = state.workers.lock().unwrap();
+pub fn add_channel(state: State<AppState>, execution_id: String, channel_id: String) {
+    let mut executions = state.executions.lock().unwrap();
 
-    if let Some(worker) = workers.get_mut(&worker_id) {
-        worker.channel_store.add_channel(channel_id);
+    if let Some(execution) = executions.get_mut(&execution_id) {
+        let _ = execution.channel_store.add_channel(channel_id);
     }
 }
 
 #[tauri::command]
 pub fn append_lines(
     state: State<AppState>,
-    worker_id: String,
+    execution_id: String,
     channel_id: String,
     batches: Vec<Vec<String>>,
 ) {
-    let mut workers = state.workers.lock().unwrap();
+    let mut executions = state.executions.lock().unwrap();
 
-    if let Some(w) = workers.get_mut(&worker_id) {
-        w.channel_store
-            .append_lines(&channel_id, batches)
-            .expect("There is no buffer corresponding to the channel ID.");
+    if let Some(w) = executions.get_mut(&execution_id) {
+        let _ = w.channel_store.append_lines(&channel_id, batches);
     }
 }
 
 #[tauri::command]
 pub fn get_range_lines(
     state: tauri::State<AppState>,
-    worker_id: String,
+    execution_id: String,
     channel_id: String,
     from: usize,
     to: usize,
 ) -> Vec<String> {
-    let workers = state.workers.lock().unwrap();
-    let worker = workers.get(&worker_id).unwrap();
-    let store = &worker.channel_store;
+    let executions = state.executions.lock().unwrap();
+    let Some(execution) = executions.get(&execution_id) else {
+        return Vec::new();
+    };
+    let store = &execution.channel_store;
 
-    let buf: &LineBuffer = store
-        .channels
-        .get(&channel_id)
-        .expect("here is no buffer corresponding to the channel ID.");
+    let Some(buf) = store.channels.get(&channel_id) else {
+        return Vec::new();
+    };
     let len = buf.lines.len();
     if from >= len {
         return Vec::new();
@@ -92,17 +91,19 @@ pub fn get_range_lines(
 }
 
 #[tauri::command]
-pub fn get_line_len(state: tauri::State<AppState>, worker_id: String, channel_id: String) -> usize {
-    let workers = state.workers.lock().unwrap();
+pub fn get_line_len(
+    state: tauri::State<AppState>,
+    execution_id: String,
+    channel_id: String,
+) -> usize {
+    let executions = state.executions.lock().unwrap();
 
-    workers
-        .get(&worker_id)
+    executions
+        .get(&execution_id)
         .map(|w| {
-            let buf = w
-                .channel_store
-                .channels
-                .get(&channel_id)
-                .expect("here is no buffer corresponding to the channel ID.");
+            let Some(buf) = w.channel_store.channels.get(&channel_id) else {
+                return 0;
+            };
             let lines = &buf.lines;
             match lines.last() {
                 Some(last) if last.is_empty() => lines.len().saturating_sub(1),

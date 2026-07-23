@@ -3,7 +3,7 @@ import WorkerInvoke from '../worker-invoke';
 
 namespace DomParser {
   type DomContext = {
-    workerId: string;
+    executionId: string;
     domId: number;
   };
 
@@ -30,21 +30,21 @@ namespace DomParser {
     return {
       name() {
         return WorkerInvoke.call<string | null>('dom_node_name', {
-          workerId: ctx.workerId,
+          executionId: ctx.executionId,
           domId: ctx.domId,
           nodeId,
         });
       },
       text() {
         return WorkerInvoke.call<string>('dom_node_text', {
-          workerId: ctx.workerId,
+          executionId: ctx.executionId,
           domId: ctx.domId,
           nodeId,
         });
       },
       attr(name: string) {
         return WorkerInvoke.call<string | null>('dom_node_attr', {
-          workerId: ctx.workerId,
+          executionId: ctx.executionId,
           domId: ctx.domId,
           nodeId,
           name,
@@ -54,7 +54,7 @@ namespace DomParser {
         const childIds = await WorkerInvoke.call<number[]>(
           'dom_node_children',
           {
-            workerId: ctx.workerId,
+            executionId: ctx.executionId,
             domId: ctx.domId,
             nodeId,
           },
@@ -65,7 +65,7 @@ namespace DomParser {
         const parentId = await WorkerInvoke.call<number | null>(
           'dom_node_parent',
           {
-            workerId: ctx.workerId,
+            executionId: ctx.executionId,
             domId: ctx.domId,
             nodeId,
           },
@@ -76,7 +76,7 @@ namespace DomParser {
         const nodeIds = await WorkerInvoke.call<number[]>(
           'dom_query_from_node',
           {
-            workerId: ctx.workerId,
+            executionId: ctx.executionId,
             domId: ctx.domId,
             nodeId,
             xpath,
@@ -91,24 +91,24 @@ namespace DomParser {
     rustCache: RuntimeUtil.RustCache,
     source: string,
   ): Promise<DomController> => {
-    const workerId = rustCache.workerId;
+    const executionId = rustCache.executionId;
     const domId = await WorkerInvoke.call<number>('dom_parse', {
-      workerId,
+      executionId,
       source,
     });
-    const ctx: DomContext = { workerId, domId };
+    const ctx: DomContext = { executionId, domId };
 
     return {
       async root() {
         const rootId = await WorkerInvoke.call<number | null>('dom_root', {
-          workerId,
+          executionId,
           domId,
         });
         return rootId == null ? null : createNode(ctx, rootId);
       },
       async query(xpath: string) {
         const nodeIds = await WorkerInvoke.call<number[]>('dom_query', {
-          workerId,
+          executionId,
           domId,
           xpath,
         });
@@ -118,7 +118,7 @@ namespace DomParser {
         const [id, nodeCount] = await WorkerInvoke.call<[number, number]>(
           'dom_info',
           {
-            workerId,
+            executionId,
             domId,
           },
         );
@@ -127,7 +127,7 @@ namespace DomParser {
       },
       async dispose() {
         await WorkerInvoke.call<void>('dom_dispose', {
-          workerId,
+          executionId,
           domId,
         });
       },
@@ -138,24 +138,24 @@ namespace DomParser {
     rustCache: RuntimeUtil.RustCache,
     source: string,
   ): Promise<DomController> => {
-    const workerId = rustCache.workerId;
+    const executionId = rustCache.executionId;
     const domId = await WorkerInvoke.call<number>('dom_parse_html', {
-      workerId,
+      executionId,
       source,
     });
-    const ctx: DomContext = { workerId, domId };
+    const ctx: DomContext = { executionId, domId };
 
     return {
       async root() {
         const rootId = await WorkerInvoke.call<number | null>('dom_root', {
-          workerId,
+          executionId,
           domId,
         });
         return rootId == null ? null : createNode(ctx, rootId);
       },
       async query(xpath: string) {
         const nodeIds = await WorkerInvoke.call<number[]>('dom_query', {
-          workerId,
+          executionId,
           domId,
           xpath,
         });
@@ -165,7 +165,7 @@ namespace DomParser {
         const [id, nodeCount] = await WorkerInvoke.call<[number, number]>(
           'dom_info',
           {
-            workerId,
+            executionId,
             domId,
           },
         );
@@ -174,7 +174,7 @@ namespace DomParser {
       },
       async dispose() {
         await WorkerInvoke.call<void>('dom_dispose', {
-          workerId,
+          executionId,
           domId,
         });
       },

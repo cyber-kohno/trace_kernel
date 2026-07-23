@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type TxExecuter from '../util/tx-executer';
+  import type TxExecutor from '../util/tx-executor';
 
-  export let phase: TxExecuter.Phase;
+  export let phase: TxExecutor.Phase;
 </script>
 
 <div class="wrap">

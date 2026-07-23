@@ -25,38 +25,8 @@ pub struct Cell {
     pub row: usize,
     pub col: usize,
 
-    pub value: String, //CellValue,
+    pub value: String,
 }
-#[derive(Debug, Serialize)]
-#[serde(tag = "kind")]
-pub enum CellValue {
-    Empty,
-
-    String {
-        value: String,
-    },
-
-    Number {
-        value: f64,
-    },
-
-    Boolean {
-        value: bool,
-    },
-
-    Date {
-        /// ISO-8601 (UTC or local, 方針固定)
-        value: String,
-    },
-
-    Formula {
-        expr: String,
-
-        #[serde(skip_serializing_if = "Option::is_none")]
-        value: Option<Box<CellValue>>,
-    },
-}
-
 fn parse_excel_buffer(buffer: Vec<u8>) -> Result<Book, String> {
     let cursor = Cursor::new(buffer);
     let mut workbook: calamine::Sheets<Cursor<Vec<u8>>> =
@@ -124,7 +94,7 @@ fn parse_excel_buffer(buffer: Vec<u8>) -> Result<Book, String> {
 
 #[tauri::command]
 pub fn excel_parse_file(file_path: String) -> Result<Book, String> {
-    let buffer = std::fs::read(&file_path)
-        .map_err(|e| format!("failed to read excel file: {}", e))?;
+    let buffer =
+        std::fs::read(&file_path).map_err(|e| format!("failed to read excel file: {}", e))?;
     parse_excel_buffer(buffer)
 }

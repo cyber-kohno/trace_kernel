@@ -15,7 +15,7 @@ import ValidationService from '../../service/validation-service';
 import { appStore, dirtyStore, workspaceStore } from '../../state/store';
 
 namespace FileUtil {
-  export const VERSION = `v${0}.${0}.${4}`;
+  export const VERSION = `v${0}.${0}.${5}`;
   export const APP_NAME = `Trace Kernel ${VERSION}`;
   const FILE_EXTENSION: string = `${VERSION}.trk`;
 
@@ -41,20 +41,20 @@ namespace FileUtil {
   };
 
   /**
-   * 譁・ｭ怜・繧貞悸邵ｮ縺吶ｋ
-   * @param baseStr 蝨ｧ邵ｮ蜑阪・譁・ｭ怜・
-   * @returns 蝨ｧ邵ｮ蠕後・譁・ｭ怜・
+   * 文字列を圧縮する
+   * @param baseStr 圧縮前の文字列
+   * @returns 圧縮後の文字列
    */
   const gZip = (baseStr: string) => {
-    const encoder = new TextEncoder(); // 譁・ｭ怜・繧旦int8Array縺ｫ繧ｨ繝ｳ繧ｳ繝ｼ繝峨☆繧九◆繧√↓菴ｿ逕ｨ
+    const encoder = new TextEncoder(); // 文字列をUint8Arrayにエンコードするために使用
     const textUint8Array = encoder.encode(baseStr);
 
-    // gzip蝨ｧ邵ｮ
-    const compressed = Pako.gzip(textUint8Array); // Uint8Array 繧・Base64 譁・ｭ怜・縺ｫ螟画鋤
+    // gzip圧縮
+    const compressed = Pako.gzip(textUint8Array); // Uint8ArrayをBase64文字列に変換
     const compressedBase64 = uint8ArrayToBase64(compressed);
     return compressedBase64;
   };
-  // Uint8Array 繧・Base64 縺ｫ繧ｨ繝ｳ繧ｳ繝ｼ繝峨☆繧九・繝ｫ繝代・髢｢謨ｰ
+  // Uint8ArrayをBase64にエンコードするヘルパー関数
   const uint8ArrayToBase64 = (buffer: Uint8Array) => {
     let binary = '';
     const bytes = new Uint8Array(buffer);
@@ -66,9 +66,9 @@ namespace FileUtil {
   };
 
   /**
-   * 蝨ｧ邵ｮ縺輔ｌ縺滓枚蟄怜・繧定､・捷縺吶ｋ
-   * @param baseStr 蝨ｧ邵ｮ縺輔ｌ縺滓枚蟄怜・
-   * @returns 隍・捷蠕後・譁・ｭ怜・
+   * 圧縮された文字列を復元する
+   * @param baseStr 圧縮された文字列
+   * @returns 復元後の文字列
    */
   export const unZip = (baseStr: string) => {
     const compressedFromBase64 = Uint8Array.from(atob(baseStr), (c) =>

@@ -48,7 +48,7 @@
         con.pattern = v;
         invalidate();
       }}
-      requied
+      required
     />
   </div>
 {/each}

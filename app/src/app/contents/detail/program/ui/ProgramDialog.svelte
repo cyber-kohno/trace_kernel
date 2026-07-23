@@ -26,7 +26,7 @@
   import TxDialog from './tx/ui/TxDialog.svelte';
   import WorkspaceRecoveryUtil from '../../../../util/data/workspace-recovery-util';
 
-  type Phase = 'coding' | 'prepar' | 'executing' | 'done' | 'error';
+  type Phase = 'coding' | 'preparing' | 'executing' | 'done' | 'error';
 
   let hasError = writable(false);
   let phase = writable<Phase>('coding');
@@ -52,7 +52,7 @@
   let monacoRef: ScriptEditor;
 
   $: workspace = WorkspaceState.getWorkspace($workspaceStore);
-  $: injectionalData = ContextDataUtil.getUsableData(
+  $: contextData = ContextDataUtil.getUsableData(
     workspace,
     $validationStore.disables,
   );
@@ -64,7 +64,7 @@
   })();
 
   $: usableUtils = DeclareUtil.getUsableReserveList({ method: work.method });
-  $: injectionalDefs = ContextDataUtil.createDeclareDef(injectionalData);
+  $: contextDefs = ContextDataUtil.createDeclareDef(contextData);
   $: activeChannel = $channels[$activeChannelIdx];
 
   const setRecoverySnapshot = async () => {
@@ -83,79 +83,82 @@
     $uiStore.shortcutEvent = null;
   });
 
-  const { init, terminate, start, postInvoke } = WorkerAdapter.use(
-    async (e) => {
-      switch (e.type) {
-        case 'create_stream': {
-          if ($channels.some((ch) => ch.id === e.props.id)) {
-            throw new Error(`A stream with ID "${e.props.id}" already exists.`);
-          }
-          $channels.push(e.props);
-          $channels = $channels.slice();
+  const { init, terminate, start, postInvoke, getExecutionId } =
+    WorkerAdapter.use(
+      async (e) => {
+        switch (e.type) {
+          case 'create_stream': {
+            if ($channels.some((ch) => ch.id === e.props.id)) {
+              throw new Error(
+                `A stream with ID "${e.props.id}" already exists.`,
+              );
+            }
+            $channels.push(e.props);
+            $channels = $channels.slice();
 
-          if ($channels.length === 1) {
-            $activeChannelIdx = 0;
+            if ($channels.length === 1) {
+              $activeChannelIdx = 0;
+            }
+            break;
           }
-          break;
-        }
-        case 'receive_stream': {
-          if (activeChannel == undefined) break;
-          if (e.channelId === activeChannel.id) {
-            if (!streamRef) throw new Error();
-            streamRef.receiveStream();
+          case 'receive_stream': {
+            if (activeChannel == undefined) break;
+            if (e.channelId === activeChannel.id) {
+              if (!streamRef) throw new Error();
+              streamRef.receiveStream();
+            }
+            break;
           }
-          break;
-        }
-        case 'invoke':
-          postInvoke(e);
-          break;
-        case 'prepar_end':
-          $phase = 'executing';
-          break;
-        case 'done':
-          await clearRecoverySnapshot();
-          $phase = 'done';
-          streamRef?.end();
+          case 'invoke':
+            postInvoke(e);
+            break;
+          case 'prepared':
+            $phase = 'executing';
+            break;
+          case 'done':
+            await clearRecoverySnapshot();
+            $phase = 'done';
+            streamRef?.end();
 
-          if (e.vfs != null) {
-            $txCache = e.vfs;
-            $isDispTxDialog = true;
+            if (e.vfs != null) {
+              $txCache = e.vfs;
+              $isDispTxDialog = true;
+            }
+            break;
+          case 'runtime-error': {
+            await clearRecoverySnapshot();
+            $phase = 'error';
+            const { sourceMap, stack } = e;
+            setTimeout(() => {
+              errorFrameRef.init(
+                sourceMap,
+                stack,
+                work.source,
+                (monacoRef as any).setRuntimeErrorMarker,
+              );
+            }, 0);
+            break;
           }
-          break;
-        case 'runtime-error': {
-          await clearRecoverySnapshot();
-          $phase = 'error';
-          const { sourceMap, stack } = e;
-          setTimeout(() => {
-            errorFrameRef.init(
-              sourceMap,
-              stack,
-              work.source,
-              (monacoRef as any).setRuntimeErrorMarker,
-            );
-          }, 0);
-          break;
-        }
-        case 'state': {
-          switch (e.method) {
-            case 'progress_start':
-              $progress.total = e.total;
-              break;
-            case 'progress_tick':
-              $progress.cur++;
-              break;
-            case 'monitor_init':
-              $monitorLines = Array.from({ length: e.allocSize }, () => '');
-              break;
-            case 'monitor_set':
-              $monitorLines[e.index] = e.str;
-              break;
+          case 'state': {
+            switch (e.method) {
+              case 'progress_start':
+                $progress.total = e.total;
+                break;
+              case 'progress_tick':
+                $progress.cur++;
+                break;
+              case 'monitor_init':
+                $monitorLines = Array.from({ length: e.allocSize }, () => '');
+                break;
+              case 'monitor_set':
+                $monitorLines[e.index] = e.str;
+                break;
+            }
+            break;
           }
-          break;
         }
-      }
-    },
-  );
+      },
+    );
 
   onMount(async () => {
     init();
@@ -173,7 +176,7 @@
 
   $: cancel = async () => {
     if ($phase === 'coding' || $isDispTxDialog) return;
-    terminate();
+    await terminate();
     await clearRecoverySnapshot();
     $channels = [];
     $phase = 'coding';
@@ -191,7 +194,7 @@
     (document.activeElement as HTMLElement)?.blur();
     document.body.focus();
 
-    $phase = 'prepar';
+    $phase = 'preparing';
     await setRecoverySnapshot();
 
     const { outputText, sourceMapText } = TypescriptUtil.transpileTsToJs(
@@ -202,7 +205,7 @@
       type: 'execute',
       outputText,
       sourceMapText,
-      injectionalData,
+      contextData,
       usableUtils,
       outputMethod: work.method,
     });
@@ -229,7 +232,7 @@
                     DeclareUtil.createUtilDeclareDef(r);
                   return `${typeDec} declare const $${r}: ${valueDec};`;
                 })
-                .concat(injectionalDefs)}
+                .concat(contextDefs)}
               declareSource={workspace.declare.source}
               analysisMode={'wrapped'}
               setError={(flg) => ($hasError = flg)}
@@ -244,7 +247,7 @@
                   <div class="executing">
                     {(() => {
                       switch ($phase) {
-                        case 'prepar':
+                        case 'preparing':
                           return 'Preparing...';
                         case 'executing':
                           return 'Executing...';
@@ -317,11 +320,13 @@
                   {#if activeChannel.view === 'text'}
                     <TextStreamView
                       bind:this={streamRef}
+                      executionId={getExecutionId()}
                       channel={activeChannel}
                     />
                   {:else if activeChannel.view === 'table'}
                     <TableStreamView
                       bind:this={streamRef}
+                      executionId={getExecutionId()}
                       channel={activeChannel}
                     />
                   {/if}

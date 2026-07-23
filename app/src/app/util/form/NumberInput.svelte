@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let requied = false;
+  export let required = false;
   export let optional = false;
   export let value: number | undefined;
   export let set: (value: number) => void;
@@ -26,7 +26,7 @@
     }
     set(value as number);
   }}
-  data--blank={requied && getValue() === ''}
+  data--blank={required && getValue() === ''}
 />
 
 <style>

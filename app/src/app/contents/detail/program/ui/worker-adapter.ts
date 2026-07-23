@@ -19,7 +19,7 @@ namespace WorkerAdapter {
     // | { type: "log"; value: string }
     | { type: 'create_stream'; props: DclChannel.Props }
     | { type: 'receive_stream'; channelId: string }
-    | { type: 'prepar_end' }
+    | { type: 'prepared' }
     | {
         type: 'invoke';
         command: string;
@@ -38,8 +38,10 @@ namespace WorkerAdapter {
 
   export const use = (onEvent: (e: WorkerEvent) => void) => {
     let worker: Worker;
+    let executionId = '';
 
     const init = () => {
+      executionId = crypto.randomUUID();
       // worker.ts を生成して別スレッドで実行
       worker = new Worker(new URL('../runtime/worker.ts', import.meta.url), {
         type: 'module',
@@ -52,11 +54,17 @@ namespace WorkerAdapter {
       // console.log(worker);
     };
 
-    const terminate = () => {
+    const terminate = async () => {
+      const disposeExecutionId = executionId;
       worker.terminate();
-      invoke('worker_dispose', { workerId: 'a' });
+      if (disposeExecutionId !== '') {
+        await invoke('worker_dispose', { executionId: disposeExecutionId });
+      }
     };
-    const start = (props: MessageProps) => worker.postMessage(props);
+    const start = (props: Omit<MessageProps, 'executionId'>) => {
+      worker.postMessage({ ...props, executionId });
+    };
+    const getExecutionId = () => executionId;
 
     const postInvoke = async (e: {
       type: 'invoke';
@@ -73,6 +81,7 @@ namespace WorkerAdapter {
         callsiteStackArr[0] = err;
         worker.postMessage({
           type: 'invoke-error',
+          id: e.id,
           callsiteStack: callsiteStackArr.join('\n'),
         });
       }
@@ -82,6 +91,7 @@ namespace WorkerAdapter {
       terminate,
       start,
       postInvoke,
+      getExecutionId,
     };
   };
 }

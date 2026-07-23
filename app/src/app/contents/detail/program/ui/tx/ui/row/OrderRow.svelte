@@ -3,7 +3,7 @@
   import Column from '../../../../../../../util/layout/Column.svelte';
   import RecordDiv from '../../../../../../../util/layout/RecordDiv.svelte';
   import type TxDetailUtil from '../../util/tx-detail-util';
-  import type TxExecuter from '../../util/tx-executer';
+  import type TxExecutor from '../../util/tx-executor';
   import TxPlanUtil from '../../util/tx-plan-util';
   import CommitStatus from './CommitStatus.svelte';
   import CopyFileRow from './CopyFileRow.svelte';
@@ -13,7 +13,7 @@
   import ModifyFileRow from './ModifyFileRow.svelte';
   import RenameFileRow from './RenameFileRow.svelte';
 
-  export let row: TxExecuter.OrderRow;
+  export let row: TxExecutor.OrderRow;
   export let setDetail: (v: TxDetailUtil.Props | null) => void;
 
   $: getIcon = () => {

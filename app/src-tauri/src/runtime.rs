@@ -5,7 +5,7 @@ use crate::parser::dom::DomStore;
 use crate::stream::channel::ChannelStore;
 use serde::{Deserialize, Serialize};
 
-pub struct WorkerContext {
+pub struct ExecutionContext {
     pub dom_store: DomStore,
     pub channel_store: ChannelStore,
     // 今後追加
@@ -30,7 +30,7 @@ pub fn clear_recovery_snapshot(state: tauri::State<AppState>) {
 }
 
 pub struct AppState {
-    pub workers: Mutex<HashMap<String, WorkerContext>>,
+    pub executions: Mutex<HashMap<String, ExecutionContext>>,
     pub recovery_snapshot: Mutex<Option<RecoverySnapshot>>,
 }
 
@@ -46,11 +46,11 @@ pub struct RecoverySnapshot {
 }
 
 #[tauri::command]
-pub fn worker_init(state: tauri::State<AppState>, worker_id: String) {
-    let mut workers = state.workers.lock().unwrap();
-    workers.insert(
-        worker_id,
-        WorkerContext {
+pub fn worker_init(state: tauri::State<AppState>, execution_id: String) {
+    let mut executions = state.executions.lock().unwrap();
+    executions.insert(
+        execution_id,
+        ExecutionContext {
             dom_store: DomStore::new(),
             channel_store: ChannelStore::new(),
         },
@@ -58,8 +58,8 @@ pub fn worker_init(state: tauri::State<AppState>, worker_id: String) {
 }
 
 #[tauri::command]
-pub fn worker_dispose(state: tauri::State<AppState>, worker_id: String) {
-    let mut workers = state.workers.lock().unwrap();
-    workers.remove(&worker_id);
-    // → WorkerContext が drop
+pub fn worker_dispose(state: tauri::State<AppState>, execution_id: String) {
+    let mut executions = state.executions.lock().unwrap();
+    executions.remove(&execution_id);
+    // → ExecutionContext が drop
 }

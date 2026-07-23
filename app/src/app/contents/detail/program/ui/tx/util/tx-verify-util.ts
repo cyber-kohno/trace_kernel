@@ -1,7 +1,7 @@
 ﻿import { invoke } from '@tauri-apps/api/core';
 import type TauriDto from '../../../../../../infra/tauri/tauri-dto';
 import PathUtil from '../../../../../../util/data/path-util';
-import type TxExecuter from './tx-executer';
+import type TxExecutor from './tx-executor';
 
 namespace TxVerifyUtil {
   export const existsPath = (path: string) => {
@@ -16,7 +16,7 @@ namespace TxVerifyUtil {
     from: string,
     to: string,
     reserveDirs: string[],
-  ): Promise<TxExecuter.VerifyResult> => {
+  ): Promise<TxExecutor.VerifyResult> => {
     // 0. 同一パスチェック
     if (from === to) {
       return {
@@ -59,7 +59,7 @@ namespace TxVerifyUtil {
   export const checkSaveFile = async (
     filePath: string,
     reserveDirs: string[],
-  ): Promise<TxExecuter.VerifyResult> => {
+  ): Promise<TxExecutor.VerifyResult> => {
     // 1. 親ディレクトリ取得
     const lastSlash = filePath.lastIndexOf('\\');
     if (lastSlash === -1) {
@@ -124,7 +124,7 @@ namespace TxVerifyUtil {
 
   export const checkCreateDir = async (
     dirPath: string,
-  ): Promise<TxExecuter.VerifyResult> => {
+  ): Promise<TxExecutor.VerifyResult> => {
     // 0. normalize
     const path = PathUtil.normalize(dirPath);
 
@@ -193,7 +193,7 @@ namespace TxVerifyUtil {
   export const checkExistsFile = async (
     filePath: string,
     permitNone: boolean,
-  ): Promise<TxExecuter.VerifyResult> => {
+  ): Promise<TxExecutor.VerifyResult> => {
     if (!(await existsPath(filePath))) {
       return {
         kind: permitNone ? 'warn' : 'error',
@@ -228,7 +228,7 @@ namespace TxVerifyUtil {
   export const checkRenameFile = async (
     fromFilePath: string,
     newName: string,
-  ): Promise<TxExecuter.VerifyResult> => {
+  ): Promise<TxExecutor.VerifyResult> => {
     // 1. 元ファイル存在＆file保証
     const baseCheck = await checkExistsFile(fromFilePath, false);
     if (baseCheck.kind === 'error') {

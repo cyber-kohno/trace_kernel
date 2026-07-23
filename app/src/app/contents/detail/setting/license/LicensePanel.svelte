@@ -26,7 +26,6 @@
     try {
       const payload =
         await LicenseUtil.parseActivateInfoFromProductKey($productKey);
-      console.log(payload);
       LicenseUtil.saveLicense($productKey);
 
       $appStore.license = LicenseUtil.getConvertedLicenseFromPayload(payload);
@@ -47,7 +46,7 @@
         $productKey = v;
       }}
       value={$productKey}
-      requied
+      required
     />
     <Record align="right">
       {#if $error !== ''}

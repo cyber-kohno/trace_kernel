@@ -1,7 +1,3 @@
-use tauri::State;
-
-use crate::runtime::AppState;
-
 pub struct LineBuffer {
     pub lines: Vec<String>,
 }

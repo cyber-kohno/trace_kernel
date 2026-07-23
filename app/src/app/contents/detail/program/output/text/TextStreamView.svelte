@@ -5,6 +5,7 @@
   import TextRecord from './TextRecord.svelte';
 
   export let channel: DclChannel.Props;
+  export let executionId: string;
 
   let streamRef: StreamReceiver;
 
@@ -15,12 +16,13 @@
 
 <StreamReceiver
   bind:this={streamRef}
+  {executionId}
   channelId={channel.id}
   recordHeight={25}
   fixedAreaHeight={30}
 >
   <svelte:fragment slot="fixed" let:total>
-    <TextFixed channelId={channel.id} {total} />
+    <TextFixed {executionId} channelId={channel.id} {total} />
   </svelte:fragment>
   <svelte:fragment slot="record" let:record let:index>
     <TextRecord {record} {index} />

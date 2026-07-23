@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type TxExecuter from '../../util/tx-executer';
+  import type TxExecutor from '../../util/tx-executor';
 
-  export let status: TxExecuter.Status;
+  export let status: TxExecutor.Status;
 
   $: message = (() => {
     const { verify, commit } = status;

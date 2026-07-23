@@ -2,7 +2,7 @@ import TxCommitRunner from './tx-commit-runner';
 import type TxPlanNormalize from './tx-plan-normalize';
 import TxVerifyUtil from './tx-verify-util';
 
-namespace TxExecuter {
+namespace TxExecutor {
   export type Phase = 'confirm' | 'verify' | 'commit';
 
   export type CommitResult =
@@ -21,12 +21,12 @@ namespace TxExecuter {
 
   export interface OrderRow {
     order: TxPlanNormalize.Order;
-    status: TxExecuter.Status;
+    status: TxExecutor.Status;
   }
 
   export const run = async (props: {
     setPhase: (phase: Phase) => void;
-    rows: TxExecuter.OrderRow[];
+    rows: TxExecutor.OrderRow[];
     progressTick: () => void;
   }) => {
     const { setPhase, progressTick } = props;
@@ -137,4 +137,4 @@ namespace TxExecuter {
     }
   };
 }
-export default TxExecuter;
+export default TxExecutor;

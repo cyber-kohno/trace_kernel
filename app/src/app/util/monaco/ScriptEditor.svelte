@@ -284,7 +284,7 @@
       value,
     );
 
-    // 洶 繝・・繝槫ｮ夂ｾｩ
+    // テーマ定義
     monaco.editor.defineTheme(themeName, {
       base: 'vs-dark',
       inherit: true,
@@ -333,7 +333,7 @@
     });
 
     editor.onDidChangeModelContent(() => {
-      // 繝ｩ繝ｳ繧ｿ繧､繝繧ｨ繝ｩ繝ｼ縺ｮ繝槭・繧ｫ繝ｼ蜑企勁
+      // ランタイムエラーのマーカー削除
       clearRuntimeMarkers();
 
       const code = userModel.getValue();

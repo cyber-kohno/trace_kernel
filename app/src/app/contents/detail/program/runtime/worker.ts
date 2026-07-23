@@ -12,9 +12,10 @@ import { createFlushScheduler } from './stream-flush';
 
 export interface MessageProps {
   type: 'execute' | 'invoke-result';
+  executionId: string;
   outputText: string;
   sourceMapText: string;
-  injectionalData: ContextDataUtil.Props;
+  contextData: ContextDataUtil.Props;
   usableUtils: DeclareUtil.ReserveDef[];
   outputMethod: WorkState.OutputMethod;
 }
@@ -39,7 +40,7 @@ const scheduler = createFlushScheduler({
 
   async appendToRuntime(channelId, batches) {
     await WorkerInvoke.call('append_lines', {
-      workerId: cache.rust.workerId,
+      executionId: cache.rust.executionId,
       channelId,
       batches,
     });
@@ -70,10 +71,10 @@ function scheduleFlush(channelId: string) {
  */
 const cache: RuntimeUtil.WorkerCache = {
   progress: { current: 0, total: 0 },
-  prepar: { datasetMap: [] },
+  preparation: { datasetMap: [] },
   vfs: null,
   rust: {
-    workerId: 'a', //crypto.randomUUID(),
+    executionId: '',
     logQueues: new Map<string, string[][]>(),
   },
   scheduleFlush,
@@ -89,11 +90,13 @@ self.onmessage = async (e: MessageEvent<MessageProps>) => {
     type,
     outputText,
     sourceMapText,
-    injectionalData,
+    contextData,
     usableUtils,
     outputMethod,
+    executionId,
   } = e.data;
   if (type === 'execute') {
+    cache.rust.executionId = executionId;
     self.fetch = undefined as any;
 
     const $done = () => WorkerAdapter.post({ type: 'done', vfs: cache.vfs });
@@ -106,13 +109,13 @@ self.onmessage = async (e: MessageEvent<MessageProps>) => {
     );
 
     // 遅延ロード（ランタイム時検索）
-    const tasks = injectionalData.datasets
+    const tasks = contextData.datasets
       .filter((d) => d.targets == null)
       .map(async (ds) => {
         const req: TauriDto.ScanRequest = {
           rootPath: DataUtil.getAppliedEnvValue(
             ds.rootPath,
-            injectionalData.envs,
+            contextData.envs,
           ),
           ...ds.scanOption,
         };
@@ -129,17 +132,17 @@ self.onmessage = async (e: MessageEvent<MessageProps>) => {
           else node.children.forEach((n) => rec(n, nextPath));
         };
         rec(res.node, '');
-        cache.prepar.datasetMap.push({ key: ds.varName, targets: list });
+        cache.preparation.datasetMap.push({ key: ds.varName, targets: list });
       });
     if (tasks.length > 0) {
       await Promise.all(tasks);
     }
 
-    // Initialize the runtime worker before executing user code.
-    const workerId = cache.rust.workerId;
-    await WorkerInvoke.call('worker_init', { workerId });
+    // Initialize the runtime execution before executing user code.
+    const currentExecutionId = cache.rust.executionId;
+    await WorkerInvoke.call('worker_init', { executionId: currentExecutionId });
     WorkerAdapter.post({
-      type: 'prepar_end',
+      type: 'prepared',
     });
     if (outputMethod === 'plain') {
       WorkerAdapter.post({
@@ -151,14 +154,14 @@ self.onmessage = async (e: MessageEvent<MessageProps>) => {
         },
       });
       await WorkerInvoke.call('add_channel', {
-        workerId,
+        executionId: currentExecutionId,
         channelId: RuntimeUtil.PLAIN_CHANNEL_ID,
       });
     }
 
-    const injectionalObjects = ContextDataUtil.createObjects(
-      injectionalData,
-      cache.prepar,
+    const contextObjects = ContextDataUtil.createObjects(
+      contextData,
+      cache.preparation,
       cache.rust,
     );
 
@@ -167,7 +170,7 @@ self.onmessage = async (e: MessageEvent<MessageProps>) => {
     const func = new Function(
       ...reserveObjects
         .map((f) => f.name)
-        .concat(injectionalObjects.map((d) => d.name)),
+        .concat(contextObjects.map((d) => d.name)),
       wrappedCode,
     );
 
@@ -176,7 +179,7 @@ self.onmessage = async (e: MessageEvent<MessageProps>) => {
       await func(
         ...reserveObjects
           .map((f) => f.value)
-          .concat(injectionalObjects.map((d) => d.value)),
+          .concat(contextObjects.map((d) => d.value)),
       );
       shouldNotifyDone = true;
     } catch (err: any) {
