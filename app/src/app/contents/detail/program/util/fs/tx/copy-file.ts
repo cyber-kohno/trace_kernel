@@ -11,11 +11,11 @@ namespace CopyFile {
     const { fileTable, pathIndex, reservedPaths } = vfs;
 
     if (reservedPaths.has(dest)) {
-      throw new Error('Destination path is already reserved.');
+      throw new Error(`destination path is already reserved: ${dest}`);
     }
 
     if (pathIndex.has(dest)) {
-      throw new Error('Destination path is already used in transaction.');
+      throw new Error(`destination path is already used in transaction: ${dest}`);
     }
 
     const token = pathIndex.get(from);
@@ -49,7 +49,7 @@ namespace CopyFile {
     }
 
     if (state.intent != null) {
-      throw new Error('Cannot copy a file that has pending changes.');
+      throw new Error(`cannot copy file with pending changes: ${state.path}`);
     }
     core(vfs, state.path, dest);
   };
@@ -85,11 +85,11 @@ namespace CopyFile {
     }
 
     if (reservedPaths.has(dest)) {
-      throw new Error('Destination path is already reserved.');
+      throw new Error(`destination path is already reserved: ${dest}`);
     }
 
     if (pathIndex.has(dest)) {
-      throw new Error('Destination path is already used in transaction.');
+      throw new Error(`destination path is already used in transaction: ${dest}`);
     }
 
     // 予約

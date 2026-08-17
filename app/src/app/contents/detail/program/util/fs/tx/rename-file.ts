@@ -91,7 +91,9 @@ namespace RenameFile {
     TxPathValidate.windowsPath(newPath);
 
     if (newPath === oldPath) {
-      throw new Error('new name is identical to current name');
+      throw new Error(
+        `new name is identical to current path: ${oldPath} -> ${newPath}`,
+      );
     }
 
     if (reservedPaths.has(newPath)) {

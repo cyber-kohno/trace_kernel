@@ -7,18 +7,18 @@ namespace DomParser {
     domId: number;
   };
 
-  export type Node = {
+  export type DomNode = {
     name(): Promise<string | null>;
     text(): Promise<string>;
     attr(name: string): Promise<string | null>;
-    children(): Promise<Node[]>;
-    parent(): Promise<Node | null>;
-    query(xpath: string): Promise<Node[]>;
+    children(): Promise<DomNode[]>;
+    parent(): Promise<DomNode | null>;
+    query(xpath: string): Promise<DomNode[]>;
   };
 
   export type DomController = {
-    root(): Promise<Node | null>;
-    query(xpath: string): Promise<Node[]>;
+    root(): Promise<DomNode | null>;
+    query(xpath: string): Promise<DomNode[]>;
     debug(): Promise<{
       domId: number;
       nodeCount: number;
@@ -26,7 +26,7 @@ namespace DomParser {
     dispose(): Promise<void>;
   };
 
-  const createNode = (ctx: DomContext, nodeId: number): Node => {
+  const createNode = (ctx: DomContext, nodeId: number): DomNode => {
     return {
       name() {
         return WorkerInvoke.call<string | null>('dom_node_name', {

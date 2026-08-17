@@ -37,7 +37,7 @@ namespace SaveFile {
       }
     }
     if (reservedPaths.has(filePath)) {
-      throw new Error('Destination path is already reserved.');
+      throw new Error(`destination path is already reserved: ${filePath}`);
     }
     // 新規トークン発行
     token = RuntimeUtil.createFileToken();

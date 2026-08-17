@@ -16,17 +16,17 @@ namespace DclParser {
   };
 
   export const getTypeDeclare = () => `
-        type XmlNode = {
+        type DomNode = {
             name(): Promise<string | null>;
             text(): Promise<string>;
             attr(name: string): Promise<string | null>;
-            children(): Promise<XmlNode[]>;
-            parent(): Promise<XmlNode | null>;
-            query(xpath: string): Promise<XmlNode[]>;
+            children(): Promise<DomNode[]>;
+            parent(): Promise<DomNode | null>;
+            query(xpath: string): Promise<DomNode[]>;
         };
         type DomController = {
-            root(): Promise<XmlNode | null>;
-            query(xpath: string): Promise<XmlNode[]>;
+            root(): Promise<DomNode | null>;
+            query(xpath: string): Promise<DomNode[]>;
             debug(): Promise<{ domId: number; nodeCount: number }>;
             dispose(): Promise<void>;
         };

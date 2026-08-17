@@ -1,13 +1,11 @@
 ---
-title: DomController / XmlNode
-description: XML、HTMLをDOMとして操作するオブジェクト。
+title: DomController / DomNode
+description: XML や HTML を DOM として扱うための API リファレンス
 ---
 
-`$parser.xml()`と`$parser.html()`は、文字列をDOMとして解析し、XPathでノードを検索できる`DomController`を返します。
+`$parser.xml()` と `$parser.html()` は、文字列を DOM として解析し、XPath でノードを検索できる `DomController` を返します。
 
-DOMは、XMLやHTMLを「ノードのツリー」として扱うための形式です。タグは要素ノード、タグの中の文字はテキストノードとして管理されます。
-
-Trace Kernelでは、まず`$parser.xml()`または`$parser.html()`で文字列を`DomController`に変換し、`query()`で必要なノードを探します。見つかったノードは`XmlNode`として扱い、`text()`や`attr()`で値を取り出します。
+Trace Kernel では、まず `$parser.xml()` または `$parser.html()` で文字列を `DomController` に変換し、`query()` で必要なノードを探します。見つかったノードは `DomNode` として扱い、`text()` や `attr()` で値を取り出します。
 
 ```ts
 const dom = await $parser.html($resource.pageHtml);
@@ -22,12 +20,12 @@ await dom.dispose();
 
 ## 基本の流れ
 
-DOM操作は、次の流れで使います。
+DOM 解析は、次の流れで使います。
 
-1. 文字列を`DomController`へ変換する
-2. `query(xpath)`で必要なノードを探す
-3. 見つかった`XmlNode`からテキストや属性を取り出す
-4. 最後に`dispose()`でDOMを破棄する
+1. 文字列を `DomController` へ変換する
+2. `query(xpath)` で必要なノードを検索する
+3. 見つかった `DomNode` からテキストや属性を取り出す
+4. 最後に `dispose()` で DOM を解放する
 
 ```ts
 const html = `<html>
@@ -49,11 +47,11 @@ for (const link of links) {
 await dom.dispose();
 ```
 
-`text()`や`attr()`は非同期メソッドです。呼び出すときは`await`します。
+`text()` や `attr()` は非同期メソッドなので、呼び出すときは `await` します。
 
-## XMLとHTMLの違い
+## XML と HTML の違い
 
-`$parser.xml()`はXMLとして厳密に解析します。タグの閉じ忘れなど、XMLとして不正な文字列はエラーになります。
+`$parser.xml()` は XML として厳密に解析します。タグの閉じ忘れなど、XML として不正な文字列はエラーになります。
 
 ```ts
 const xml = `<users>
@@ -64,74 +62,55 @@ const xml = `<users>
 const dom = await $parser.xml(xml);
 ```
 
-`$parser.html()`はHTMLとして解析します。Webページや保存済みHTMLから、リンク、見出し、表などを取り出す用途に向いています。
+`$parser.html()` は HTML として解析します。Web ページや保存済み HTML から、リンク、見出し、表などを取り出す用途に向いています。
 
 ```ts
 const dom = await $parser.html($resource.pageHtml);
 ```
 
-## XPathの最小パターン
+## XPath の最小パターン
 
-`query()`にはXPath文字列を渡します。Trace KernelのDOM APIは、基本的な抽出に必要な範囲のXPathをサポートしています。
+`query()` には XPath 文字列を渡します。Trace Kernel の DOM API は、実務で使いやすい範囲の XPath を想定しています。
 
 | XPath | 意味 |
 | --- | --- |
-| `//a` | 文書全体から`a`要素をすべて探します。 |
-| `/html/body/h1` | ルートから順に`html`、`body`、`h1`をたどります。 |
-| `//*` | 文書全体からすべての要素を探します。 |
-| `//a[@href]` | `href`属性を持つ`a`要素を探します。 |
-| `//div[@class="item"]` | `class`属性が`item`の`div`要素を探します。 |
-
-対応している主な構文は次の通りです。
-
-- `/` による子要素の指定
-- `//` による子孫要素の指定
-- 要素名による検索
-- `*` による任意要素の検索
-- `[@name]` による属性の存在チェック
-- `[@name="value"]` による属性値の一致チェック
-
-複雑なXPath関数、テキスト条件、数値条件、名前空間を使った検索などは、現時点では対象外です。
+| `//a` | すべての `a` 要素を検索します。 |
+| `/html/body/h1` | ルートから `html` → `body` → `h1` をたどります。 |
+| `//*` | すべての要素を検索します。 |
+| `//a[@href]` | `href` 属性を持つ `a` 要素を検索します。 |
+| `//div[@class="item"]` | `class` 属性が `item` の `div` 要素を検索します。 |
 
 ## DomController
 
 | メソッド | 戻り値 | 説明 |
 | --- | --- | --- |
-| `root()` | `Promise<XmlNode \| null>` | ルートノードを取得します。 |
-| `query(xpath)` | `Promise<XmlNode[]>` | XPathでノードを検索します。 |
-| `debug()` | `Promise<{ domId: number; nodeCount: number }>` | DOM内部情報を取得します。 |
-| `dispose()` | `Promise<void>` | DOMを破棄します。 |
+| `root()` | `Promise<DomNode \| null>` | ルートノードを取得します。 |
+| `query(xpath)` | `Promise<DomNode[]>` | XPath でノードを検索します。 |
+| `debug()` | `Promise<{ domId: number; nodeCount: number }>` | DOM の内部情報を取得します。 |
+| `dispose()` | `Promise<void>` | DOM を解放します。 |
 
-`query()`は文書全体を起点に検索します。XML/HTMLの中から目的の要素を直接取り出したい場合は、まず`dom.query('//tagName')`を使うのが基本です。
-
-`root()`はルート要素を取得します。ルート要素から順に子要素をたどりたい場合に使います。
+`query()` は DOM 全体を対象に検索します。
 
 ```ts
 const root = await dom.root();
 
 if (root) {
-  $println(await root.name() ?? '');
+  $println((await root.name()) ?? '');
 }
 ```
 
-`debug()`は、DOM内部のIDとノード数を確認するための補助機能です。通常の解析処理では必須ではありません。
-
-`dispose()`は、Rust側に保持されているDOMを破棄します。DOMを使い終わったら呼び出してください。
-
-## XmlNode
+## DomNode
 
 | メソッド | 戻り値 | 説明 |
 | --- | --- | --- |
 | `name()` | `Promise<string \| null>` | ノード名を取得します。 |
 | `text()` | `Promise<string>` | テキストを取得します。 |
 | `attr(name)` | `Promise<string \| null>` | 属性値を取得します。 |
-| `children()` | `Promise<XmlNode[]>` | 子ノードを取得します。 |
-| `parent()` | `Promise<XmlNode \| null>` | 親ノードを取得します。 |
-| `query(xpath)` | `Promise<XmlNode[]>` | 対象ノード配下をXPathで検索します。 |
+| `children()` | `Promise<DomNode[]>` | 子ノードを取得します。 |
+| `parent()` | `Promise<DomNode \| null>` | 親ノードを取得します。 |
+| `query(xpath)` | `Promise<DomNode[]>` | 対象ノード配下を XPath で検索します。 |
 
-`XmlNode`は、検索で見つかった要素やテキストを表します。
-
-よく使うのは、要素内の文字列を取得する`text()`と、属性値を取得する`attr(name)`です。
+`DomNode` は、検索で見つかった要素やテキストを表します。
 
 ```ts
 const links = await dom.query('//a[@href]');
@@ -143,7 +122,7 @@ for (const link of links) {
 }
 ```
 
-`children()`と`parent()`を使うと、XPathではなくツリー構造として前後のノードをたどれます。
+`children()` と `parent()` を使うと、XPath だけではなくツリー探索としてノードをたどれます。
 
 ```ts
 const sections = await dom.query('//section');
@@ -154,7 +133,7 @@ for (const section of sections) {
 }
 ```
 
-`node.query(xpath)`は、そのノード配下を起点に検索します。たとえば、各`article`の中にあるタイトルだけを取り出す場合に使えます。
+`node.query(xpath)` は、そのノード配下だけを対象に検索します。
 
 ```ts
 const articles = await dom.query('//article');
@@ -166,7 +145,7 @@ for (const article of articles) {
 }
 ```
 
-## HTMLからリンクを抽出する例
+## 例
 
 ```ts
 const dom = await $parser.html($resource.pageHtml);
@@ -181,36 +160,8 @@ for (const link of links) {
 await dom.dispose();
 ```
 
-## XMLから属性とテキストを抽出する例
-
-```ts
-const xml = `<users>
-  <user id="001" role="admin">taro</user>
-  <user id="002" role="member">jiro</user>
-</users>`;
-
-const dom = await $parser.xml(xml);
-
-const users = await dom.query('//user[@role="admin"]');
-for (const user of users) {
-  const id = await user.attr('id');
-  const name = await user.text();
-  $println(`${id}: ${name}`);
-}
-
-await dom.dispose();
-```
-
 ## 注意点
 
-- `DomController`と`XmlNode`のメソッドは非同期です。基本的に`await`して使います。
-- `text()`は対象ノード配下のテキストを結合して返します。
-- `attr(name)`は、属性がない場合に`null`を返します。
-- `query()`で見つからない場合は空配列を返します。
-- 文書全体に対する`query()`は、`/`または`//`から始めます。
-- ノード配下に対する`node.query()`では、`h2`のように相対的な指定もできます。
-- DOMはRust側に保持されるため、使い終わったら`dispose()`を呼び出してください。
-
-<div class="image-memo">
-  <strong>画像メモ:</strong> HTML文字列をresourceに登録し、<code>$parser.html()</code>でタイトルやリンクを抽出してテーブル出力する流れのGIFがあるとよいです。DOMツリーそのものより、「HTMLから必要な情報を取り出す」用途が伝わるものが向いています。
-</div>
+- `DomController` と `DomNode` のメソッドは非同期です。基本的に `await` して使います。
+- `attr(name)` は、属性がない場合に `null` を返します。
+- 使い終わった DOM は `dispose()` を呼んで解放してください。
