@@ -153,7 +153,7 @@ Windows では `StoreProcess.ts -> store-process.ts` のような rename が不�
 
 ## 完了条件
 
-- `app/src` 配下の `.ts`, `.d.ts` が原則 `kebab-case` になっている
+- `apps/desktop/src` 配下の `.ts`, `.d.ts` が原則 `kebab-case` になっている
 - PascalCase / camelCase の `.ts` が意図的な例外を除いて消えている
 - import の大文字小文字不一致が解消している
 - `npm run check` が命名由来のエラーを出さない

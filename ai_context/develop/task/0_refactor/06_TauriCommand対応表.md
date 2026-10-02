@@ -17,7 +17,7 @@ TypeScript 側から Rust 側へ渡している Tauri command について、
 
 ## 前提
 
-Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.rs) に集約されている。
+Rust 側の command 公開は [apps/desktop/src-tauri/src/lib.rs](apps/desktop/src-tauri/src/lib.rs) に集約されている。
 
 現状の呼び出し経路は大きく3種類ある。
 
@@ -39,7 +39,7 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 - request: なし
 - response: `string[]`
 - 主な呼び出し元:
-  - [Entry.svelte](app/src/app/Entry.svelte)
+  - [Entry.svelte](apps/desktop/src/apps/desktop/Entry.svelte)
 - 用途:
   - 起動時に CLI 引数を取得し、ワークスペースファイルの自動読込に使う
 - 備考:
@@ -48,11 +48,11 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `worker_init`
 
-- Rust実装: [runtime.rs](app/src-tauri/src/runtime.rs)
+- Rust実装: [runtime.rs](apps/desktop/src-tauri/src/runtime.rs)
 - request: `{ workerId: string }`
 - response: `void`
 - 主な呼び出し元:
-  - [worker.ts](app/src/app/contents/detail/program/runtime/worker.ts)
+  - [worker.ts](apps/desktop/src/apps/desktop/contents/detail/program/runtime/worker.ts)
 - 用途:
   - Rust 側に Worker ごとの runtime context を初期化する
 - 課題:
@@ -61,11 +61,11 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `worker_dispose`
 
-- Rust実装: [runtime.rs](app/src-tauri/src/runtime.rs)
+- Rust実装: [runtime.rs](apps/desktop/src-tauri/src/runtime.rs)
 - request: `{ workerId: string }`
 - response: `void`
 - 主な呼び出し元:
-  - [workerAdapter.ts](app/src/app/contents/detail/program/ui/workerAdapter.ts)
+  - [workerAdapter.ts](apps/desktop/src/apps/desktop/contents/detail/program/ui/workerAdapter.ts)
 - 用途:
   - Worker 終了時に Rust 側 context を破棄する
 - 課題:
@@ -77,13 +77,13 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `exists_path`
 
-- Rust実装: [file_system.rs](app/src-tauri/src/file_system.rs)
+- Rust実装: [file_system.rs](apps/desktop/src-tauri/src/file_system.rs)
 - request: `{ path: string }`
 - response: `boolean`
 - 主な呼び出し元:
-  - [dclFileSystem.ts](app/src/app/contents/detail/program/util/fs/dclFileSystem.ts)
-  - [realFSWriter.ts](app/src/app/contents/detail/program/util/fs/realFSWriter.ts)
-  - [txVerifyUtil.ts](app/src/app/contents/detail/program/ui/tx/util/txVerifyUtil.ts)
+  - [dclFileSystem.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/fs/dclFileSystem.ts)
+  - [realFSWriter.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/fs/realFSWriter.ts)
+  - [txVerifyUtil.ts](apps/desktop/src/apps/desktop/contents/detail/program/ui/tx/util/txVerifyUtil.ts)
 - 用途:
   - 実行系 FS API
   - transaction verify
@@ -93,11 +93,11 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `glob_path`
 
-- Rust実装: [file_system.rs](app/src-tauri/src/file_system.rs)
+- Rust実装: [file_system.rs](apps/desktop/src-tauri/src/file_system.rs)
 - request: `{ pattern: string }`
 - response: `string[]`
 - 主な呼び出し元:
-  - [dclFileSystem.ts](app/src/app/contents/detail/program/util/fs/dclFileSystem.ts)
+  - [dclFileSystem.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/fs/dclFileSystem.ts)
 - 用途:
   - `$fs.glob`
 - 備考:
@@ -106,11 +106,11 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `read_binary`
 
-- Rust実装: [file_system.rs](app/src-tauri/src/file_system.rs)
+- Rust実装: [file_system.rs](apps/desktop/src-tauri/src/file_system.rs)
 - request: `{ filePath: string }`
 - response: `number[]`
 - 主な呼び出し元:
-  - [realFSWriter.ts](app/src/app/contents/detail/program/util/fs/realFSWriter.ts)
+  - [realFSWriter.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/fs/realFSWriter.ts)
 - 用途:
   - `$fs.readBinary`
 - 備考:
@@ -119,14 +119,14 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `read_file`
 
-- Rust実装: [file_system.rs](app/src-tauri/src/file_system.rs)
+- Rust実装: [file_system.rs](apps/desktop/src-tauri/src/file_system.rs)
 - request: `{ req: { filePath: string; encoding?: "utf8" | "sjis" } }`
 - response: `string`
 - 主な呼び出し元:
-  - [fileUtil.ts](app/src/app/util/data/fileUtil.ts)
-  - [ChooseRecord.svelte](app/src/app/contents/maintenance/dataset/choose/ChooseRecord.svelte)
-  - [dclFileSystem.ts](app/src/app/contents/detail/program/util/fs/dclFileSystem.ts)
-  - [contextDataUtil.ts](app/src/app/contents/detail/program/util/contextDataUtil.ts)
+  - [fileUtil.ts](apps/desktop/src/apps/desktop/util/data/fileUtil.ts)
+  - [ChooseRecord.svelte](apps/desktop/src/apps/desktop/contents/maintenance/dataset/choose/ChooseRecord.svelte)
+  - [dclFileSystem.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/fs/dclFileSystem.ts)
+  - [contextDataUtil.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/contextDataUtil.ts)
 - 用途:
   - ワークスペース読込
   - dataset プレビュー
@@ -139,24 +139,24 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `read_dir`
 
-- Rust実装: [file_system.rs](app/src-tauri/src/file_system.rs)
+- Rust実装: [file_system.rs](apps/desktop/src-tauri/src/file_system.rs)
 - request: `{ dir: string }`
 - response: `{ name: string; isDir: boolean }[]`
 - 主な呼び出し元:
-  - [dclFileSystem.ts](app/src/app/contents/detail/program/util/fs/dclFileSystem.ts)
+  - [dclFileSystem.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/fs/dclFileSystem.ts)
 - 用途:
   - `$fs.readDir`
 
 
 ### `stat`
 
-- Rust実装: [file_system.rs](app/src-tauri/src/file_system.rs)
+- Rust実装: [file_system.rs](apps/desktop/src-tauri/src/file_system.rs)
 - request: `{ path: string }`
 - response: `FileStat`
 - 主な呼び出し元:
-  - [realFSWriter.ts](app/src/app/contents/detail/program/util/fs/realFSWriter.ts)
-  - [txVerifyUtil.ts](app/src/app/contents/detail/program/ui/tx/util/txVerifyUtil.ts)
-  - [PathState.svelte](app/src/app/util/form/validation/PathState.svelte)
+  - [realFSWriter.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/fs/realFSWriter.ts)
+  - [txVerifyUtil.ts](apps/desktop/src/apps/desktop/contents/detail/program/ui/tx/util/txVerifyUtil.ts)
+  - [PathState.svelte](apps/desktop/src/apps/desktop/util/form/validation/PathState.svelte)
 - 用途:
   - 実行系 FS
   - transaction verify
@@ -167,12 +167,12 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `save_text`
 
-- Rust実装: [file_system.rs](app/src-tauri/src/file_system.rs)
+- Rust実装: [file_system.rs](apps/desktop/src-tauri/src/file_system.rs)
 - request: `{ path: string; content: string }`
 - response: `void`
 - 主な呼び出し元:
-  - [fileUtil.ts](app/src/app/util/data/fileUtil.ts)
-  - [realFSWriter.ts](app/src/app/contents/detail/program/util/fs/realFSWriter.ts)
+  - [fileUtil.ts](apps/desktop/src/apps/desktop/util/data/fileUtil.ts)
+  - [realFSWriter.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/fs/realFSWriter.ts)
 - 用途:
   - ワークスペース保存
   - `$fs.saveText`
@@ -182,11 +182,11 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `save_binary`
 
-- Rust実装: [file_system.rs](app/src-tauri/src/file_system.rs)
+- Rust実装: [file_system.rs](apps/desktop/src-tauri/src/file_system.rs)
 - request: `{ path: string; bytes: number[] }`
 - response: `void`
 - 主な呼び出し元:
-  - [txCommitRunner.ts](app/src/app/contents/detail/program/ui/tx/util/txCommitRunner.ts)
+  - [txCommitRunner.ts](apps/desktop/src/apps/desktop/contents/detail/program/ui/tx/util/txCommitRunner.ts)
 - 用途:
   - transaction commit 時のファイル書き込み
 - 備考:
@@ -195,12 +195,12 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `rename`
 
-- Rust実装: [file_system.rs](app/src-tauri/src/file_system.rs)
+- Rust実装: [file_system.rs](apps/desktop/src-tauri/src/file_system.rs)
 - request: `{ from: string; to: string }`
 - response: `void`
 - 主な呼び出し元:
-  - [realFSWriter.ts](app/src/app/contents/detail/program/util/fs/realFSWriter.ts)
-  - [txCommitRunner.ts](app/src/app/contents/detail/program/ui/tx/util/txCommitRunner.ts)
+  - [realFSWriter.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/fs/realFSWriter.ts)
+  - [txCommitRunner.ts](apps/desktop/src/apps/desktop/contents/detail/program/ui/tx/util/txCommitRunner.ts)
 - 用途:
   - `$fs.renameFile`, `$fs.renameDir`
   - transaction commit
@@ -210,12 +210,12 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `copy_file`
 
-- Rust実装: [file_system.rs](app/src-tauri/src/file_system.rs)
+- Rust実装: [file_system.rs](apps/desktop/src-tauri/src/file_system.rs)
 - request: `{ src: string; dest: string }`
 - response: `void`
 - 主な呼び出し元:
-  - [realFSWriter.ts](app/src/app/contents/detail/program/util/fs/realFSWriter.ts)
-  - [txCommitRunner.ts](app/src/app/contents/detail/program/ui/tx/util/txCommitRunner.ts)
+  - [realFSWriter.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/fs/realFSWriter.ts)
+  - [txCommitRunner.ts](apps/desktop/src/apps/desktop/contents/detail/program/ui/tx/util/txCommitRunner.ts)
 - 用途:
   - `$fs.copyFile`
   - transaction commit
@@ -223,12 +223,12 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `make_dir`
 
-- Rust実装: [file_system.rs](app/src-tauri/src/file_system.rs)
+- Rust実装: [file_system.rs](apps/desktop/src-tauri/src/file_system.rs)
 - request: `{ dirPath: string }`
 - response: `void`
 - 主な呼び出し元:
-  - [realFSWriter.ts](app/src/app/contents/detail/program/util/fs/realFSWriter.ts)
-  - [txCommitRunner.ts](app/src/app/contents/detail/program/ui/tx/util/txCommitRunner.ts)
+  - [realFSWriter.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/fs/realFSWriter.ts)
+  - [txCommitRunner.ts](apps/desktop/src/apps/desktop/contents/detail/program/ui/tx/util/txCommitRunner.ts)
 - 用途:
   - `$fs.makeDir`
   - transaction commit
@@ -236,12 +236,12 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `delete_file`
 
-- Rust実装: [file_system.rs](app/src-tauri/src/file_system.rs)
+- Rust実装: [file_system.rs](apps/desktop/src-tauri/src/file_system.rs)
 - request: `{ path: string }`
 - response: `void`
 - 主な呼び出し元:
-  - [realFSWriter.ts](app/src/app/contents/detail/program/util/fs/realFSWriter.ts)
-  - [txCommitRunner.ts](app/src/app/contents/detail/program/ui/tx/util/txCommitRunner.ts)
+  - [realFSWriter.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/fs/realFSWriter.ts)
+  - [txCommitRunner.ts](apps/desktop/src/apps/desktop/contents/detail/program/ui/tx/util/txCommitRunner.ts)
 - 用途:
   - `$fs.deleteFile`
   - transaction commit
@@ -249,18 +249,18 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `delete_dir`
 
-- Rust実装: [file_system.rs](app/src-tauri/src/file_system.rs)
+- Rust実装: [file_system.rs](apps/desktop/src-tauri/src/file_system.rs)
 - request: `{ path: string }`
 - response: `void`
 - 主な呼び出し元:
-  - [realFSWriter.ts](app/src/app/contents/detail/program/util/fs/realFSWriter.ts)
+  - [realFSWriter.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/fs/realFSWriter.ts)
 - 用途:
   - `$fs.deleteDir`
 
 
 ### `delete_dir_all`
 
-- Rust実装: [file_system.rs](app/src-tauri/src/file_system.rs)
+- Rust実装: [file_system.rs](apps/desktop/src-tauri/src/file_system.rs)
 - request: `{ path: string }`
 - response: `void`
 - 主な呼び出し元:
@@ -275,12 +275,12 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `scan_directory`
 
-- Rust実装: [scan.rs](app/src-tauri/src/scan.rs)
+- Rust実装: [scan.rs](apps/desktop/src-tauri/src/scan.rs)
 - request: `{ req: ScanRequest }`
 - response: `ScanResponse`
 - 主な呼び出し元:
-  - [ScanUtil.ts](app/src/app/contents/maintenance/dataset/scan/ScanUtil.ts)
-  - [worker.ts](app/src/app/contents/detail/program/runtime/worker.ts)
+  - [ScanUtil.ts](apps/desktop/src/apps/desktop/contents/maintenance/dataset/scan/ScanUtil.ts)
+  - [worker.ts](apps/desktop/src/apps/desktop/contents/detail/program/runtime/worker.ts)
 - 用途:
   - dataset 選択 UI 用スキャン
   - runtime auto スキャン
@@ -292,11 +292,11 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `run_process`
 
-- Rust実装: [process.rs](app/src-tauri/src/process.rs)
+- Rust実装: [process.rs](apps/desktop/src-tauri/src/process.rs)
 - request: `{ req: { program: string; args: string[]; timeoutMs: number } }`
 - response: `{ stdout: number[]; stderr: number[]; exitCode: number }`
 - 主な呼び出し元:
-  - [contextDataUtil.ts](app/src/app/contents/detail/program/util/contextDataUtil.ts)
+  - [contextDataUtil.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/contextDataUtil.ts)
 - 用途:
   - `$process.xxx()` の実体
 - 備考:
@@ -307,12 +307,12 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `add_channel`
 
-- Rust実装: [stream/channel.rs](app/src-tauri/src/stream/channel.rs)
+- Rust実装: [stream/channel.rs](apps/desktop/src-tauri/src/stream/channel.rs)
 - request: `{ workerId: string; channelId: string }`
 - response: `void`
 - 主な呼び出し元:
-  - [worker.ts](app/src/app/contents/detail/program/runtime/worker.ts)
-  - [dclChannel.ts](app/src/app/contents/detail/program/util/channel/dclChannel.ts)
+  - [worker.ts](apps/desktop/src/apps/desktop/contents/detail/program/runtime/worker.ts)
+  - [dclChannel.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/channel/dclChannel.ts)
 - 用途:
   - plain 出力チャネル初期化
   - channel API の動的ストリーム生成
@@ -320,24 +320,24 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `append_lines`
 
-- Rust実装: [stream/channel.rs](app/src-tauri/src/stream/channel.rs)
+- Rust実装: [stream/channel.rs](apps/desktop/src-tauri/src/stream/channel.rs)
 - request: `{ workerId: string; channelId: string; batches: string[][] }`
 - response: `void`
 - 主な呼び出し元:
-  - [worker.ts](app/src/app/contents/detail/program/runtime/worker.ts)
+  - [worker.ts](apps/desktop/src/apps/desktop/contents/detail/program/runtime/worker.ts)
 - 用途:
   - Worker 側に溜めたログバッチを Rust の channel buffer へ転送
 
 
 ### `get_range_lines`
 
-- Rust実装: [stream/channel.rs](app/src-tauri/src/stream/channel.rs)
+- Rust実装: [stream/channel.rs](apps/desktop/src-tauri/src/stream/channel.rs)
 - request: `{ workerId: string; channelId: string; from: number; to: number }`
 - response: `string[]`
 - 主な呼び出し元:
-  - [TextFixed.svelte](app/src/app/contents/detail/program/output/text/TextFixed.svelte)
-  - [TableFixed.svelte](app/src/app/contents/detail/program/output/table/TableFixed.svelte)
-  - [StreamReceiver.svelte](app/src/app/contents/detail/program/output/StreamReceiver.svelte)
+  - [TextFixed.svelte](apps/desktop/src/apps/desktop/contents/detail/program/output/text/TextFixed.svelte)
+  - [TableFixed.svelte](apps/desktop/src/apps/desktop/contents/detail/program/output/table/TableFixed.svelte)
+  - [StreamReceiver.svelte](apps/desktop/src/apps/desktop/contents/detail/program/output/StreamReceiver.svelte)
 - 用途:
   - 出力ストリーム表示用のページング取得
 - 課題:
@@ -347,11 +347,11 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `get_line_len`
 
-- Rust実装: [stream/channel.rs](app/src-tauri/src/stream/channel.rs)
+- Rust実装: [stream/channel.rs](apps/desktop/src-tauri/src/stream/channel.rs)
 - request: `{ workerId: string; channelId: string }`
 - response: `number`
 - 主な呼び出し元:
-  - [StreamReceiver.svelte](app/src/app/contents/detail/program/output/StreamReceiver.svelte)
+  - [StreamReceiver.svelte](apps/desktop/src/apps/desktop/contents/detail/program/output/StreamReceiver.svelte)
 - 用途:
   - 出力総行数取得
 - 課題:
@@ -362,133 +362,133 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `dom_parse`
 
-- Rust実装: [parser/dom.rs](app/src-tauri/src/parser/dom.rs)
+- Rust実装: [parser/dom.rs](apps/desktop/src-tauri/src/parser/dom.rs)
 - request: `{ workerId: string; source: string }`
 - response: `number` (`domId`)
 - 主な呼び出し元:
-  - [domParser.ts](app/src/app/contents/detail/program/util/parser/domParser.ts)
+  - [domParser.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/parser/domParser.ts)
 - 用途:
   - XML DOM 構築
 
 
 ### `dom_parse_html`
 
-- Rust実装: [parser/dom.rs](app/src-tauri/src/parser/dom.rs)
+- Rust実装: [parser/dom.rs](apps/desktop/src-tauri/src/parser/dom.rs)
 - request: `{ workerId: string; source: string }`
 - response: `number` (`domId`)
 - 主な呼び出し元:
-  - [domParser.ts](app/src/app/contents/detail/program/util/parser/domParser.ts)
+  - [domParser.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/parser/domParser.ts)
 - 用途:
   - HTML DOM 構築
 
 
 ### `dom_root`
 
-- Rust実装: [parser/dom.rs](app/src-tauri/src/parser/dom.rs)
+- Rust実装: [parser/dom.rs](apps/desktop/src-tauri/src/parser/dom.rs)
 - request: `{ workerId: string; domId: number }`
 - response: `number | null`
 - 主な呼び出し元:
-  - [domParser.ts](app/src/app/contents/detail/program/util/parser/domParser.ts)
+  - [domParser.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/parser/domParser.ts)
 - 用途:
   - DOM root 取得
 
 
 ### `dom_query`
 
-- Rust実装: [parser/dom.rs](app/src-tauri/src/parser/dom.rs)
+- Rust実装: [parser/dom.rs](apps/desktop/src-tauri/src/parser/dom.rs)
 - request: `{ workerId: string; domId: number; xpath: string }`
 - response: `number[]`
 - 主な呼び出し元:
-  - [domParser.ts](app/src/app/contents/detail/program/util/parser/domParser.ts)
+  - [domParser.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/parser/domParser.ts)
 - 用途:
   - document query
 
 
 ### `dom_query_from_node`
 
-- Rust実装: [parser/dom.rs](app/src-tauri/src/parser/dom.rs)
+- Rust実装: [parser/dom.rs](apps/desktop/src-tauri/src/parser/dom.rs)
 - request: `{ workerId: string; domId: number; nodeId: number; xpath: string }`
 - response: `number[]`
 - 主な呼び出し元:
-  - [domParser.ts](app/src/app/contents/detail/program/util/parser/domParser.ts)
+  - [domParser.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/parser/domParser.ts)
 - 用途:
   - node 基準 query
 
 
 ### `dom_node_name`
 
-- Rust実装: [parser/dom.rs](app/src-tauri/src/parser/dom.rs)
+- Rust実装: [parser/dom.rs](apps/desktop/src-tauri/src/parser/dom.rs)
 - request: `{ workerId: string; domId: number; nodeId: number }`
 - response: `string | null`
 - 主な呼び出し元:
-  - [domParser.ts](app/src/app/contents/detail/program/util/parser/domParser.ts)
+  - [domParser.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/parser/domParser.ts)
 
 
 ### `dom_node_text`
 
-- Rust実装: [parser/dom.rs](app/src-tauri/src/parser/dom.rs)
+- Rust実装: [parser/dom.rs](apps/desktop/src-tauri/src/parser/dom.rs)
 - request: `{ workerId: string; domId: number; nodeId: number }`
 - response: `string`
 - 主な呼び出し元:
-  - [domParser.ts](app/src/app/contents/detail/program/util/parser/domParser.ts)
+  - [domParser.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/parser/domParser.ts)
 
 
 ### `dom_node_attr`
 
-- Rust実装: [parser/dom.rs](app/src-tauri/src/parser/dom.rs)
+- Rust実装: [parser/dom.rs](apps/desktop/src-tauri/src/parser/dom.rs)
 - request: `{ workerId: string; domId: number; nodeId: number; name: string }`
 - response: `string | null`
 - 主な呼び出し元:
-  - [domParser.ts](app/src/app/contents/detail/program/util/parser/domParser.ts)
+  - [domParser.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/parser/domParser.ts)
 
 
 ### `dom_node_children`
 
-- Rust実装: [parser/dom.rs](app/src-tauri/src/parser/dom.rs)
+- Rust実装: [parser/dom.rs](apps/desktop/src-tauri/src/parser/dom.rs)
 - request: `{ workerId: string; domId: number; nodeId: number }`
 - response: `number[]`
 - 主な呼び出し元:
-  - [domParser.ts](app/src/app/contents/detail/program/util/parser/domParser.ts)
+  - [domParser.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/parser/domParser.ts)
 
 
 ### `dom_node_parent`
 
-- Rust実装: [parser/dom.rs](app/src-tauri/src/parser/dom.rs)
+- Rust実装: [parser/dom.rs](apps/desktop/src-tauri/src/parser/dom.rs)
 - request: `{ workerId: string; domId: number; nodeId: number }`
 - response: `number | null`
 - 主な呼び出し元:
-  - [domParser.ts](app/src/app/contents/detail/program/util/parser/domParser.ts)
+  - [domParser.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/parser/domParser.ts)
 
 
 ### `dom_info`
 
-- Rust実装: [parser/dom.rs](app/src-tauri/src/parser/dom.rs)
+- Rust実装: [parser/dom.rs](apps/desktop/src-tauri/src/parser/dom.rs)
 - request: `{ workerId: string; domId: number }`
 - response: `[number, number]`
 - 主な呼び出し元:
-  - [domParser.ts](app/src/app/contents/detail/program/util/parser/domParser.ts)
+  - [domParser.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/parser/domParser.ts)
 - 用途:
   - debug / 情報取得
 
 
 ### `dom_dispose`
 
-- Rust実装: [parser/dom.rs](app/src-tauri/src/parser/dom.rs)
+- Rust実装: [parser/dom.rs](apps/desktop/src-tauri/src/parser/dom.rs)
 - request: `{ workerId: string; domId: number }`
 - response: `void`
 - 主な呼び出し元:
-  - [domParser.ts](app/src/app/contents/detail/program/util/parser/domParser.ts)
+  - [domParser.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/parser/domParser.ts)
 - 用途:
   - DOM ストア解放
 
 
 ### `excel_parse`
 
-- Rust実装: [parser/excel.rs](app/src-tauri/src/parser/excel.rs)
+- Rust実装: [parser/excel.rs](apps/desktop/src-tauri/src/parser/excel.rs)
 - request: `{ buffer: number[] }`
 - response: `Book`
 - 主な呼び出し元:
-  - [excelParser.ts](app/src/app/contents/detail/program/util/parser/excelParser.ts)
+  - [excelParser.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/parser/excelParser.ts)
 - 用途:
   - `$parser.excel`
 
@@ -497,22 +497,22 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 ### `load_html_from_url`
 
-- Rust実装: [scraper/api.rs](app/src-tauri/src/scraper/api.rs)
+- Rust実装: [scraper/api.rs](apps/desktop/src-tauri/src/scraper/api.rs)
 - request: `{ url: string }`
 - response: `{ url: string; html: string; fetchedAt: number }`
 - 主な呼び出し元:
-  - [dclNet.ts](app/src/app/contents/detail/program/util/dclNet.ts)
+  - [dclNet.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/dclNet.ts)
 - 用途:
   - `$net.getHtml`
 
 
 ### `load_http`
 
-- Rust実装: [scraper/api.rs](app/src-tauri/src/scraper/api.rs)
+- Rust実装: [scraper/api.rs](apps/desktop/src-tauri/src/scraper/api.rs)
 - request: `{ req: HttpRequest }`
 - response: `HttpResponse`
 - 主な呼び出し元:
-  - [dclNet.ts](app/src/app/contents/detail/program/util/dclNet.ts)
+  - [dclNet.ts](apps/desktop/src/apps/desktop/contents/detail/program/util/dclNet.ts)
 - 用途:
   - `$net.request`
   - `$net.getText`
@@ -579,7 +579,7 @@ Rust 側の command 公開は [app/src-tauri/src/lib.rs](app/src-tauri/src/lib.r
 
 補足:
 
-- 現行 `app/src` 内では呼び出し元を確認できなかった
+- 現行 `apps/desktop/src` 内では呼び出し元を確認できなかった
 - 将来用途がないなら公開を見直す余地がある
 
 

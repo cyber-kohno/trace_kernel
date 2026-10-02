@@ -20,7 +20,7 @@ Phase 1 では、今後の改善を安全に進めるための前提を作る。
 
 - 新規ファイルをどこに置くべきか判断できる
 - ファイル名と export 名の付け方が統一されている
-- `app/src` の各ディレクトリの責務が説明できる
+- `apps/desktop/src` の各ディレクトリの責務が説明できる
 - Tauri command と TypeScript 側呼び出し口の対応が追える
 - 明確に直すべき命名揺れ、構造不整合が一覧化されている
 
@@ -53,15 +53,15 @@ Phase 1 では、今後の改善を安全に進めるための前提を作る。
 
 ### 目的
 
-`app/src` 配下のモジュールを「なんとなくの配置」から脱却させる。
+`apps/desktop/src` 配下のモジュールを「なんとなくの配置」から脱却させる。
 
 ### 対象
 
-- `app/src/app/contents`
-- `app/src/app/store`
-- `app/src/app/util`
-- `app/src/app/contents/detail/program`
-- `app/src-tauri/src`
+- `apps/desktop/src/apps/desktop/contents`
+- `apps/desktop/src/apps/desktop/store`
+- `apps/desktop/src/apps/desktop/util`
+- `apps/desktop/src/apps/desktop/contents/detail/program`
+- `apps/desktop/src-tauri/src`
 
 ### 整理観点
 

@@ -97,7 +97,7 @@ tx.saveFile(`${$env.DEST_DIR}\\${fileName}`, content);
 他のコンテキスト要素でパスを設定する際、`%`ブレースフォルダで囲うことでenvの変数を参照できます。
 
 ```
-%WORKSPACE%\testApp\src\
+%WORKSPACE%\testapps/desktop\\src\
 ```
 
 ---
