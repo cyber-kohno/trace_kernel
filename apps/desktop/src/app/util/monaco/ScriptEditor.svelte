@@ -55,6 +55,10 @@
   const navigationHistory: NavigationEntry[] = [];
   let pendingCtrlClickNavigationEntry: NavigationEntry | null = null;
 
+  $: if (userModel && userModel.getValue() !== value) {
+    userModel.setValue(value);
+  }
+
   const toMarkerSeverity = (diagnostic: any) => {
     if (diagnostic.reportsUnnecessary) {
       return monaco.MarkerSeverity.Hint;
@@ -365,9 +369,10 @@
       if (!e.event.leftButton) return;
       if (pendingCtrlClickNavigationEntry == null) return;
 
-      scheduleNavigationHistoryCheck(pendingCtrlClickNavigationEntry, [
-        100, 300, 800,
-      ]);
+      scheduleNavigationHistoryCheck(
+        pendingCtrlClickNavigationEntry,
+        [100, 300, 800],
+      );
       pendingCtrlClickNavigationEntry = null;
     });
 

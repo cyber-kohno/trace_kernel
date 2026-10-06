@@ -5,6 +5,7 @@
   import ToastService from '../../../service/toast-service';
   import EntryRecord from './EntryRecord.svelte';
   import ValidationService from '../../../service/validation-service';
+  import { openWorkEditor } from '../../../mcp/open-work-editor';
 
   export let index: number;
 
@@ -38,8 +39,10 @@
     const target = UiState.getTarget($uiStore);
     const hasDisable = ValidationService.hasDisable(target);
     if (hasDisable)
-      ToastService.show({ text: 'This work has an error and cannot be opened.' });
-    else $uiStore.dialog = 'program';
+      ToastService.show({
+        text: 'This work has an error and cannot be opened.',
+      });
+    else openWorkEditor();
   };
 </script>
 
@@ -69,5 +72,14 @@
     color: rgb(238, 139, 255);
     font-style: italic;
   }
-  .ai-badge { margin-left: 6px; padding: 1px 4px; border: 1px solid #63e6a0; border-radius: 4px; color: #8affbd; background: #12633f; font-size: 10px !important; font-style: normal; }
+  .ai-badge {
+    margin-left: 6px;
+    padding: 1px 4px;
+    border: 1px solid #63e6a0;
+    border-radius: 4px;
+    color: #8affbd;
+    background: #12633f;
+    font-size: 10px !important;
+    font-style: normal;
+  }
 </style>

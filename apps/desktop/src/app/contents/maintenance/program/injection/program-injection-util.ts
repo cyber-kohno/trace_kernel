@@ -87,6 +87,14 @@ namespace ProgramInjectionUtil {
     return [...getBaseContextItems(workspace, disables), ...logicItems];
   };
 
+  export const getWorkContextDeclarations = (
+    workspace: WorkspaceState.Props,
+    disables: ValidationState.Target[],
+  ): string[] =>
+    ContextDataUtil.createDeclareDef(
+      ContextDataUtil.getUsableData(workspace, disables),
+    );
+
   export const getLogicContextItems = (
     workspace: WorkspaceState.Props,
     disables: ValidationState.Target[],
@@ -119,6 +127,16 @@ namespace ProgramInjectionUtil {
       method,
     }).map((res) => `$${res}`);
   };
+
+  export const getWorkApiDeclarations = (
+    method: WorkState.OutputMethod,
+  ): string[] =>
+    DeclareUtil.getUsableReserveList({ method }).map((name) => {
+      const { typeDec, valueDec } = DeclareUtil.createUtilDeclareDef(name);
+      return [typeDec, `declare const $${name}: ${valueDec};`]
+        .filter((declaration) => declaration !== '')
+        .join('\n');
+    });
 
   export const getLogicApiItems = (): string[] => {
     return ['$parser'];

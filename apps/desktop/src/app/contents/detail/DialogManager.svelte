@@ -5,14 +5,21 @@
   import LogicDialog from './logic/ui/LogicDialog.svelte';
   import ProgramDialog from './program/ui/ProgramDialog.svelte';
   import SettingDialog from './setting/SettingDialog.svelte';
+  import WorkProposalDialog from './WorkProposalDialog.svelte';
 
   $: dialog = $uiStore.dialog;
 </script>
 
 {#if dialog != undefined}
   <div class="blind">
-    {#if dialog === 'program'}
-      <ProgramDialog />
+    {#if dialog === 'program' || dialog === 'work-proposal'}
+      <ProgramDialog
+        visible={dialog === 'program'}
+        editorId={$uiStore.workEditorId ?? ''}
+      />
+      {#if dialog === 'work-proposal'}
+        <WorkProposalDialog />
+      {/if}
     {:else if dialog === 'logic'}
       <LogicDialog />
     {:else if dialog === 'declare'}

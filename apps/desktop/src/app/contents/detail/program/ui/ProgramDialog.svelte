@@ -6,7 +6,7 @@
   import OperationButton from '../../../../util/button/OperationButton.svelte';
   import TypescriptUtil from '../../../../util/typescript-util';
   import { onDestroy, onMount } from 'svelte';
-  import { writable } from 'svelte/store';
+  import { get, writable } from 'svelte/store';
   import Record from '../../../../util/layout/RecordDiv.svelte';
   import WorkspaceState from '../../../../state/model/workspace/workspace-state';
   import { workspaceStore } from '../../../../state/store';
@@ -25,6 +25,13 @@
   import BusyIndicator from '../../../../util/item/BusyIndicator.svelte';
   import TxDialog from './tx/ui/TxDialog.svelte';
   import WorkspaceRecoveryUtil from '../../../../util/data/workspace-recovery-util';
+  import {
+    resolveWorkUpdateProposal,
+    workUpdateProposalStore,
+  } from '../../../../mcp/work-update-proposal';
+
+  export let visible = true;
+  export let editorId = '';
 
   type Phase = 'coding' | 'preparing' | 'executing' | 'done' | 'error';
 
@@ -81,84 +88,87 @@
 
   onDestroy(() => {
     $uiStore.shortcutEvent = null;
+    if ($uiStore.workEditorId === editorId) {
+      $uiStore.workEditorId = null;
+      const proposal = get(workUpdateProposalStore);
+      if (proposal?.editorId === editorId) {
+        resolveWorkUpdateProposal(proposal.proposalId, 'reject');
+      }
+    }
   });
 
   const { init, terminate, start, postInvoke, getExecutionId } =
-    WorkerAdapter.use(
-      async (e) => {
-        switch (e.type) {
-          case 'create_stream': {
-            if ($channels.some((ch) => ch.id === e.props.id)) {
-              throw new Error(
-                `A stream with ID "${e.props.id}" already exists.`,
-              );
-            }
-            $channels.push(e.props);
-            $channels = $channels.slice();
+    WorkerAdapter.use(async (e) => {
+      switch (e.type) {
+        case 'create_stream': {
+          if ($channels.some((ch) => ch.id === e.props.id)) {
+            throw new Error(`A stream with ID "${e.props.id}" already exists.`);
+          }
+          $channels.push(e.props);
+          $channels = $channels.slice();
 
-            if ($channels.length === 1) {
-              $activeChannelIdx = 0;
-            }
-            break;
+          if ($channels.length === 1) {
+            $activeChannelIdx = 0;
           }
-          case 'receive_stream': {
-            if (activeChannel == undefined) break;
-            if (e.channelId === activeChannel.id) {
-              if (!streamRef) throw new Error();
-              streamRef.receiveStream();
-            }
-            break;
-          }
-          case 'invoke':
-            postInvoke(e);
-            break;
-          case 'prepared':
-            $phase = 'executing';
-            break;
-          case 'done':
-            await clearRecoverySnapshot();
-            $phase = 'done';
-            streamRef?.end();
-
-            if (e.vfs != null) {
-              $txCache = e.vfs;
-              $isDispTxDialog = true;
-            }
-            break;
-          case 'runtime-error': {
-            await clearRecoverySnapshot();
-            $phase = 'error';
-            const { sourceMap, stack } = e;
-            setTimeout(() => {
-              errorFrameRef.init(
-                sourceMap,
-                stack,
-                work.source,
-                (monacoRef as any).setRuntimeErrorMarker,
-              );
-            }, 0);
-            break;
-          }
-          case 'state': {
-            switch (e.method) {
-              case 'progress_start':
-                $progress.total = e.total;
-                break;
-              case 'progress_tick':
-                $progress.cur++;
-                break;
-              case 'monitor_init':
-                $monitorLines = Array.from({ length: e.allocSize }, () => '');
-                break;
-              case 'monitor_set':
-                $monitorLines[e.index] = e.str;
-                break;
-            }
-            break;
-          }
+          break;
         }
-      },
-    );
+        case 'receive_stream': {
+          if (activeChannel == undefined) break;
+          if (e.channelId === activeChannel.id) {
+            if (!streamRef) throw new Error();
+            streamRef.receiveStream();
+          }
+          break;
+        }
+        case 'invoke':
+          postInvoke(e);
+          break;
+        case 'prepared':
+          $phase = 'executing';
+          break;
+        case 'done':
+          await clearRecoverySnapshot();
+          $phase = 'done';
+          streamRef?.end();
+
+          if (e.vfs != null) {
+            $txCache = e.vfs;
+            $isDispTxDialog = true;
+          }
+          break;
+        case 'runtime-error': {
+          await clearRecoverySnapshot();
+          $phase = 'error';
+          const { sourceMap, stack } = e;
+          setTimeout(() => {
+            errorFrameRef.init(
+              sourceMap,
+              stack,
+              work.source,
+              (monacoRef as any).setRuntimeErrorMarker,
+            );
+          }, 0);
+          break;
+        }
+        case 'state': {
+          switch (e.method) {
+            case 'progress_start':
+              $progress.total = e.total;
+              break;
+            case 'progress_tick':
+              $progress.cur++;
+              break;
+            case 'monitor_init':
+              $monitorLines = Array.from({ length: e.allocSize }, () => '');
+              break;
+            case 'monitor_set':
+              $monitorLines[e.index] = e.str;
+              break;
+          }
+          break;
+        }
+      }
+    });
 
   onMount(async () => {
     init();
@@ -189,7 +199,8 @@
   $: executeDisable = $phase !== 'coding' || $hasError;
 
   $: runScript = async () => {
-    if ($phase !== 'coding' || $hasError) return;
+    if ($uiStore.dialog !== 'program' || $phase !== 'coding' || $hasError)
+      return;
 
     (document.activeElement as HTMLElement)?.blur();
     document.body.focus();
@@ -212,7 +223,7 @@
   };
 </script>
 
-<div class="frame">
+<div class="frame" class:hidden={!visible}>
   <DialogHeader title={'#' + work.name} />
   <Record surplus={30}>
     <div class="half" style:width={`${$phase === 'coding' ? 100 : 50}%`}>
@@ -369,6 +380,9 @@
     margin: 8px 0 0 8px;
     width: calc(100% - 16px);
     height: calc(100% - 16px);
+  }
+  .frame.hidden {
+    display: none;
   }
   .half {
     display: inline-block;

@@ -12,7 +12,9 @@ use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager, State};
 use uuid::Uuid;
 
-const MAX_BODY_BYTES: usize = 256 * 1024;
+const MAX_BODY_BYTES: usize = 4 * 1024 * 1024;
+const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+const WORK_PROPOSAL_TIMEOUT: Duration = Duration::from_secs(600);
 
 #[derive(Default)]
 pub struct McpState {
@@ -152,6 +154,7 @@ fn handle(
         return;
     };
     let request_id = Uuid::new_v4().to_string();
+    let is_work_proposal = request.method == "proposeWorkUpdate";
     let (sender, receiver) = mpsc::channel();
     if let Ok(mut requests) = pending.lock() {
         requests.insert(request_id.clone(), sender);
@@ -175,7 +178,13 @@ fn handle(
         );
         return;
     }
-    match receiver.recv_timeout(Duration::from_secs(30)) {
+    let timeout = if is_work_proposal {
+        WORK_PROPOSAL_TIMEOUT
+    } else {
+        DEFAULT_REQUEST_TIMEOUT
+    };
+    let _ = stream.set_read_timeout(Some(timeout));
+    match receiver.recv_timeout(timeout) {
         Ok(value) => response(
             &mut stream,
             "200 OK",
@@ -185,6 +194,10 @@ fn handle(
             if let Ok(mut requests) = pending.lock() {
                 requests.remove(&request_id);
             }
+            let _ = app.emit(
+                "trace-kernel://mcp/cancel",
+                json!({"id":request_id,"reason":"timeout_or_disconnect"}),
+            );
             response(
                 &mut stream,
                 "504 Gateway Timeout",
@@ -205,7 +218,23 @@ fn run(
     listener.set_nonblocking(true).ok();
     while !stop.load(Ordering::Relaxed) {
         match listener.accept() {
-            Ok((stream, _)) => handle(stream, &app, &session_id, &token, &pending),
+            Ok((stream, _)) => {
+                let thread_app = app.clone();
+                let thread_session = session_id.clone();
+                let thread_token = token.clone();
+                let thread_pending = Arc::clone(&pending);
+                let _ = thread::Builder::new()
+                    .name("trace-kernel-mcp-request".into())
+                    .spawn(move || {
+                        handle(
+                            stream,
+                            &thread_app,
+                            &thread_session,
+                            &thread_token,
+                            &thread_pending,
+                        )
+                    });
+            }
             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                 thread::sleep(Duration::from_millis(20))
             }
@@ -281,7 +310,7 @@ pub fn mcp_start_session(
 }
 
 #[tauri::command]
-pub fn mcp_stop_session(state: State<'_, McpState>) -> Result<(), String> {
+pub fn mcp_stop_session(app: AppHandle, state: State<'_, McpState>) -> Result<(), String> {
     let mut active = state
         .active
         .lock()
@@ -292,6 +321,22 @@ pub fn mcp_stop_session(state: State<'_, McpState>) -> Result<(), String> {
             let _ = thread.join();
         }
         let _ = std::fs::remove_file(session.descriptor_path);
+    }
+    let pending = state
+        .pending
+        .lock()
+        .map_err(|_| "MCP pending requests unavailable".to_string())?
+        .drain()
+        .collect::<Vec<_>>();
+    for (id, sender) in pending {
+        let _ = app.emit(
+            "trace-kernel://mcp/cancel",
+            serde_json::json!({"id":id,"reason":"session_stopped"}),
+        );
+        let _ = sender.send(BridgeResponse {
+            result: serde_json::json!({"status":"cancelled","message":"MCP session stopped; no changes were applied."}),
+            error: None,
+        });
     }
     Ok(())
 }

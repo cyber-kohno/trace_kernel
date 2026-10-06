@@ -86,7 +86,10 @@ namespace DclFileSystem {
       },
       readText: async (filePath: string, encoding?: 'utf8' | 'sjis') => {
         await RealFSWriter.assertTextReadSize(filePath, 'readText');
-        const req: TauriDto.FileRequest = { filePath, encoding: encoding ?? 'utf8' };
+        const req: TauriDto.FileRequest = {
+          filePath,
+          encoding: encoding ?? 'utf8',
+        };
         return WorkerInvoke.call<string>('read_file', { req });
       },
       tailText: async (
@@ -94,8 +97,11 @@ namespace DclFileSystem {
         lineCount: number,
         encoding?: 'utf8' | 'sjis',
       ) => {
+        RealFSWriter.assertAbsolutePath(filePath, 'filePath');
         if (!Number.isInteger(lineCount) || lineCount < 0) {
-          throw new Error('tailText() lineCount must be a non-negative integer.');
+          throw new Error(
+            'tailText() lineCount must be a non-negative integer.',
+          );
         }
 
         return WorkerInvoke.call<string>('read_tail_file', {

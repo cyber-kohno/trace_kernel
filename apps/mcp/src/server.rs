@@ -26,10 +26,45 @@ struct SessionRequest {
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "lowercase")]
+enum WorkMethod {
+    Plain,
+    Channel,
+}
+
+impl WorkMethod {
+    fn as_str(&self) -> &'static str {
+        match self {
+            Self::Plain => "plain",
+            Self::Channel => "channel",
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+struct WorkContextRequest {
+    session_id: String,
+    #[schemars(
+        description = "The Work output method to author: plain or channel. Defaults to plain."
+    )]
+    method: Option<WorkMethod>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct NamedRequest {
     session_id: String,
     name: String,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+struct ApiReferenceRequest {
+    #[schemars(
+        description = "API area or name: overview, context, output, runtime-state, parser, filesystem, or network. Individual API aliases such as excel, dom, channel, fs, and net are also accepted."
+    )]
+    topic: String,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -39,6 +74,26 @@ struct WorkRequest {
     name: String,
     method: Option<String>,
     source: String,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+struct WorkUpdateProposalRequest {
+    session_id: String,
+    #[schemars(
+        description = "Opaque editorId returned by get_ui_state when the target Work editor was read."
+    )]
+    editor_id: String,
+    #[schemars(description = "Exact Work name returned when its source was read.")]
+    name: String,
+    #[schemars(
+        description = "Exact source text returned by get_work at read time; app-side stale-source guard."
+    )]
+    baseline_source: String,
+    #[schemars(
+        description = "Complete proposed replacement source, validated but never executed by MCP."
+    )]
+    proposed_source: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -105,6 +160,15 @@ fn call_session(
     method: &str,
     params: serde_json::Value,
 ) -> Result<serde_json::Value, String> {
+    call_session_with_timeout(session_id, method, params, Duration::from_secs(35))
+}
+
+fn call_session_with_timeout(
+    session_id: &str,
+    method: &str,
+    params: serde_json::Value,
+    timeout: Duration,
+) -> Result<serde_json::Value, String> {
     let session = sessions()
         .into_iter()
         .find(|s| s.session_id == session_id)
@@ -115,7 +179,7 @@ fn call_session(
         .ok_or("Invalid session endpoint.")?;
     let mut stream = TcpStream::connect(endpoint).map_err(|e| e.to_string())?;
     stream
-        .set_read_timeout(Some(Duration::from_secs(35)))
+        .set_read_timeout(Some(timeout))
         .map_err(|e| e.to_string())?;
     let body = serde_json::to_vec(&serde_json::json!({"method": method, "params": params}))
         .map_err(|e| e.to_string())?;
@@ -175,6 +239,21 @@ impl TraceKernelMcpServer {
     }
 
     #[tool(
+        description = "Retrieve Trace Kernel API guidance on demand. Read the relevant topic before authoring a Work; then call get_work_context for the live declarations and current workspace-specific names. Topics: overview, context, output, runtime-state, parser, filesystem, network. Aliases include excel, dom, channel, fs, and net."
+    )]
+    async fn get_api_reference(
+        &self,
+        Parameters(request): Parameters<ApiReferenceRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        let Some(reference) = crate::resources::api_reference(&request.topic) else {
+            return Ok(CallToolResult::error(vec![ContentBlock::text(
+                "Unknown API topic. Use overview, context, output, runtime-state, parser, filesystem, or network.",
+            )]));
+        };
+        Ok(CallToolResult::success(vec![ContentBlock::text(reference)]))
+    }
+
+    #[tool(
         description = "List active Trace Kernel desktop sessions that are available for MCP control."
     )]
     async fn list_development_sessions(&self) -> Result<CallToolResult, McpError> {
@@ -205,7 +284,7 @@ impl TraceKernelMcpServer {
     }
 
     #[tool(
-        description = "Read the current UI state of a live Trace Kernel session. Returns outlineSelection and editor separately, with type, name, and zero-based index. editor is null when no source editor is open; an open editor includes open: true. Includes Work, Logic, and Declare editors. Returns no source or values. Use get_work to read the source of an identified Work. This reports what is open, not whether the user is typing."
+        description = "Read the current UI state of a live Trace Kernel session. Returns outlineSelection and editor separately, with type, name, and zero-based index. editor is null when no source editor is open; an open Work editor also includes an opaque editorId to bind a later propose_work_update to this exact editor instance. Includes Work, Logic, and Declare editors. Returns no source or values. Use get_work to read the source of an identified Work. This reports what is open, not whether the user is typing."
     )]
     async fn get_ui_state(
         &self,
@@ -258,7 +337,9 @@ impl TraceKernelMcpServer {
         ))
     }
 
-    #[tool(description = "List resources in the current Trace Kernel workspace.")]
+    #[tool(
+        description = "List resources in the current Trace Kernel workspace. Inspect resource metadata, then use get_resource_sample before writing a Work that depends on tabular data."
+    )]
     async fn list_resources(
         &self,
         Parameters(request): Parameters<SessionRequest>,
@@ -270,7 +351,9 @@ impl TraceKernelMcpServer {
         ))
     }
 
-    #[tool(description = "Read a small parsed sample and headers from a Resource.")]
+    #[tool(
+        description = "Read a small parsed sample and headers from a Resource. Use this to confirm actual columns and value shapes before writing a Work; see trace-kernel://knowledge/context for parser examples."
+    )]
     async fn get_resource_sample(
         &self,
         Parameters(request): Parameters<NamedRequest>,
@@ -319,20 +402,22 @@ impl TraceKernelMcpServer {
     }
 
     #[tool(
-        description = "Read the available Context Injection, API Injection, and declarations for creating a Work."
+        description = "Read the live context entries plus complete contextDeclarations and apiDeclarations for the requested Work method. Always call this before authoring or validating a Work and use those declarations as authoritative. Fetch focused examples with get_api_reference."
     )]
     async fn get_work_context(
         &self,
-        Parameters(request): Parameters<SessionRequest>,
+        Parameters(request): Parameters<WorkContextRequest>,
     ) -> Result<CallToolResult, McpError> {
         call_result(call_session(
             &request.session_id,
             "getWorkContext",
-            serde_json::json!({}),
+            serde_json::json!({"method":request.method.as_ref().map(WorkMethod::as_str).unwrap_or("plain")}),
         ))
     }
 
-    #[tool(description = "Validate a new Work without changing the project.")]
+    #[tool(
+        description = "Validate a new Work without changing the project. Checks TypeScript syntax and semantic types against the current workspace, Work method, and Trace Kernel API declarations; it does not execute the Work or prove runtime behavior. Call after reading get_work_context and checking relevant Resource samples; fix all reported errors before create_work."
+    )]
     async fn validate_work(
         &self,
         Parameters(request): Parameters<WorkRequest>,
@@ -345,7 +430,7 @@ impl TraceKernelMcpServer {
     }
 
     #[tool(
-        description = "Create one new AI-generated Work. This is the only Trace Kernel update operation and never changes existing entries."
+        description = "Create one new AI-generated Work. Re-runs TypeScript syntax and semantic type validation against the current workspace before saving; it does not execute the Work or prove runtime behavior. Call only after get_work_context and a successful validate_work. This creates a new entry and never changes existing entries. For a proposed update to an open Work, use propose_work_update; the app applies it only after explicit user approval."
     )]
     async fn create_work(
         &self,
@@ -356,6 +441,33 @@ impl TraceKernelMcpServer {
             "createWork",
             serde_json::json!({"work":{"name":request.name,"method":request.method.unwrap_or_else(|| "plain".into()),"source":request.source}}),
         ))
+    }
+
+    #[tool(
+        description = "Submit a complete replacement proposal for the Work whose editor was open when its source was read. Pass editorId from get_ui_state and the exact source from get_work as baselineSource. Trace Kernel rejects without showing UI if that editor is no longer open or its source changed. Otherwise the app shows a whole-source diff and waits for the user to apply all or reject. It validates the replacement but never executes it."
+    )]
+    async fn propose_work_update(
+        &self,
+        Parameters(request): Parameters<WorkUpdateProposalRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        let session_id = request.session_id;
+        let params = serde_json::json!({
+            "editorId": request.editor_id,
+            "name": request.name,
+            "baselineSource": request.baseline_source,
+            "proposedSource": request.proposed_source,
+        });
+        let result = tokio::task::spawn_blocking(move || {
+            call_session_with_timeout(
+                &session_id,
+                "proposeWorkUpdate",
+                params,
+                Duration::from_secs(600),
+            )
+        })
+        .await
+        .map_err(|error| McpError::internal_error(error.to_string(), None))?;
+        call_result(result)
     }
 }
 
@@ -393,7 +505,29 @@ impl ServerHandler for TraceKernelMcpServer {
             )
             .with_protocol_version(ProtocolVersion::V_2024_11_05)
             .with_instructions(
-                "Read trace-kernel://knowledge/core first, then context and api-and-validation. Use list_development_sessions to discover an open Trace Kernel project. Read live workspace declarations before creating a Work.",
+                "Read trace-kernel://knowledge/core first, then api-and-validation. Discover an open project with list_development_sessions. Before authoring a Work, inspect relevant Resources and samples, call get_api_reference for the needed API areas, then call get_work_context and follow its live declarations. Call validate_work before create_work; never replace an existing Work. To revise an open Work, read get_ui_state and get_work, retain editorId and exact baseline source, validate the full replacement, and submit propose_work_update; only the app user's approval applies it.",
             )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tool_router_exposes_api_discovery_and_method_specific_context() {
+        let router = TraceKernelMcpServer::tool_router();
+        assert!(router.has_route("get_api_reference"));
+        assert!(router.has_route("get_work_context"));
+        assert!(router.has_route("validate_work"));
+        assert!(router.has_route("propose_work_update"));
+    }
+
+    #[test]
+    fn server_advertises_knowledge_resources() {
+        let info = TraceKernelMcpServer::new().get_info();
+        assert!(info.capabilities.tools.is_some());
+        assert!(info.capabilities.resources.is_some());
+        assert_eq!(crate::resources::list().len(), 8);
     }
 }

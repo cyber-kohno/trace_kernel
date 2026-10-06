@@ -12,6 +12,7 @@
   import ApiInjectionFrame from './injection/api/ApiInjectionFrame.svelte';
   import { commitWorkspace, getTargetEntry } from '../maintenance-helpers';
   import ValidationService from '../../../service/validation-service';
+  import { openWorkEditor } from '../../../mcp/open-work-editor';
 
   $: workspace = WorkspaceState.getWorkspace($workspaceStore);
 
@@ -36,7 +37,7 @@
   };
 
   $: openProgram = () => {
-    $uiStore.dialog = 'program';
+    openWorkEditor();
   };
 </script>
 

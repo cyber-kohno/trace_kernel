@@ -12,7 +12,10 @@ async fn main() -> Result<()> {
         .with_writer(std::io::stderr)
         .with_ansi(false)
         .init();
+
+    tracing::info!("starting Trace Kernel MCP stdio server");
     let service = server::TraceKernelMcpServer::new().serve(stdio()).await?;
     service.waiting().await?;
+    tracing::info!("Trace Kernel MCP stdio server stopped");
     Ok(())
 }

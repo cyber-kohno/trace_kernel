@@ -18,6 +18,7 @@
   import updateDirty from './service/dirty/update-dirty';
   import WorkspaceRecoveryUtil from './util/data/workspace-recovery-util';
   import { handleMcpWorkspaceRequest } from './mcp/mcp-workspace-handler';
+  import { cancelWorkUpdateProposalByRequestId } from './mcp/work-update-proposal';
 
   let args: string[] | null = null;
   let isClosing = false;
@@ -108,7 +109,8 @@
         async (event) => {
           console.info('MCP request received', event.payload);
           try {
-            const result = handleMcpWorkspaceRequest({
+            const result = await handleMcpWorkspaceRequest({
+              id: event.payload.id,
               method: event.payload.method,
               params: event.payload.params as globalThis.Record<
                 string,
@@ -119,18 +121,32 @@
               response: { id: event.payload.id, result, error: null },
             });
           } catch (error) {
-            await invoke('mcp_respond', {
-              response: {
-                id: event.payload.id,
-                result: null,
-                error: {
-                  code: 'REQUEST_FAILED',
-                  message:
-                    error instanceof Error ? error.message : String(error),
+            try {
+              await invoke('mcp_respond', {
+                response: {
+                  id: event.payload.id,
+                  result: null,
+                  error: {
+                    code: 'REQUEST_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
                 },
-              },
-            });
+              });
+            } catch (responseError) {
+              console.info(
+                'MCP request completed after its client stopped waiting.',
+                responseError,
+              );
+            }
           }
+        },
+      );
+
+      await listen<{ id: string; reason?: string }>(
+        'trace-kernel://mcp/cancel',
+        (event) => {
+          cancelWorkUpdateProposalByRequestId(event.payload.id);
         },
       );
 

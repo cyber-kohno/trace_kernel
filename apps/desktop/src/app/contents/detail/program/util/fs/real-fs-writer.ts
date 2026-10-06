@@ -5,7 +5,7 @@ import WorkerInvoke from '../worker-invoke';
 export namespace RealFSWriter {
   const TEXT_READ_LIMIT_BYTES = 50 * 1024 * 1024;
 
-  const assertAbsolutePath = (path: string, label: string) => {
+  export const assertAbsolutePath = (path: string, label: string) => {
     if (!PathUtil.isAbsolute(path)) {
       throw new Error(`${label} must be absolute path.`);
     }
@@ -30,7 +30,10 @@ export namespace RealFSWriter {
     return stat;
   };
 
-  export const assertTextReadSize = async (filePath: string, apiName: string) => {
+  export const assertTextReadSize = async (
+    filePath: string,
+    apiName: string,
+  ) => {
     assertAbsolutePath(filePath, 'filePath');
     const fileStat = await stat(filePath);
 
