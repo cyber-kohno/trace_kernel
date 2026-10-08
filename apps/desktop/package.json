@@ -11,7 +11,7 @@
     "format:check": "npx prettier --check .",
     "check:mcp-api-coverage": "node scripts/check-mcp-api-coverage.mjs",
     "check:mcp-api-behavior": "node scripts/test-mcp-api-behavior.mjs",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && node ./scripts/check-mcp-api-coverage.mjs && node ./scripts/test-mcp-api-behavior.mjs",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && node ./scripts/check-mcp-api-coverage.mjs && node ./scripts/test-mcp-api-behavior.mjs && node ./scripts/test-mcp-context-consistency.mjs",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "workspace:fixture": "node ./scripts/export-workspace-fixture.mjs",
     "tauri": "tauri"

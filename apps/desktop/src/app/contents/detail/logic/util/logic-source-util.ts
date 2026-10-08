@@ -53,6 +53,8 @@ declare var Promise: PromiseConstructor;
   export type AnalyzeOptions = {
     injectionDefs?: string[];
     declareSource?: string;
+    logicSources?: { name: string; source: string }[];
+    currentLogicName?: string;
   };
 
   const FILE_NAME = 'logic.ts';
@@ -72,8 +74,9 @@ declare var Promise: PromiseConstructor;
     for (const statement of sourceFile.statements) {
       if (ts.isFunctionDeclaration(statement)) {
         const isDefault =
-          statement.modifiers?.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword) ??
-          false;
+          statement.modifiers?.some(
+            (m) => m.kind === ts.SyntaxKind.DefaultKeyword,
+          ) ?? false;
         if (isDefault) return statement;
       }
 
@@ -113,7 +116,9 @@ declare var Promise: PromiseConstructor;
     sourceFile.statements.forEach((statement) => {
       if (
         ts.isFunctionDeclaration(statement) &&
-        statement.modifiers?.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword)
+        statement.modifiers?.some(
+          (m) => m.kind === ts.SyntaxKind.DefaultKeyword,
+        )
       ) {
         defaultFunctions.push(statement);
         return;
@@ -184,14 +189,41 @@ declare var Promise: PromiseConstructor;
     source: string,
     options?: AnalyzeOptions,
   ): SignatureInfo | null => {
-    const sourceFile = createSourceFile(source);
+    const modules = [
+      { name: options?.currentLogicName ?? '', fileName: FILE_NAME, source },
+      ...(options?.logicSources ?? [])
+        .filter(
+          (logic) =>
+            logic.name !== options?.currentLogicName && logic.name !== '',
+        )
+        .map((logic, index) => ({
+          ...logic,
+          fileName: `__logic_peer_${index}__.ts`,
+        })),
+    ];
+    const moduleSource = (entry: (typeof modules)[number]) => {
+      if (options?.logicSources == null) return entry.source;
+      const peers = modules.filter(
+        (peer) => peer.fileName !== entry.fileName && peer.name !== '',
+      );
+      return `${entry.source}\ndeclare const $logic: {${peers
+        .map(
+          (peer) =>
+            `${JSON.stringify(peer.name)}: typeof import(${JSON.stringify(peer.fileName)}).default`,
+        )
+        .join(';')}};\n`;
+    };
+    const sourceFile = createSourceFile(moduleSource(modules[0]));
     const fn = getDefaultFunctionNode(sourceFile);
     if (fn == null) return null;
 
     const injectionSource = (options?.injectionDefs ?? []).join('\n');
     const declareSource = options?.declareSource ?? '';
     const ambientFiles = new Map<string, string>([
-      [FILE_NAME, source],
+      ...modules.map((entry): [string, string] => [
+        entry.fileName,
+        moduleSource(entry),
+      ]),
       ['__logic_basic_lib__.d.ts', BASIC_LIB_SOURCE],
       ['__logic_injection__.d.ts', injectionSource],
       ['__logic_declare__.d.ts', declareSource],
@@ -202,7 +234,7 @@ declare var Promise: PromiseConstructor;
       module: ts.ModuleKind.ESNext,
       strict: true,
       noLib: true,
-      noResolve: true,
+      noResolve: false,
     };
 
     const host: ts.CompilerHost = {
@@ -227,6 +259,12 @@ declare var Promise: PromiseConstructor;
       getCanonicalFileName: (fileName) => fileName,
       useCaseSensitiveFileNames: () => true,
       getNewLine: () => '\n',
+      resolveModuleNames: (names) =>
+        names.map((name) =>
+          ambientFiles.has(name)
+            ? { resolvedFileName: name, extension: ts.Extension.Ts }
+            : undefined,
+        ),
     };
 
     const program = ts.createProgram(
@@ -248,7 +286,7 @@ declare var Promise: PromiseConstructor;
     return {
       name:
         ts.isFunctionDeclaration(fn) || ts.isFunctionExpression(fn)
-          ? fn.name?.text ?? 'default'
+          ? (fn.name?.text ?? 'default')
           : 'default',
       args: fn.parameters.map((param) => {
         const name = param.name.getText(sourceFile);

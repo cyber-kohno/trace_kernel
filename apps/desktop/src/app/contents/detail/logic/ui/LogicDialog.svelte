@@ -12,7 +12,6 @@
   import { writable } from 'svelte/store';
   import LogicSourceUtil from '../util/logic-source-util';
   import DeclareUtil from '../../program/util/declare-util';
-  import LogicSignatureCache from '../util/logic-signature-cache';
 
   let isMonacoInitDone = writable(false);
   let hasError = writable(false);
@@ -39,14 +38,17 @@
     return `${typeDec} declare const $${r}: ${valueDec};`;
   });
   $: contextDefs = logicApiDefs.concat(
-    ContextDataUtil.createDeclareDef(logicContextData),
+    ContextDataUtil.createDeclareDef(
+      logicContextData,
+      workspace.declare.source,
+    ),
   );
   $: structureMarkers = LogicSourceUtil.validate(logic.source);
-  $: signature = LogicSignatureCache.get({
-    source: logic.source,
-    injectionDefs: contextDefs,
-    declareSource: workspace.declare.source,
-  });
+  $: signature = ContextDataUtil.getLogicSignature(
+    logic,
+    contextData,
+    workspace.declare.source,
+  );
   $: signatureLabel =
     signature == null
       ? ''

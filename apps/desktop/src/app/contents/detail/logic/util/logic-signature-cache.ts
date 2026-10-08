@@ -3,31 +3,20 @@ import LogicSourceUtil from './logic-source-util';
 namespace LogicSignatureCache {
   const cache = new Map<string, LogicSourceUtil.SignatureInfo | null>();
 
-  const createKey = (props: {
-    source: string;
-    injectionDefs?: string[];
-    declareSource?: string;
-  }) =>
-    [
+  type Props = LogicSourceUtil.AnalyzeOptions & { source: string };
+  const createKey = (props: Props) =>
+    JSON.stringify([
       props.source,
       props.declareSource ?? '',
-      ...(props.injectionDefs ?? []),
-    ].join('\u0001');
+      props.injectionDefs ?? [],
+      props.logicSources ?? [],
+      props.currentLogicName ?? '',
+    ]);
 
-  export const get = (props: {
-    source: string;
-    injectionDefs?: string[];
-    declareSource?: string;
-  }): LogicSourceUtil.SignatureInfo | null => {
+  export const get = (props: Props): LogicSourceUtil.SignatureInfo | null => {
     const key = createKey(props);
     if (!cache.has(key)) {
-      cache.set(
-        key,
-        LogicSourceUtil.getSignatureInfo(props.source, {
-          injectionDefs: props.injectionDefs,
-          declareSource: props.declareSource,
-        }),
-      );
+      cache.set(key, LogicSourceUtil.getSignatureInfo(props.source, props));
     }
     return cache.get(key) ?? null;
   };

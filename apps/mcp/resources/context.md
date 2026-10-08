@@ -8,7 +8,11 @@ Environment entries are injected as strings, for example `$env.OUTPUT_DIR`.
 
 ## `$resource`
 
-Without parsing, a resource is a `string`. With CSV or TSV parsing, it becomes an array of objects whose properties come from the header. CSV may infer numeric columns; TSV values are strings. Empty cells become `null` at runtime, so handle them even if an inferred declaration appears non-nullable. Use `get_resource_sample` before coding against it.
+Without parsing, a resource is a `string`. With CSV or TSV parsing, it becomes an array of objects whose properties come from the header. CSV may infer numeric columns; TSV values are strings. Empty cells become `null` at runtime, and declarations include `| null` for columns with empty cells anywhere in the input. Handle nullable values before calling string or numeric methods. Use `get_resource_sample` before coding against it.
+
+`get_resource_sample` uses the same client-side `DataUtil` parser as GUI parsing and Work Context Injection. For CSV/TSV it parses the complete input, then returns `headers`, up to 10 `rows` (arrays of values in header order), and `totalRows` (parsed record count, not physical line count). Values retain runtime types, including numbers and nulls. Parser errors are reported instead of returning a misleading sample. Even records beyond the sample affect type inference and validation.
+
+For a Resource without a parse method, the tool returns `parse: null`, empty `headers` and `rows`, `totalRows: null`, and a `sampleText` of up to 4096 characters with a `truncated` flag. It does not interpret plain text as CSV. Use `get_resource` to read the complete source.
 
 ```ts
 const text: string = $resource.rawLog;
@@ -25,7 +29,7 @@ Each process is an asynchronous function with workspace-defined arguments and re
 
 ## `$logic`
 
-Logic functions have signatures inferred from their source. The exact declaration is returned by `get_work_context`. Call a logic function by its injected `$logic` name and use its declared argument and return types; do not assume it has side effects or a particular return shape without reading its source or description.
+Logic functions have signatures inferred from their source, the current user Declare source, and available context and other Logic definitions. The GUI and MCP use the same inference and availability rules; non-Pro or disabled Logic entries are not listed or declared. Each Logic can refer to other usable Logic entries, but its own name is excluded from its injected `$logic`. The exact declaration is returned by `get_work_context`. Call a logic function by its injected `$logic` name and use its declared argument and return types; do not assume it has side effects or a particular return shape without reading its source or description.
 
 ## `$parser`
 

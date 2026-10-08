@@ -3,6 +3,7 @@ import ValidationState from '../state/model/validation-state';
 import WorkspaceState from '../state/model/workspace/workspace-state';
 import { validationStore, workspaceStore } from '../state/store';
 import ValidateUtil from '../util/data/validate-util';
+import { validateWorkName } from '../util/data/work-name-validation';
 
 namespace ValidationService {
   const setEnable = (target: ValidationState.Target, enable: boolean) => {
@@ -109,15 +110,12 @@ namespace ValidationService {
       }
       case 'process': {
         const process = workspace.processes[target.index];
-        const isEnableScriptArgDefs = !process.scriptArgs.find(
-          (arg, index) => {
-            const isDuplicate = process.scriptArgs.find(
-              (item, itemIndex) =>
-                itemIndex !== index && item.name === arg.name,
-            );
-            return arg.name === '' || isDuplicate;
-          },
-        );
+        const isEnableScriptArgDefs = !process.scriptArgs.find((arg, index) => {
+          const isDuplicate = process.scriptArgs.find(
+            (item, itemIndex) => itemIndex !== index && item.name === arg.name,
+          );
+          return arg.name === '' || isDuplicate;
+        });
         const isEnableCommandArgValues = !process.cmdArgs.some(
           (arg) => arg === '',
         );
@@ -139,9 +137,13 @@ namespace ValidationService {
         break;
       }
       case 'work': {
-        const work = workspace.works[target.index];
-        const isUnique = checkDuplicate(target, workspace);
-        setEnable(target, work.name !== '' && isUnique);
+        const names = workspace.works.map((work) => work.name);
+        workspace.works.forEach((work, index) => {
+          setEnable(
+            { cat: 'work', index },
+            validateWorkName(work.name, names, index).length === 0,
+          );
+        });
         break;
       }
     }

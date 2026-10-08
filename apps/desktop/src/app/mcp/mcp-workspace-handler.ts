@@ -8,6 +8,8 @@ import { validationStore } from '../state/store';
 import TypescriptUtil from '../util/typescript-util';
 import type ValidationState from '../state/model/validation-state';
 import { validateWorkTypes } from './semantic-work-validator';
+import ResourceSample from './resource-sample';
+import { validateWorkName } from '../util/data/work-name-validation';
 import {
   clearWorkUpdateProposal,
   openWorkUpdateProposal,
@@ -53,19 +55,10 @@ const staticValidateWork = (
   work: WorkState.Props,
   workspace: WorkspaceState.Props,
 ) => {
-  const errors: { code: string; message: string }[] = [];
-  if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(work.name)) {
-    errors.push({
-      code: 'INVALID_NAME',
-      message: 'Work name must be a valid TypeScript identifier.',
-    });
-  }
-  if (workspace.works.some((item) => item.name === work.name)) {
-    errors.push({
-      code: 'DUPLICATE_NAME',
-      message: `Work '${work.name}' already exists.`,
-    });
-  }
+  const errors = validateWorkName(
+    work.name,
+    workspace.works.map((item) => item.name),
+  );
   if (work.source.trim() === '')
     errors.push({
       code: 'EMPTY_SOURCE',
@@ -165,17 +158,7 @@ export const handleMcpWorkspaceRequest = async (request: Request) => {
         (item) => item.varName === name,
       );
       if (!resource) throw new Error(`Resource '${name}' was not found.`);
-      const lines = resource.source
-        .split(/\r?\n/)
-        .filter((line) => line.trim() !== '');
-      const delimiter = resource.parse === 'tsv' ? '\t' : ',';
-      return {
-        varName: resource.varName,
-        parse: resource.parse ?? null,
-        headers: lines[0]?.split(delimiter) ?? [],
-        rows: lines.slice(1, 11).map((line) => line.split(delimiter)),
-        totalRows: Math.max(0, lines.length - 1),
-      };
+      return ResourceSample.create(resource);
     }
     case 'listWorks':
       return json(

@@ -19,6 +19,8 @@ Call `validate_work` before `create_work`. Validation checks the Work name, dupl
 
 ## Safe sequence
 
+GUI and MCP share Work name rules: a name must be non-empty and unique; spaces and Japanese labels are allowed. They also share compiler settings and restricted-global checks. References to unsupported globals such as `fetch` and `console` produce static errors; use the injected APIs. Comments, strings, ordinary property names, and local variables with the same names are not treated as global references.
+
 1. Discover a live session.
 2. Read the workspace overview and resources.
 3. Read the relevant resource samples.

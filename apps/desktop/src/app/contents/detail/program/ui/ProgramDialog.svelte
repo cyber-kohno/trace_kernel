@@ -71,7 +71,10 @@
   })();
 
   $: usableUtils = DeclareUtil.getUsableReserveList({ method: work.method });
-  $: contextDefs = ContextDataUtil.createDeclareDef(contextData);
+  $: contextDefs = ContextDataUtil.createDeclareDef(
+    contextData,
+    workspace.declare.source,
+  );
   $: activeChannel = $channels[$activeChannelIdx];
 
   const setRecoverySnapshot = async () => {

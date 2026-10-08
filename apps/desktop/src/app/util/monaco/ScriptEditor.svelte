@@ -5,7 +5,10 @@
   import { get, writable } from 'svelte/store';
   import { appStore } from '../../state/store';
   import MonacoFactory from './monaco-factory';
-  import { restrictedGlobals } from './restricted-globals';
+  import {
+    getRestrictedGlobalDiagnostics,
+    wrapWorkSource,
+  } from '../typescript/script-analysis';
 
   let editorDiv: HTMLDivElement | null = null;
   let editor: Monaco.editor.IStandaloneCodeEditor;
@@ -79,48 +82,15 @@
   };
 
   const getRestrictedGlobalMarkers = (code: string) => {
-    if (!monaco) return [];
-
-    return monaco.editor
-      .tokenize(code, LANGUAGE)
-      .flatMap((lineTokens: any[], lineIndex: number) => {
-        const lineNumber = lineIndex + 1;
-        const lineText = userModel.getLineContent(lineNumber);
-
-        return lineTokens.flatMap((token: any, tokenIndex: number) => {
-          const startColumn = token.offset + 1;
-          const endColumn =
-            tokenIndex + 1 < lineTokens.length
-              ? lineTokens[tokenIndex + 1].offset + 1
-              : lineText.length + 1;
-          const tokenText = lineText
-            .slice(startColumn - 1, endColumn - 1)
-            .trim();
-          const prevChar = lineText[startColumn - 2] ?? '';
-
-          const restricted = restrictedGlobals.find(
-            (entry) => entry.name === tokenText,
-          );
-          if (!restricted) return [];
-
-          const isIdentifierToken =
-            typeof token.type === 'string' && token.type.includes('identifier');
-          if (!isIdentifierToken) return [];
-
-          if (prevChar === '.') return [];
-
-          return [
-            {
-              severity: monaco.MarkerSeverity.Error,
-              message: restricted.message,
-              startLineNumber: lineNumber,
-              startColumn,
-              endLineNumber: lineNumber,
-              endColumn,
-            },
-          ];
-        });
-      });
+    return getRestrictedGlobalDiagnostics(code).map((diagnostic) => ({
+      severity: monaco.MarkerSeverity.Error,
+      message: diagnostic.message,
+      startLineNumber: diagnostic.line,
+      startColumn: diagnostic.column,
+      endLineNumber: diagnostic.endLine,
+      endColumn: diagnostic.endColumn,
+      tags: [],
+    }));
   };
 
   export const setRuntimeErrorMarker = (
@@ -259,10 +229,8 @@
     const userUri = monaco.Uri.parse(`inmemory://user-${uid}.ts`);
     const analysisUri = monaco.Uri.parse(`inmemory://analysis-${uid}.ts`);
 
-    const makeWrapped = (code: string) =>
-      `async function __run() {\n${code}\n}`;
     const toAnalysisCode = (code: string) =>
-      analysisMode === 'wrapped' ? makeWrapped(code) : code;
+      analysisMode === 'wrapped' ? wrapWorkSource(code) : code;
 
     typescript.typescriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: true,

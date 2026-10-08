@@ -105,7 +105,10 @@ namespace ContextDataUtil {
               const absolutePath = fixedRootPath + t;
               const relativePath = t;
               const content = async () => {
-                const req: TauriDto.FileRequest = { filePath: absolutePath, encoding };
+                const req: TauriDto.FileRequest = {
+                  filePath: absolutePath,
+                  encoding,
+                };
                 const text = await WorkerInvoke.call<string>('read_file', {
                   req,
                 });
@@ -299,7 +302,7 @@ return module.exports.default ?? exports.default;
     return mappedItems;
   };
 
-  export const createDeclareDef = (data: Props) => {
+  export const createDeclareDef = (data: Props, declareSource = '') => {
     const { envs: envVars, resources, datasets, processes, logics } = data;
     const items: {
       name: string;
@@ -314,7 +317,7 @@ return module.exports.default ?? exports.default;
       items.push({
         name: '$env',
         defs: envVars.map((env) => {
-          const declareDef = `${env.varName}: string`;
+          const declareDef = `${JSON.stringify(env.varName)}: string`;
           return { name: env.varName, declareDef };
         }),
       });
@@ -329,9 +332,9 @@ return module.exports.default ?? exports.default;
           let type: string = 'string';
           if (r.parse != undefined) {
             const defs = DataUtil.convertTableToColDefs(source, r.parse);
-            type = `{\n${defs.map((def) => `  "${def.name}": ${def.type}`)};\n}[]`;
+            type = `{\n${defs.map((def) => `  ${JSON.stringify(def.name)}: ${def.type}${def.nullable ? ' | null' : ''}`).join(';\n')};\n}[]`;
           }
-          const declareDef = `${varName}: ${type}`;
+          const declareDef = `${JSON.stringify(varName)}: ${type}`;
           return { name: varName, declareDef };
         }),
       });
@@ -350,7 +353,7 @@ return module.exports.default ?? exports.default;
           ];
           return {
             name,
-            declareDef: `${name}: {${types.join('; ')}}[]`,
+            declareDef: `${JSON.stringify(name)}: {${types.join('; ')}}[]`,
           };
         }),
       });
@@ -364,22 +367,18 @@ return module.exports.default ?? exports.default;
           const args = proc.scriptArgs.map((a) => `${a.name}: ${a.type}`);
           return {
             name,
-            declareDef: `${name}: (${args}) => Promise<{stdout: string; stderr: string; exitCode: number;}>`,
+            declareDef: `${JSON.stringify(name)}: (${args}) => Promise<{stdout: string; stderr: string; exitCode: number;}>`,
           };
         }),
       });
     }
     if (logics.length > 0) {
-      const ambientDefs = createLogicSignatureAmbientDefs(items);
       items.push({
         name: '$logic',
         defs: logics.map((logic) => {
-          const signature = LogicSignatureCache.get({
-            source: logic.source,
-            injectionDefs: ambientDefs,
-          });
+          const signature = getLogicSignature(logic, data, declareSource);
           const name = `${logic.name}`;
-          const declareDef = `${name}: ${LogicSignatureCache.formatFunctionType(
+          const declareDef = `${JSON.stringify(name)}: ${LogicSignatureCache.formatFunctionType(
             signature,
           )}`;
           return {
@@ -397,25 +396,22 @@ return module.exports.default ?? exports.default;
     );
   };
 
-  export const createLogicSignatureAmbientDefs = (
-    items: {
-      name: string;
-      defs: {
-        name: string;
-        declareDef: string;
-      }[];
-    }[],
+  export const getLogicSignature = (
+    logic: LogicState.Props,
+    data: Props,
+    declareSource = '',
   ) => {
     const parserDeclare = DeclareUtil.createUtilDeclareDef('parser');
-    return [
-      `${parserDeclare.typeDec} declare const $parser: ${parserDeclare.valueDec};`,
-      ...items.map(
-        (item) =>
-          `declare const ${item.name}: {${item.defs
-            .map((d) => d.declareDef)
-            .join(',')}}`,
-      ),
-    ];
+    return LogicSignatureCache.get({
+      source: logic.source,
+      injectionDefs: [
+        `${parserDeclare.typeDec} declare const $parser: ${parserDeclare.valueDec};`,
+        ...createDeclareDef({ ...data, logics: [] }, declareSource),
+      ],
+      declareSource,
+      logicSources: data.logics,
+      currentLogicName: logic.name,
+    });
   };
 }
 export default ContextDataUtil;

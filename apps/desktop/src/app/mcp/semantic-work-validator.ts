@@ -1,5 +1,10 @@
 import * as ts from 'typescript';
 import type WorkState from '../state/model/workspace/work-state';
+import {
+  getRestrictedGlobalDiagnostics,
+  getScriptCompilerOptions,
+  wrapWorkSource,
+} from '../util/typescript/script-analysis';
 
 type WorkDeclarations = {
   contextDeclarations: string[];
@@ -48,19 +53,9 @@ export const validateWorkTypes = async (
   files.set(contextPath, declarations.contextDeclarations.join('\n'));
   files.set(apiPath, declarations.apiDeclarations.join('\n'));
   files.set(declarePath, declarations.declare);
-  files.set(workPath, `async function __run() {\n${work.source}\n}\n`);
+  files.set(workPath, wrapWorkSource(work.source));
 
-  const options: ts.CompilerOptions = {
-    target: ts.ScriptTarget.ES2020,
-    module: ts.ModuleKind.ESNext,
-    strict: false,
-    noImplicitAny: true,
-    strictNullChecks: true,
-    noUnusedLocals: true,
-    noUnusedParameters: true,
-    noResolve: false,
-    skipLibCheck: true,
-  };
+  const options = getScriptCompilerOptions();
   const host: ts.CompilerHost = {
     getSourceFile: (fileName, languageVersion) => {
       const source = files.get(fileName);
@@ -91,7 +86,7 @@ export const validateWorkTypes = async (
     host,
   );
   const source = program.getSourceFile(workPath);
-  return ts
+  const diagnostics = ts
     .getPreEmitDiagnostics(program, source)
     .filter((diagnostic) => !diagnostic.reportsUnnecessary)
     .map((diagnostic) => {
@@ -110,4 +105,5 @@ export const validateWorkTypes = async (
         column: position == null ? 0 : position.character + 1,
       };
     });
+  return [...diagnostics, ...getRestrictedGlobalDiagnostics(work.source)];
 };

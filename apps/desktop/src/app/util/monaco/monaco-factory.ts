@@ -1,17 +1,13 @@
 import loader from '@monaco-editor/loader';
+import { getScriptCompilerOptions } from '../typescript/script-analysis';
 
 namespace MonacoFactory {
   export const configureTypeScriptDefaults = (monaco: any) => {
     const defaults = monaco.languages.typescript.typescriptDefaults;
     defaults.setCompilerOptions({
       ...defaults.getCompilerOptions(),
-      target: monaco.languages.typescript.ScriptTarget.ES2020,
-      module: monaco.languages.typescript.ModuleKind.ESNext,
+      ...getScriptCompilerOptions(),
       lib: ['es2020', 'webworker'],
-      noImplicitAny: true,
-      strictNullChecks: true,
-      noUnusedLocals: true,
-      noUnusedParameters: true,
     });
     defaults.setEagerModelSync(true);
   };

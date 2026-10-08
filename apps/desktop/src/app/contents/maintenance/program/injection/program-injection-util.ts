@@ -36,49 +36,25 @@ namespace ProgramInjectionUtil {
     ];
   };
 
-  const getLogicApiDeclareDefs = () =>
-    ['parser' as const].map((r) => {
-      const { typeDec, valueDec } = DeclareUtil.createUtilDeclareDef(r);
-      return `${typeDec} declare const $${r}: ${valueDec};`;
-    });
-
   export const getLogicDisplayItem = (
     logic: WorkspaceState.Props['logics'][number],
     workspace: WorkspaceState.Props,
     disables: ValidationState.Target[],
   ) => {
-    const injectionDefs = getLogicSignatureInjectionDefs(workspace, disables);
-    const signature = LogicSignatureCache.get({
-      source: logic.source,
-      injectionDefs,
-      declareSource: workspace.declare.source,
-    });
-    return `${logic.name}: ${LogicSignatureCache.formatFunctionType(signature)}`;
-  };
-
-  const getLogicSignatureInjectionDefs = (
-    workspace: WorkspaceState.Props,
-    disables: ValidationState.Target[],
-  ) => {
-    const contexts = ContextDataUtil.getUsableData(workspace, disables);
-    return getLogicApiDeclareDefs().concat(
-      ContextDataUtil.createDeclareDef({
-        ...contexts,
-        logics: [],
-      }),
+    const signature = ContextDataUtil.getLogicSignature(
+      logic,
+      ContextDataUtil.getUsableData(workspace, disables),
+      workspace.declare.source,
     );
+    return `${logic.name}: ${LogicSignatureCache.formatFunctionType(signature)}`;
   };
 
   export const getWorkContextItems = (
     workspace: WorkspaceState.Props,
     disables: ValidationState.Target[],
   ): ContextItem[] => {
-    const isDisable = (cat: ValidationState.Category, index: number) =>
-      disables.find((item) => item.cat === cat && item.index === index) !=
-      undefined;
-
-    const logicItems = workspace.logics
-      .filter((logic, index) => !isDisable('logic', index) && logic.name !== '')
+    const logicItems = ContextDataUtil.getUsableData(workspace, disables)
+      .logics.filter((logic) => logic.name !== '')
       .map((logic) => ({
         prefix: '$logic' as const,
         item: getLogicDisplayItem(logic, workspace, disables),
@@ -93,6 +69,7 @@ namespace ProgramInjectionUtil {
   ): string[] =>
     ContextDataUtil.createDeclareDef(
       ContextDataUtil.getUsableData(workspace, disables),
+      workspace.declare.source,
     );
 
   export const getLogicContextItems = (
@@ -102,13 +79,8 @@ namespace ProgramInjectionUtil {
       excludeName?: string;
     },
   ): ContextItem[] => {
-    const isDisable = (cat: ValidationState.Category, index: number) =>
-      disables.find((item) => item.cat === cat && item.index === index) !=
-      undefined;
-
-    const logicItems = workspace.logics
-      .filter((logic, index) => {
-        if (isDisable('logic', index)) return false;
+    const logicItems = ContextDataUtil.getUsableData(workspace, disables)
+      .logics.filter((logic) => {
         if (options?.excludeName && logic.name === options.excludeName) {
           return false;
         }

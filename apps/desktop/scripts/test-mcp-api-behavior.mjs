@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
+import Encoding from 'encoding-japanese';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const appDir = path.resolve(scriptDir, '..');
@@ -77,6 +78,7 @@ const loadNamespace = (filePath, namespaceName, requireMock = () => {}) => {
       OpenText: 'execute',
       CopyFile: 'byPath',
       DeleteDir: 'execute',
+      DataUtil: 'convertTableToJson',
     }[namespaceName] ?? 'create';
   assert.equal(
     typeof api?.[requiredExport],
@@ -85,6 +87,107 @@ const loadNamespace = (filePath, namespaceName, requireMock = () => {}) => {
   );
   return api;
 };
+
+// Regression: MCP samples use the GUI/Work parser, including quoted CSV cells.
+const dataUtil = loadMockedNamespace(
+  path.join(appDir, 'src', 'app', 'util', 'data', 'data-util.ts'),
+  'DataUtil',
+  { 'encoding-japanese': Encoding },
+);
+const resourceSample = loadMockedNamespace(
+  path.join(appDir, 'src', 'app', 'mcp', 'resource-sample.ts'),
+  'ResourceSample',
+  { 'data-util': dataUtil },
+);
+const sampleCases = [
+  {
+    source: 'id,note\n1,"hello, world"',
+    headers: ['id', 'note'],
+    rows: [[1, 'hello, world']],
+  },
+  {
+    source: 'id,note\r\n1,"hello\nworld"',
+    headers: ['id', 'note'],
+    rows: [[1, 'hello\nworld']],
+  },
+  {
+    source: '"item,name",quantity\nApple,2',
+    headers: ['item,name', 'quantity'],
+    rows: [['Apple', 2]],
+  },
+  {
+    source: 'id,note\n1,\n2,ready',
+    headers: ['id', 'note'],
+    rows: [
+      [1, null],
+      [2, 'ready'],
+    ],
+  },
+  {
+    source: 'id\tnote\n1\t\n2\tready',
+    parse: 'tsv',
+    headers: ['id', 'note'],
+    rows: [
+      ['1', null],
+      ['2', 'ready'],
+    ],
+  },
+  { source: 'id,note', headers: ['id', 'note'], rows: [] },
+  { source: '', headers: [], rows: [] },
+];
+for (const test of sampleCases) {
+  const sample = resourceSample.create({
+    varName: 'example',
+    parse: test.parse ?? 'csv',
+    source: test.source,
+  });
+  assert.deepEqual(sample.headers, test.headers);
+  assert.deepEqual(sample.rows, test.rows);
+  assert.equal(sample.totalRows, test.rows.length);
+}
+const manyRows =
+  'value\n' +
+  [...Array.from({ length: 10 }, (_, index) => String(index)), 'text'].join(
+    '\n',
+  );
+const limitedSample = resourceSample.create({
+  varName: 'example',
+  parse: 'csv',
+  source: manyRows,
+});
+assert.equal(limitedSample.rows.length, 10);
+assert.equal(limitedSample.totalRows, 11);
+assert.equal(
+  limitedSample.rows[0][0],
+  '0',
+  'Type inference must include records beyond the sample',
+);
+assert.throws(
+  () =>
+    resourceSample.create({
+      varName: 'example',
+      parse: 'csv',
+      source: manyRows + '\nextra,column',
+    }),
+  /Column mismatch/,
+  'Invalid records beyond the sample must use the actual parser error',
+);
+const textSample = resourceSample.create({
+  varName: 'example',
+  source: 'plain,text\nsecond line',
+});
+assert.equal(textSample.parse, null);
+assert.equal(textSample.totalRows, null);
+assert.deepEqual(textSample.headers, []);
+assert.deepEqual(textSample.rows, []);
+assert.equal(textSample.sampleText, 'plain,text\nsecond line');
+assert.equal(textSample.truncated, false);
+const longTextSample = resourceSample.create({
+  varName: 'example',
+  source: 'a'.repeat(4097),
+});
+assert.equal(longTextSample.sampleText.length, 4096);
+assert.equal(longTextSample.truncated, true);
 
 const tableInspector = loadNamespace(
   sourcePath('inspector', 'table-inspector.ts'),

@@ -7,6 +7,7 @@ namespace DataUtil {
   export type ColumnDef = {
     name: string;
     type: 'string' | 'number';
+    nullable: boolean;
   };
 
   /**
@@ -212,8 +213,11 @@ namespace DataUtil {
     parseMethod: ResourceState.ParseMethod,
   ): ColumnDef[] => {
     return header.map((name, colIdx) => {
+      const nullable = dataRows.some(
+        (row) => parseRow(row, parseMethod)[colIdx] === '',
+      );
       if (parseMethod === 'tsv' || dataRows.length === 0) {
-        return { name, type: 'string' };
+        return { name, type: 'string', nullable };
       }
 
       let isNumber = true;
@@ -245,7 +249,7 @@ namespace DataUtil {
         }
       }
 
-      return { name, type: isNumber ? 'number' : 'string' };
+      return { name, type: isNumber ? 'number' : 'string', nullable };
     });
   };
 

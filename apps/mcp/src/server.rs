@@ -352,7 +352,7 @@ impl TraceKernelMcpServer {
     }
 
     #[tool(
-        description = "Read a small parsed sample and headers from a Resource. Use this to confirm actual columns and value shapes before writing a Work; see trace-kernel://knowledge/context for parser examples."
+        description = "Read a Resource sample using the desktop's actual parser. CSV/TSV returns headers, up to 10 rows in header order with runtime value types, and totalRows after parsing the complete input. Resources without a parse method return sampleText (up to 4096 characters), truncated, and totalRows: null. Use this to confirm actual columns and value shapes before writing a Work; see trace-kernel://knowledge/context."
     )]
     async fn get_resource_sample(
         &self,
