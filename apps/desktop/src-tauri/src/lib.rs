@@ -5,12 +5,11 @@ mod file_system_commands;
 mod mcp;
 mod parser;
 mod process;
+mod resource_limits;
 mod runtime;
 mod scan;
 mod scan_commands;
 mod stream;
-use std::collections::HashMap;
-use std::sync::Mutex;
 use tauri::WindowEvent;
 use tauri::{DragDropEvent, Emitter};
 
@@ -46,10 +45,11 @@ use crate::parser::dom::dom_parse_html;
 use crate::parser::dom::dom_query;
 use crate::parser::dom::dom_query_from_node;
 use crate::parser::dom::dom_root;
-use crate::parser::excel::excel_parse_file;
+use crate::parser::excel_commands::excel_parse_file;
 use crate::runtime::clear_recovery_snapshot;
 use crate::runtime::get_recovery_snapshot;
 use crate::runtime::set_recovery_snapshot;
+use crate::runtime::shutdown_native_io;
 use crate::runtime::worker_dispose;
 use crate::runtime::worker_init;
 use crate::runtime::worker_stop;
@@ -73,10 +73,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
-        .manage(AppState {
-            executions: Mutex::new(HashMap::new()),
-            recovery_snapshot: Mutex::new(None),
-        })
+        .manage(AppState::default())
         .manage(mcp::McpState::default())
         .on_window_event(|window, event| {
             if let WindowEvent::DragDrop(drag_event) = event {
@@ -115,6 +112,7 @@ pub fn run() {
             worker_init,
             worker_dispose,
             worker_stop,
+            shutdown_native_io,
             set_recovery_snapshot,
             get_recovery_snapshot,
             clear_recovery_snapshot,

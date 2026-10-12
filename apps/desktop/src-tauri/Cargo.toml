@@ -41,3 +41,5 @@ tauri-plugin-process = "2.3.1"
 roxmltree = "0.20"
 scraper = "0.20"
 ego-tree = "0.6"
+# Inspect archive expansion before handing workbook bytes to calamine.
+zip = { version = "0.6.6", default-features = false }

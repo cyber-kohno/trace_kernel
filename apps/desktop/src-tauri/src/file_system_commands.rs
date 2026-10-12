@@ -9,8 +9,8 @@ where
     T: Send + 'static,
     F: FnOnce() -> Result<T, String> + Send + 'static,
 {
-    let operation = execution_id.map(|id| state.register_io(&id)).transpose()?;
-    blocking_io::run(operation, task).await
+    let operation = state.register_native_io(execution_id.as_deref())?;
+    blocking_io::run(Some(operation), task).await
 }
 
 #[tauri::command]
@@ -165,6 +165,7 @@ mod tests {
         AppState {
             executions: Mutex::new(HashMap::new()),
             recovery_snapshot: Mutex::new(None),
+            ..AppState::default()
         }
     }
 
@@ -220,5 +221,81 @@ mod tests {
         .await;
         assert!(result.unwrap_err().contains("stopped"));
         assert_eq!(run(&state, None, || Ok(7)).await.unwrap(), 7);
+    }
+
+    #[tokio::test]
+    async fn saturated_execution_rejects_before_file_effects_without_blocking_editor_io() {
+        use crate::execution_io::ExecutionIo;
+        use crate::parser::dom::DomStore;
+        use crate::runtime::ExecutionContext;
+        use crate::stream::channel::ChannelStore;
+        let state = state();
+        let io = ExecutionIo::new();
+        state.executions.lock().unwrap().insert(
+            "work".into(),
+            ExecutionContext {
+                dom_store: DomStore::new(),
+                channel_store: ChannelStore::new(),
+                io: io.clone(),
+            },
+        );
+        let mut held = (0..crate::resource_limits::NATIVE_IO_MAX_OPERATIONS)
+            .map(|_| io.register().unwrap())
+            .collect::<Vec<_>>();
+        let error = run::<(), _>(&state, Some("work".into()), || {
+            panic!("overload must not execute file task")
+        })
+        .await
+        .unwrap_err();
+        assert!(error.contains("concurrency limit exceeded (32)"), "{error}");
+        assert_eq!(run(&state, None, || Ok(7)).await.unwrap(), 7);
+        drop(held.pop());
+        assert_eq!(
+            run(&state, Some("work".into()), || Ok(42)).await.unwrap(),
+            42
+        );
+        drop(held);
+        io.stop().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn shutdown_waits_for_dropped_editor_file_caller_and_rejects_new_file_effects() {
+        let state = Arc::new(state());
+        let mut observer = state.register_native_io(None).unwrap();
+        let (started, ready) = tokio::sync::oneshot::channel();
+        let (release, gate) = std::sync::mpsc::channel();
+        let caller = tokio::spawn({
+            let state = state.clone();
+            async move {
+                run(&state, None, move || {
+                    started.send(()).unwrap();
+                    gate.recv_timeout(std::time::Duration::from_secs(5))
+                        .unwrap();
+                    Ok(42)
+                })
+                .await
+            }
+        });
+        ready.await.unwrap();
+        caller.abort();
+        assert!(caller.await.unwrap_err().is_cancelled());
+        let shutdown = tokio::spawn({
+            let state = state.clone();
+            async move { state.shutdown_native_io().await }
+        });
+        observer.cancelled().await;
+        drop(observer);
+        let error = run::<(), _>(&state, None, || panic!("must reject before file effects"))
+            .await
+            .unwrap_err();
+        assert!(error.contains("shutting down"));
+        let early = shutdown.is_finished();
+        release.send(()).unwrap();
+        tokio::time::timeout(std::time::Duration::from_secs(5), shutdown)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+        assert!(!early);
     }
 }

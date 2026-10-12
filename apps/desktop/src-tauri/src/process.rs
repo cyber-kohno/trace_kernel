@@ -1,8 +1,10 @@
 use crate::execution_io::Operation;
 use crate::file_system::Encoding;
+use crate::resource_limits::{BufferError, LimitedBuffer, PROCESS_OUTPUT_MAX_BYTES};
 use crate::runtime::AppState;
 use std::path::Path;
 use std::process::Stdio;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt};
 use tokio::process::Command;
 use tokio::time::{sleep_until, Duration, Instant};
@@ -35,18 +37,69 @@ fn is_binary(bytes: &[u8]) -> bool {
             > bytes.len() / 10
 }
 
-async fn read_output(mut reader: impl AsyncRead + Unpin, name: &str) -> Result<Vec<u8>, String> {
-    let mut bytes = Vec::new();
-    reader
-        .read_to_end(&mut bytes)
-        .await
-        .map_err(|e| format!("Failed to read {name}: {e}"))?;
-    Ok(bytes)
+struct OutputBudget {
+    used: AtomicUsize,
+    limit: usize,
+}
+
+impl OutputBudget {
+    fn new(limit: usize) -> Self {
+        Self {
+            used: AtomicUsize::new(0),
+            limit,
+        }
+    }
+
+    fn claim(&self, count: usize) -> Result<(), String> {
+        self.used
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |used| {
+                (count <= self.limit - used).then(|| used + count)
+            })
+            .map(|_| ())
+            .map_err(|_| {
+                format!(
+                    "Process output exceeded combined stdout/stderr limit ({} bytes)",
+                    self.limit
+                )
+            })
+    }
+}
+
+async fn read_output(
+    mut reader: impl AsyncRead + Unpin,
+    name: &str,
+    budget: &OutputBudget,
+) -> Result<Vec<u8>, String> {
+    let mut bytes = LimitedBuffer::new(budget.limit);
+    let mut chunk = [0; 8192];
+    loop {
+        let len = reader
+            .read(&mut chunk)
+            .await
+            .map_err(|e| format!("Failed to read {name}: {e}"))?;
+        if len == 0 {
+            break;
+        }
+        budget.claim(len)?;
+        bytes.extend(&chunk[..len]).map_err(|error| match error {
+            BufferError::LimitExceeded => format!("Process {name} exceeded output limit"),
+            BufferError::AllocationFailed => format!("Failed to allocate process {name} output"),
+        })?;
+    }
+    Ok(bytes.into_bytes())
 }
 
 async fn run_owned(
     req: RunProcessRequest,
+    operation: Operation,
+) -> Result<RunProcessResult, String> {
+    run_owned_with_output_limit(req, operation, PROCESS_OUTPUT_MAX_BYTES).await
+}
+
+async fn run_owned_with_output_limit(
+    req: RunProcessRequest,
     mut operation: Operation,
+    output_limit: usize,
 ) -> Result<RunProcessResult, String> {
     if operation.is_cancelled() {
         return Err("Process cancelled".into());
@@ -93,6 +146,7 @@ async fn run_owned(
             .into_owned()
     });
 
+    let budget = OutputBudget::new(output_limit);
     let result = {
         // Drain both outputs while writing input: a full pipe must not deadlock the parent.
         let capture = async {
@@ -117,8 +171,8 @@ async fn run_owned(
             };
             let (_, stdout, stderr, status) = tokio::try_join!(
                 write,
-                read_output(stdout, "stdout"),
-                read_output(stderr, "stderr"),
+                read_output(stdout, "stdout", &budget),
+                read_output(stderr, "stderr", &budget),
                 wait
             )?;
             Ok(RunProcessResult {
@@ -136,11 +190,11 @@ async fn run_owned(
     };
 
     // Keep Child ownership after cancelling capture so termination is awaited, not just requested.
-    if result.is_err() {
+    if let Err(run_error) = &result {
         if let Err(error) = child.kill().await {
             let message = format!("Failed to terminate process: {error}");
             operation.cleanup_failed(message.clone());
-            return Err(format!("{}; {message}", result.unwrap_err()));
+            return Err(format!("{run_error}; {message}"));
         }
     }
     let output = result?;
@@ -156,7 +210,15 @@ pub async fn run_process(
     execution_id: String,
     req: RunProcessRequest,
 ) -> Result<RunProcessResult, String> {
-    let operation = state.register_io(&execution_id)?;
+    run(&state, &execution_id, req).await
+}
+
+async fn run(
+    state: &AppState,
+    execution_id: &str,
+    req: RunProcessRequest,
+) -> Result<RunProcessResult, String> {
+    let operation = state.register_io(execution_id)?;
     run_owned(req, operation).await
 }
 
@@ -291,6 +353,125 @@ mod tests {
         std::io::stdout().write_all(&[0]).unwrap();
     }
 
+    #[test]
+    #[ignore = "subprocess fixture"]
+    fn child_large_output() {
+        if !is_fixture() {
+            return;
+        }
+        let mode = std::fs::read_to_string("output-mode.txt").unwrap();
+        std::fs::write("ready.txt", std::process::id().to_string()).unwrap();
+        let size = std::fs::read_to_string("output-size.txt")
+            .ok()
+            .map(|size| size.parse::<usize>().unwrap())
+            .unwrap_or(96 * 1024);
+        let chunk = vec![b'x'; size];
+        if mode != "stderr" {
+            let _ = std::io::stdout().write_all(&chunk);
+        }
+        if mode != "stdout" {
+            let _ = std::io::stderr().write_all(&chunk);
+        }
+        // Remain alive even after a closed pipe: the owner must kill and wait.
+        std::thread::sleep(Duration::from_secs(30));
+        std::fs::write("late.txt", "output overflow was not terminated").unwrap();
+    }
+
+    #[tokio::test]
+    async fn exact_combined_output_limit_accepts_both_streams_without_changing_bytes() {
+        let budget = OutputBudget::new(6);
+        let (stdout, stderr) = tokio::try_join!(
+            read_output(&b"abc"[..], "stdout", &budget),
+            read_output(&b"def"[..], "stderr", &budget),
+        )
+        .unwrap();
+        assert_eq!(stdout, b"abc");
+        assert_eq!(stderr, b"def");
+    }
+
+    #[tokio::test]
+    async fn individually_small_streams_cannot_bypass_the_combined_output_limit() {
+        let budget = OutputBudget::new(5);
+        let result = tokio::try_join!(
+            read_output(&b"abc"[..], "stdout", &budget),
+            read_output(&b"def"[..], "stderr", &budget),
+        );
+        assert!(result
+            .unwrap_err()
+            .contains("combined stdout/stderr limit (5 bytes)"));
+    }
+
+    #[test]
+    fn output_budget_arithmetic_does_not_wrap_at_usize_max() {
+        let budget = OutputBudget::new(usize::MAX);
+        budget.claim(usize::MAX).unwrap();
+        assert!(budget.claim(1).is_err());
+        assert_eq!(budget.used.load(Ordering::Relaxed), usize::MAX);
+    }
+
+    #[tokio::test]
+    async fn output_overflow_terminates_the_real_child_and_releases_ownership() {
+        for mode in ["stdout", "stderr", "both"] {
+            let fixture = Fixture::new();
+            std::fs::write(fixture.0.join("output-mode.txt"), mode).unwrap();
+            let io = ExecutionIo::new();
+            // For 'both', each 96 KiB stream fits on its own but their sum does not.
+            let limit = if mode == "both" {
+                128 * 1024
+            } else {
+                64 * 1024
+            };
+            let result = tokio::time::timeout(
+                Duration::from_secs(5),
+                run_owned_with_output_limit(
+                    fixture.request("child_large_output", None, 10_000),
+                    io.register().unwrap(),
+                    limit,
+                ),
+            )
+            .await
+            .expect("output overflow must terminate without waiting for the child's deadline");
+            let error = result.unwrap_err();
+            assert!(
+                error.contains("combined stdout/stderr limit"),
+                "{mode}: {error}"
+            );
+            assert!(!error.contains("Failed to terminate"), "{error}");
+            assert!(fixture.0.join("ready.txt").exists());
+            assert!(!fixture.0.join("late.txt").exists());
+            tokio::time::timeout(Duration::from_secs(3), io.stop())
+                .await
+                .unwrap()
+                .unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn production_process_entry_enforces_the_default_output_limit() {
+        let fixture = Fixture::new();
+        std::fs::write(fixture.0.join("output-mode.txt"), "stdout").unwrap();
+        std::fs::write(
+            fixture.0.join("output-size.txt"),
+            (PROCESS_OUTPUT_MAX_BYTES + 8192).to_string(),
+        )
+        .unwrap();
+        let io = ExecutionIo::new();
+        let result = tokio::time::timeout(
+            Duration::from_secs(5),
+            run_owned(
+                fixture.request("child_large_output", None, 10_000),
+                io.register().unwrap(),
+            ),
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            result.unwrap_err(),
+            format!("Process output exceeded combined stdout/stderr limit ({PROCESS_OUTPUT_MAX_BYTES} bytes)")
+        );
+        io.stop().await.unwrap();
+    }
+
     #[tokio::test]
     async fn preserves_stdin_stdout_stderr_and_nonzero_exit() {
         let fixture = Fixture::new();
@@ -340,8 +521,16 @@ mod tests {
         let io = ExecutionIo::new();
         let request = fixture.request("child_sleep", None, 10_000);
         let operation = io.register().unwrap();
+        let held = (1..crate::resource_limits::NATIVE_IO_MAX_OPERATIONS)
+            .map(|_| io.register().unwrap())
+            .collect::<Vec<_>>();
         let task = tokio::spawn(run_owned(request, operation));
         fixture.ready().await;
+        assert!(matches!(
+            io.register(),
+            Err(crate::execution_io::RegisterError::ConcurrencyLimitExceeded { .. })
+        ));
+        drop(held);
         tokio::time::timeout(Duration::from_secs(3), io.stop())
             .await
             .unwrap()
@@ -349,6 +538,43 @@ mod tests {
         assert_eq!(task.await.unwrap().unwrap_err(), "Process cancelled");
         assert!(!fixture.0.join("late.txt").exists());
         assert!(io.register().is_err());
+    }
+
+    #[tokio::test]
+    async fn saturated_process_admission_does_not_spawn_and_reuses_a_released_slot() {
+        use crate::parser::dom::DomStore;
+        use crate::runtime::ExecutionContext;
+        use crate::stream::channel::ChannelStore;
+        let fixture = Fixture::new();
+        let io = ExecutionIo::new();
+        let state = AppState {
+            executions: std::sync::Mutex::new(std::collections::HashMap::from([(
+                "work".into(),
+                ExecutionContext {
+                    dom_store: DomStore::new(),
+                    channel_store: ChannelStore::new(),
+                    io: io.clone(),
+                },
+            )])),
+            recovery_snapshot: std::sync::Mutex::new(None),
+            ..AppState::default()
+        };
+        let mut held = (0..crate::resource_limits::NATIVE_IO_MAX_OPERATIONS)
+            .map(|_| io.register().unwrap())
+            .collect::<Vec<_>>();
+        let error = run(&state, "work", fixture.request("child_sleep", None, 5_000))
+            .await
+            .unwrap_err();
+        assert!(error.contains("concurrency limit exceeded (32)"), "{error}");
+        assert!(!fixture.0.join("ready.txt").exists());
+        drop(held.pop());
+        let result = run(&state, "work", fixture.request("child_echo", None, 5_000))
+            .await
+            .unwrap();
+        assert_eq!(result.exit_code, 7);
+        assert!(String::from_utf8_lossy(&result.stdout).contains("INPUT_LENGTH:0"));
+        drop(held);
+        io.stop().await.unwrap();
     }
 
     #[tokio::test]

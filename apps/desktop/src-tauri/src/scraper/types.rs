@@ -38,6 +38,8 @@ pub enum LoadError {
     Cancelled,
     Timeout,
     ExecutionUnavailable,
+    ConcurrencyLimitExceeded,
+    ApplicationShuttingDown,
     InvalidTimeout,
     InvalidUrl,
     InvalidMethod,
@@ -45,5 +47,17 @@ pub enum LoadError {
     TooManyRequests,
     NetworkError,
     ResponseTooLarge,
+    ResourceExhausted,
     NotHtml,
+}
+
+impl From<crate::execution_io::RegisterError> for LoadError {
+    fn from(error: crate::execution_io::RegisterError) -> Self {
+        use crate::execution_io::RegisterError;
+        match error {
+            RegisterError::ApplicationShuttingDown => Self::ApplicationShuttingDown,
+            RegisterError::ConcurrencyLimitExceeded { .. } => Self::ConcurrencyLimitExceeded,
+            RegisterError::ExecutionNotFound | RegisterError::Stopped => Self::ExecutionUnavailable,
+        }
+    }
 }

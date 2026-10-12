@@ -4,6 +4,7 @@ namespace NativeIoPolicy {
     'load_http',
     'load_html_from_url',
     'scan_directory',
+    'excel_parse_file',
     'exists_path',
     'glob_path',
     'read_binary',

@@ -1,12 +1,15 @@
 import { invoke } from '@tauri-apps/api/core';
 import WorkerSession from '../runtime/worker-session';
 import type WorkerProtocol from '../runtime/worker-protocol';
+import { applicationWorkers } from '../../../../service/lifecycle/worker-lifecycle';
 
 namespace WorkerAdapter {
   export type WorkerEvent = WorkerProtocol.Event;
 
-  export const use = (onEvent: (event: WorkerEvent) => void | Promise<void>) =>
-    WorkerSession.create({
+  export const use = (
+    onEvent: (event: WorkerEvent) => void | Promise<void>,
+  ) => {
+    const session = WorkerSession.create({
       createWorker: () => {
         const worker = new Worker(
           new URL('../runtime/worker.ts', import.meta.url),
@@ -39,5 +42,24 @@ namespace WorkerAdapter {
       onObserverError: (error) =>
         console.error('Worker event handler failed', error),
     });
+    const dispose = () => {
+      const result = session.dispose();
+      void result.then(unregister, () => {}); // Keep a failed cleanup registered.
+      return result;
+    };
+    const unregister = applicationWorkers.register(dispose);
+    return {
+      ...session,
+      init() {
+        applicationWorkers.assertOpen();
+        session.init();
+      },
+      start(props: Parameters<typeof session.start>[0]) {
+        applicationWorkers.assertOpen();
+        session.start(props);
+      },
+      dispose,
+    };
+  };
 }
 export default WorkerAdapter;

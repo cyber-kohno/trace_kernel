@@ -1,7 +1,55 @@
+use crate::resource_limits::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
+
+#[derive(Clone, Copy)]
+struct ScanLimits {
+    entries: usize,
+    depth: u32,
+    name_bytes: usize,
+}
+
+impl Default for ScanLimits {
+    fn default() -> Self {
+        Self {
+            entries: SCAN_MAX_ENTRIES,
+            depth: SCAN_MAX_DEPTH,
+            name_bytes: SCAN_NAME_MAX_BYTES,
+        }
+    }
+}
+
+struct ScanBudget {
+    limits: ScanLimits,
+    entries: usize,
+    name_bytes: usize,
+    directories: u32,
+}
+
+impl ScanBudget {
+    fn entry(&mut self) -> Result<(), String> {
+        if self.entries == self.limits.entries {
+            return Err(format!(
+                "Scan entry limit exceeded ({})",
+                self.limits.entries
+            ));
+        }
+        self.entries += 1;
+        Ok(())
+    }
+    fn name(&mut self, name: &str) -> Result<(), String> {
+        if name.len() > self.limits.name_bytes - self.name_bytes {
+            return Err(format!(
+                "Scan name byte limit exceeded ({})",
+                self.limits.name_bytes
+            ));
+        }
+        self.name_bytes += name.len();
+        Ok(())
+    }
+}
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -69,6 +117,11 @@ struct Conditions {
 
 impl CompiledCond {
     fn new(base: &BaseCond, depth: Option<u32>) -> Result<Self, String> {
+        if base.pattern.len() > SCAN_PATTERN_MAX_BYTES {
+            return Err(format!(
+                "Scan pattern byte limit exceeded ({SCAN_PATTERN_MAX_BYTES})"
+            ));
+        }
         let pattern = base
             .pattern
             .split('*')
@@ -94,10 +147,24 @@ fn name_for(path: &Path) -> Result<String, String> {
 
 pub fn scan_directory(
     req: ScanRequest,
-    mut report: impl FnMut(&Progress),
+    report: impl FnMut(&Progress),
     check: &dyn Fn() -> Result<(), String>,
 ) -> Result<ScanResponse, String> {
+    scan_directory_with_limits(req, report, check, ScanLimits::default())
+}
+
+fn scan_directory_with_limits(
+    req: ScanRequest,
+    mut report: impl FnMut(&Progress),
+    check: &dyn Fn() -> Result<(), String>,
+    limits: ScanLimits,
+) -> Result<ScanResponse, String> {
     check()?;
+    if req.dir_conds.len().saturating_add(req.file_conds.len()) > SCAN_MAX_CONDITIONS {
+        return Err(format!(
+            "Scan condition limit exceeded ({SCAN_MAX_CONDITIONS})"
+        ));
+    }
     let conditions = Conditions {
         dirs: req
             .dir_conds
@@ -126,11 +193,18 @@ pub fn scan_directory(
             root.display()
         ));
     }
-    let mut counter = 0;
+    let mut budget = ScanBudget {
+        limits,
+        entries: 0,
+        name_bytes: 0,
+        directories: 0,
+    };
+    budget.entry()?; // Count the root once, even when excluded.
+    budget.name(&name_for(root)?)?;
     let node = search_file_rec(
         root,
         0,
-        &mut counter,
+        &mut budget,
         req.limit_depth,
         &conditions,
         &mut report,
@@ -150,14 +224,21 @@ pub fn scan_directory(
 fn search_file_rec(
     dir: &Path,
     depth: u32,
-    counter: &mut u32,
+    budget: &mut ScanBudget,
     limit_depth: Option<u32>,
     conditions: &Conditions,
     report: &mut impl FnMut(&Progress),
     check: &dyn Fn() -> Result<(), String>,
 ) -> Result<Option<Node>, String> {
     check()?;
-    *counter = counter
+    if depth > budget.limits.depth {
+        return Err(format!(
+            "Scan directory depth limit exceeded ({})",
+            budget.limits.depth
+        ));
+    }
+    budget.directories = budget
+        .directories
         .checked_add(1)
         .ok_or("Scan directory counter overflow")?;
     let name = name_for(dir)?;
@@ -180,7 +261,7 @@ fn search_file_rec(
         path: dir.to_string_lossy().into_owned(),
         name: name.clone(),
         depth,
-        counter: *counter,
+        counter: budget.directories,
     });
     check()?;
     let entries =
@@ -189,7 +270,9 @@ fn search_file_rec(
     for entry in entries {
         check()?;
         let entry = entry.map_err(|e| format!("Unable to enumerate {}: {e}", dir.display()))?;
+        budget.entry()?; // Excluded entries, skipped links and depth-limited dirs count too.
         let path = entry.path();
+        budget.name(&name_for(&path)?)?;
         let metadata = fs::symlink_metadata(&path)
             .map_err(|e| format!("Unable to inspect {}: {e}", path.display()))?;
         let file_type = metadata.file_type();
@@ -210,7 +293,7 @@ fn search_file_rec(
             if let Some(child) = search_file_rec(
                 &path,
                 next_depth,
-                counter,
+                budget,
                 limit_depth,
                 conditions,
                 report,
@@ -600,5 +683,168 @@ mod tests {
         assert!(scan_directory(f.req(None), |_| {}, &|| Ok(()))
             .unwrap_err()
             .contains("Unable to inspect link"));
+    }
+
+    #[test]
+    fn exact_entry_budget_includes_root_and_rejects_excluded_entries_too() {
+        let mut f = Fixture::new();
+        f.file("one.txt");
+        f.file("two.txt");
+        let exact = ScanLimits {
+            entries: 3,
+            ..ScanLimits::default()
+        };
+        assert_eq!(
+            targets(&scan_directory_with_limits(f.req(None), |_| {}, &|| Ok(()), exact).unwrap()),
+            ["one.txt", "two.txt"]
+        );
+        for exclude in [false, true] {
+            let mut req = f.req(None);
+            if exclude {
+                req.file_conds.push(FileCond {
+                    base: base("*", true),
+                });
+            }
+            let error = scan_directory_with_limits(
+                req,
+                |_| {},
+                &|| Ok(()),
+                ScanLimits {
+                    entries: 2,
+                    ..exact
+                },
+            )
+            .unwrap_err();
+            assert!(error.contains("Scan entry limit"), "{error}");
+        }
+    }
+
+    #[test]
+    fn excluded_directories_and_depth_skipped_entries_still_count() {
+        let mut f = Fixture::new();
+        f.dir("a");
+        f.dir("b");
+        for depth in [None, Some(0)] {
+            let mut req = f.req(depth);
+            req.dir_conds.push(DirCond {
+                base: base("*", true),
+                depth: Some(1),
+            });
+            let error = scan_directory_with_limits(
+                req,
+                |_| {},
+                &|| Ok(()),
+                ScanLimits {
+                    entries: 2,
+                    ..ScanLimits::default()
+                },
+            )
+            .unwrap_err();
+            assert!(error.contains("Scan entry limit"), "{error}");
+        }
+    }
+
+    #[test]
+    fn hard_directory_depth_rejects_instead_of_silently_truncating_the_tree() {
+        let mut f = Fixture::new();
+        f.dir("child");
+        f.dir("child/deeper");
+        f.file("child/keep.txt");
+        let limits = ScanLimits {
+            depth: 1,
+            ..ScanLimits::default()
+        };
+        let error =
+            scan_directory_with_limits(f.req(None), |_| {}, &|| Ok(()), limits).unwrap_err();
+        assert!(error.contains("directory depth limit"), "{error}");
+        // A user-requested semantic depth limit may skip deeper directories normally.
+        assert_eq!(
+            targets(
+                &scan_directory_with_limits(f.req(Some(1)), |_| {}, &|| Ok(()), limits).unwrap()
+            ),
+            ["child/keep.txt"]
+        );
+    }
+
+    #[test]
+    fn production_scan_entry_enforces_default_directory_depth() {
+        let mut f = Fixture::new();
+        let mut relative = String::new();
+        for index in 0..=SCAN_MAX_DEPTH {
+            if index > 0 {
+                relative.push('/');
+            }
+            relative.push('d');
+            f.dir(&relative);
+        }
+        let error = scan_directory(f.req(None), |_| {}, &|| Ok(())).unwrap_err();
+        assert!(
+            error.contains("Scan directory depth limit exceeded (64)"),
+            "{error}"
+        );
+        assert!(scan_directory(f.req(Some(64)), |_| {}, &|| Ok(())).is_ok());
+    }
+
+    #[test]
+    fn exact_name_byte_budget_counts_root_and_every_enumerated_name() {
+        let mut f = Fixture::new();
+        f.file("one.txt");
+        let bytes = name_for(&f.root).unwrap().len() + "one.txt".len();
+        let limits = ScanLimits {
+            name_bytes: bytes,
+            ..ScanLimits::default()
+        };
+        assert!(scan_directory_with_limits(f.req(None), |_| {}, &|| Ok(()), limits).is_ok());
+        let mut req = f.req(None);
+        req.file_conds.push(FileCond {
+            base: base("*", true),
+        });
+        let error = scan_directory_with_limits(
+            req,
+            |_| {},
+            &|| Ok(()),
+            ScanLimits {
+                name_bytes: bytes - 1,
+                ..limits
+            },
+        )
+        .unwrap_err();
+        assert!(error.contains("name byte limit"), "{error}");
+    }
+
+    #[test]
+    fn condition_and_utf8_pattern_limits_are_checked_before_root_io() {
+        let f = Fixture::new();
+        let mut req = f.req(None);
+        req.file_conds = (0..SCAN_MAX_CONDITIONS)
+            .map(|_| FileCond {
+                base: base("*", false),
+            })
+            .collect();
+        assert!(scan_directory(req, |_| {}, &|| Ok(())).is_ok());
+        let mut req = f.req(None);
+        req.root_path = "missing-path".into();
+        req.file_conds = (0..SCAN_MAX_CONDITIONS)
+            .map(|_| FileCond {
+                base: base("*", false),
+            })
+            .collect();
+        req.dir_conds.push(DirCond {
+            base: base("*", false),
+            depth: None,
+        });
+        assert!(
+            scan_directory(req, |_| panic!("must not start scan"), &|| Ok(()))
+                .unwrap_err()
+                .contains("condition limit")
+        );
+        assert!(CompiledCond::new(&base(&"*".repeat(SCAN_PATTERN_MAX_BYTES), false), None).is_ok());
+        assert!(CompiledCond::new(
+            &base(&"あ".repeat(SCAN_PATTERN_MAX_BYTES / 3 + 1), false),
+            None
+        )
+        .err()
+        .unwrap()
+        .contains("pattern byte limit"));
     }
 }

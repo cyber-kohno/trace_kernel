@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use crate::execution_io::Operation;
+use crate::resource_limits::{BufferError, LimitedBuffer, HTTP_BODY_MAX_BYTES};
 use crate::runtime::AppState;
 use chrono::Utc;
 use once_cell::sync::Lazy;
@@ -48,6 +49,18 @@ fn network_error(error: reqwest::Error) -> LoadError {
     }
 }
 
+async fn read_body(mut response: reqwest::Response) -> Result<Vec<u8>, LoadError> {
+    let mut buffer = LimitedBuffer::new(HTTP_BODY_MAX_BYTES);
+    // Count actual chunks; Content-Length can be absent or describe a HEAD body.
+    while let Some(chunk) = response.chunk().await.map_err(network_error)? {
+        buffer.extend(&chunk).map_err(|error| match error {
+            BufferError::LimitExceeded => LoadError::ResponseTooLarge,
+            BufferError::AllocationFailed => LoadError::ResourceExhausted,
+        })?;
+    }
+    Ok(buffer.into_bytes())
+}
+
 async fn fetch_html(client: &Client, parsed: Url) -> Result<HtmlSource, LoadError> {
     let resp = client
         .get(parsed.as_str())
@@ -65,10 +78,7 @@ async fn fetch_html(client: &Client, parsed: Url) -> Result<HtmlSource, LoadErro
         return Err(LoadError::NotHtml);
     }
 
-    let bytes = resp.bytes().await.map_err(network_error)?;
-    if bytes.len() > 2 * 1024 * 1024 {
-        return Err(LoadError::ResponseTooLarge);
-    }
+    let bytes = read_body(resp).await?;
 
     let html = String::from_utf8_lossy(&bytes).to_string();
 
@@ -137,10 +147,7 @@ async fn fetch_http(
         })
         .collect();
 
-    let bytes = resp.bytes().await.map_err(network_error)?;
-    if bytes.len() > 2 * 1024 * 1024 {
-        return Err(LoadError::ResponseTooLarge);
-    }
+    let bytes = read_body(resp).await?;
 
     Ok(HttpResponse {
         url: parsed.to_string(),
@@ -178,9 +185,15 @@ pub async fn load_html_from_url(
     execution_id: String,
     url: String,
 ) -> Result<HtmlSource, LoadError> {
-    let operation = state
-        .register_io(&execution_id)
-        .map_err(|_| LoadError::ExecutionUnavailable)?;
+    run_html(&state, &execution_id, url).await
+}
+
+async fn run_html(
+    state: &AppState,
+    execution_id: &str,
+    url: String,
+) -> Result<HtmlSource, LoadError> {
+    let operation = state.register_io(execution_id).map_err(LoadError::from)?;
     let parsed = validate_http_url(&url)?;
     run_owned(operation, 8_000, async {
         wait_for_domain(&parsed).await?;
@@ -195,9 +208,15 @@ pub async fn load_http(
     execution_id: String,
     req: HttpRequest,
 ) -> Result<HttpResponse, LoadError> {
-    let operation = state
-        .register_io(&execution_id)
-        .map_err(|_| LoadError::ExecutionUnavailable)?;
+    run_http(&state, &execution_id, req).await
+}
+
+async fn run_http(
+    state: &AppState,
+    execution_id: &str,
+    req: HttpRequest,
+) -> Result<HttpResponse, LoadError> {
+    let operation = state.register_io(execution_id).map_err(LoadError::from)?;
     let parsed = request_url(&req)?;
     let timeout_ms = req.timeout_ms.unwrap_or(8_000);
     run_owned(operation, timeout_ms, async {
@@ -276,8 +295,123 @@ mod tests {
         }
     }
 
+    #[tokio::test]
+    async fn saturated_http_and_html_admission_does_not_contact_a_server() {
+        use crate::parser::dom::DomStore;
+        use crate::runtime::ExecutionContext;
+        use crate::stream::channel::ChannelStore;
+        let io = ExecutionIo::new();
+        let state = AppState {
+            executions: std::sync::Mutex::new(std::collections::HashMap::from([(
+                "work".into(),
+                ExecutionContext {
+                    dom_store: DomStore::new(),
+                    channel_store: ChannelStore::new(),
+                    io: io.clone(),
+                },
+            )])),
+            recovery_snapshot: std::sync::Mutex::new(None),
+            ..AppState::default()
+        };
+        let mut held = (0..crate::resource_limits::NATIVE_IO_MAX_OPERATIONS)
+            .map(|_| io.register().unwrap())
+            .collect::<Vec<_>>();
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        assert!(matches!(
+            run_http(&state, "work", request(url.clone())).await,
+            Err(LoadError::ConcurrencyLimitExceeded)
+        ));
+        assert!(matches!(
+            run_html(&state, "work", url).await,
+            Err(LoadError::ConcurrencyLimitExceeded)
+        ));
+        assert_eq!(
+            listener.accept().err().unwrap().kind(),
+            std::io::ErrorKind::WouldBlock
+        );
+        assert!(matches!(
+            run_http(&state, "unknown", request("bad url".into())).await,
+            Err(LoadError::ExecutionUnavailable)
+        ));
+        drop(held.pop());
+        // Admission succeeds again; URL validation now runs and releases the temporary slot.
+        assert!(matches!(
+            run_http(&state, "work", request("bad url".into())).await,
+            Err(LoadError::InvalidUrl)
+        ));
+        assert!(matches!(
+            run_html(&state, "work", "bad url".into()).await,
+            Err(LoadError::InvalidUrl)
+        ));
+        drop(held);
+        io.stop().await.unwrap();
+        assert!(matches!(
+            run_html(&state, "work", "bad url".into()).await,
+            Err(LoadError::ExecutionUnavailable)
+        ));
+    }
+
+    #[test]
+    fn admission_limit_is_distinct_from_domain_rate_limit_and_execution_unavailability() {
+        use crate::execution_io::RegisterError;
+        assert_eq!(
+            serde_json::to_value(LoadError::from(RegisterError::ConcurrencyLimitExceeded {
+                limit: 32
+            }))
+            .unwrap(),
+            "ConcurrencyLimitExceeded"
+        );
+        assert_eq!(
+            serde_json::to_value(LoadError::TooManyRequests).unwrap(),
+            "TooManyRequests"
+        );
+        for error in [RegisterError::Stopped, RegisterError::ExecutionNotFound] {
+            assert_eq!(
+                serde_json::to_value(LoadError::from(error)).unwrap(),
+                "ExecutionUnavailable"
+            );
+        }
+        assert_eq!(
+            serde_json::to_value(LoadError::from(RegisterError::ApplicationShuttingDown)).unwrap(),
+            "ApplicationShuttingDown"
+        );
+    }
+
+    #[tokio::test]
+    async fn application_shutdown_rejects_http_and_html_before_url_or_network_work() {
+        let state = AppState::default();
+        state.shutdown_native_io().await.unwrap();
+        assert!(matches!(
+            run_http(&state, "late", request("invalid".into())).await,
+            Err(LoadError::ApplicationShuttingDown)
+        ));
+        assert!(matches!(
+            run_html(&state, "late", "invalid".into()).await,
+            Err(LoadError::ApplicationShuttingDown)
+        ));
+    }
+
     fn server(
         body: Option<&'static str>,
+    ) -> (
+        String,
+        tokio::sync::oneshot::Receiver<()>,
+        std::sync::mpsc::Sender<()>,
+        std::thread::JoinHandle<()>,
+    ) {
+        let len = body.map(str::len).unwrap_or(2);
+        let headers = format!("HTTP/1.1 201 Created\r\nContent-Type: application/json\r\nContent-Length: {len}\r\nConnection: close\r\n\r\n");
+        let chunks = body
+            .map(|body| vec![body.as_bytes().to_vec()])
+            .unwrap_or_default();
+        server_with_response(headers, chunks)
+    }
+
+    fn server_with_response(
+        headers: String,
+        chunks: Vec<Vec<u8>>,
     ) -> (
         String,
         tokio::sync::oneshot::Receiver<()>,
@@ -309,6 +443,9 @@ mod tests {
             stream
                 .set_read_timeout(Some(Duration::from_secs(3)))
                 .unwrap();
+            stream
+                .set_write_timeout(Some(Duration::from_secs(3)))
+                .unwrap();
             let mut buffer = [0; 8192];
             let mut request = Vec::new();
             loop {
@@ -320,15 +457,153 @@ mod tests {
                 }
                 assert!(request.len() < 8192, "HTTP fixture headers too large");
             }
-            let len = body.map(str::len).unwrap_or(2);
-            write!(stream, "HTTP/1.1 201 Created\r\nContent-Type: application/json\r\nContent-Length: {len}\r\nConnection: close\r\n\r\n").unwrap();
-            if let Some(body) = body {
-                stream.write_all(body.as_bytes()).unwrap();
+            stream.write_all(headers.as_bytes()).unwrap();
+            for chunk in chunks {
+                if stream.write_all(&chunk).is_err() {
+                    // An early byte-limit failure can close the socket mid-response.
+                    break;
+                }
             }
             let _ = ready_tx.send(());
             let _ = release_rx.recv_timeout(Duration::from_secs(3));
         });
         (url, ready_rx, release_tx, thread)
+    }
+
+    async fn fetch_body_for_test(
+        io: &ExecutionIo,
+        url: String,
+        html: bool,
+    ) -> Result<String, LoadError> {
+        let client = Client::builder().no_proxy().build().unwrap();
+        let req = request(url);
+        let parsed = request_url(&req).unwrap();
+        run_owned(io.register().unwrap(), 2_000, async {
+            if html {
+                fetch_html(&client, parsed)
+                    .await
+                    .map(|response| response.html)
+            } else {
+                fetch_http(&client, req, parsed)
+                    .await
+                    .map(|response| response.body)
+            }
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn exact_http_body_limit_is_accepted_for_html_and_generic_http() {
+        for html in [false, true] {
+            let content_type = if html {
+                "text/html"
+            } else {
+                "application/json"
+            };
+            let headers = format!("HTTP/1.1 200 OK\r\nContent-Type: {content_type}\r\nContent-Length: {HTTP_BODY_MAX_BYTES}\r\nConnection: close\r\n\r\n");
+            let (url, _ready, release, thread) =
+                server_with_response(headers, vec![vec![b'x'; HTTP_BODY_MAX_BYTES]]);
+            let io = ExecutionIo::new();
+            let result = fetch_body_for_test(&io, url, html).await.unwrap();
+            assert_eq!(result.len(), HTTP_BODY_MAX_BYTES);
+            assert!(result.bytes().all(|byte| byte == b'x'));
+            io.stop().await.unwrap();
+            release.send(()).unwrap();
+            thread.join().unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn oversized_http_is_rejected_before_eof_for_fixed_chunked_and_unknown_lengths() {
+        for html in [false, true] {
+            for framing in ["fixed", "chunked", "unknown"] {
+                let content_type = if html {
+                    "text/html"
+                } else {
+                    "application/json"
+                };
+                let mut headers = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: {content_type}\r\nConnection: close\r\n"
+                );
+                let body = vec![b'x'; HTTP_BODY_MAX_BYTES + 1];
+                let chunks = match framing {
+                    "fixed" => {
+                        // Advertise more than we send and keep the body stalled after overflow.
+                        headers.push_str(&format!(
+                            "Content-Length: {}\r\n",
+                            HTTP_BODY_MAX_BYTES + 8192
+                        ));
+                        vec![body]
+                    }
+                    "chunked" => {
+                        headers.push_str("Transfer-Encoding: chunked\r\n");
+                        let mut frame = format!("{:x}\r\n", body.len()).into_bytes();
+                        frame.extend_from_slice(&body);
+                        frame.extend_from_slice(b"\r\n");
+                        // No terminating zero chunk: waiting for the entire response is wrong.
+                        vec![frame]
+                    }
+                    _ => vec![body],
+                };
+                headers.push_str("\r\n");
+                let (url, _ready, release, thread) = server_with_response(headers, chunks);
+                let io = ExecutionIo::new();
+                let result = fetch_body_for_test(&io, url, html).await;
+                assert!(
+                    matches!(result, Err(LoadError::ResponseTooLarge)),
+                    "html={html}, framing={framing}: {:?}",
+                    result.err()
+                );
+                io.stop().await.unwrap();
+                release.send(()).unwrap();
+                thread.join().unwrap();
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn head_with_large_advertised_length_keeps_its_empty_body() {
+        let headers = format!(
+            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+            HTTP_BODY_MAX_BYTES + 1
+        );
+        let (url, _ready, release, thread) = server_with_response(headers, vec![]);
+        let io = ExecutionIo::new();
+        let client = Client::builder().no_proxy().build().unwrap();
+        let mut req = request(url);
+        req.method = Some("HEAD".into());
+        let parsed = request_url(&req).unwrap();
+        let response = run_owned(
+            io.register().unwrap(),
+            2_000,
+            fetch_http(&client, req, parsed),
+        )
+        .await
+        .unwrap();
+        assert_eq!(response.status, 200);
+        assert!(response.body.is_empty());
+        io.stop().await.unwrap();
+        release.send(()).unwrap();
+        thread.join().unwrap();
+    }
+
+    #[tokio::test]
+    async fn split_utf8_bytes_are_decoded_after_assembling_the_limited_body() {
+        let (url, _ready, release, thread) = server_with_response(
+            "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n".into(),
+            vec![
+                b"1\r\n\xe3\r\n".to_vec(),
+                b"2\r\n\x81\x82\r\n0\r\n\r\n".to_vec(),
+            ],
+        );
+        let io = ExecutionIo::new();
+        assert_eq!(
+            fetch_body_for_test(&io, url, false).await.unwrap(),
+            "\u{3042}"
+        );
+        io.stop().await.unwrap();
+        release.send(()).unwrap();
+        thread.join().unwrap();
     }
 
     #[test]
@@ -357,6 +632,9 @@ mod tests {
         let (url, ready, release, thread) = server(None);
         let io = ExecutionIo::new();
         let operation = io.register().unwrap();
+        let held = (1..crate::resource_limits::NATIVE_IO_MAX_OPERATIONS)
+            .map(|_| io.register().unwrap())
+            .collect::<Vec<_>>();
         let task = tokio::spawn(async move {
             let client = Client::builder().no_proxy().build().unwrap();
             let req = request(url);
@@ -367,6 +645,11 @@ mod tests {
             .await
             .unwrap()
             .unwrap();
+        assert!(matches!(
+            io.register(),
+            Err(crate::execution_io::RegisterError::ConcurrencyLimitExceeded { .. })
+        ));
+        drop(held);
         io.stop().await.unwrap();
         assert!(matches!(task.await.unwrap(), Err(LoadError::Cancelled)));
         release.send(()).unwrap();

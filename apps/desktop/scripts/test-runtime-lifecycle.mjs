@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import test from 'node:test';
 import ts from 'typescript';
 
@@ -25,12 +25,16 @@ const load = (relative, mocks = {}, globals = {}) => {
       assert.ok(name.startsWith('.'), `Unexpected dependency: ${name}`);
       return read(path.resolve(path.dirname(file), name + '.ts'));
     };
-    new Function('require', 'exports', 'module', ...Object.keys(globals), js)(
-      require,
-      module.exports,
-      module,
-      ...Object.values(globals),
-    );
+    new Function(
+      'require',
+      'exports',
+      'module',
+      ...Object.keys(globals),
+      js.replaceAll(
+        'import.meta.url',
+        JSON.stringify(pathToFileURL(file).href),
+      ),
+    )(require, module.exports, module, ...Object.values(globals));
     return module.exports;
   };
   return read(path.join(program, relative));
@@ -129,6 +133,381 @@ test('empty output finishes without native calls', async () => {
   assert.deepEqual(f.saved, []);
 });
 
+const shutdownFixture = (options = {}) => {
+  const calls = [],
+    states = [];
+  const { default: Shutdown } = load(
+    '../../../service/lifecycle/application-shutdown.ts',
+  );
+  const participant = (name) => () => {
+    calls.push(name);
+    return options[name]?.() ?? Promise.resolve();
+  };
+  const shutdown = Shutdown.create({
+    needsConfirmation: () => options.dirty ?? false,
+    confirmClose: async () => {
+      calls.push('confirm');
+      return options.confirm ? options.confirm() : true;
+    },
+    shutdownNative: participant('native'),
+    stopWorkers: participant('workers'),
+    stopMcp: participant('mcp'),
+    closeWindow: async () => {
+      calls.push('close');
+      assert.equal(shutdown.canCloseWindow(), true);
+      await options.close?.();
+    },
+    onState: (phase, error) => {
+      states.push([phase, error]);
+      options.onState?.(phase, error);
+    },
+  });
+  return { shutdown, calls, states };
+};
+
+test('normal application close starts every participant and waits for the last release', async () => {
+  const native = deferred(),
+    workers = deferred(),
+    mcp = deferred();
+  const f = shutdownFixture({
+    native: () => native.promise,
+    workers: () => workers.promise,
+    mcp: () => mcp.promise,
+  });
+  const closing = f.shutdown.requestClose();
+  assert.deepEqual(f.calls, ['native', 'workers', 'mcp']);
+  assert.equal(f.shutdown.isStopping(), true);
+  assert.equal(f.shutdown.canCloseWindow(), false);
+  native.resolve();
+  workers.resolve();
+  await turn();
+  assert.equal(f.shutdown.getPhase(), 'stopping');
+  mcp.resolve();
+  await closing;
+  assert.deepEqual(f.calls, ['native', 'workers', 'mcp', 'close']);
+  assert.deepEqual(
+    f.states.map(([phase]) => phase),
+    ['stopping', 'closing', 'closed'],
+  );
+  await f.shutdown.requestClose();
+  assert.equal(f.calls.length, 4);
+});
+
+test('declined unsaved confirmation leaves admission open and permits a later approved close', async () => {
+  let approved = false;
+  const f = shutdownFixture({ dirty: true, confirm: () => approved });
+  await f.shutdown.requestClose();
+  assert.deepEqual(f.calls, ['confirm']);
+  assert.equal(f.shutdown.isStopping(), false);
+  assert.equal(f.shutdown.getPhase(), 'idle');
+  approved = true;
+  await f.shutdown.requestClose();
+  assert.deepEqual(f.calls, [
+    'confirm',
+    'confirm',
+    'native',
+    'workers',
+    'mcp',
+    'close',
+  ]);
+});
+
+test('duplicate close cannot bypass pending confirmation or pending native cleanup', async () => {
+  const confirmation = deferred(),
+    native = deferred();
+  const f = shutdownFixture({
+    dirty: true,
+    confirm: () => confirmation.promise,
+    native: () => native.promise,
+  });
+  const closing = f.shutdown.requestClose();
+  assert.equal(closing, f.shutdown.requestClose());
+  assert.deepEqual(f.calls, ['confirm']);
+  confirmation.resolve(true);
+  await turn();
+  assert.equal(closing, f.shutdown.requestClose());
+  assert.equal(f.shutdown.canCloseWindow(), false);
+  assert.deepEqual(f.calls, ['confirm', 'native', 'workers', 'mcp']);
+  native.resolve();
+  await closing;
+  assert.equal(f.calls.filter((name) => name === 'close').length, 1);
+});
+
+for (const failed of ['native', 'workers', 'mcp']) {
+  test(`${failed} shutdown failure still waits for other participants and keeps the window open`, async () => {
+    const gates = { native: deferred(), workers: deferred(), mcp: deferred() };
+    const f = shutdownFixture(
+      Object.fromEntries(
+        Object.entries(gates).map(([name, gate]) => [name, () => gate.promise]),
+      ),
+    );
+    const closing = f.shutdown.requestClose();
+    gates[failed].reject(new Error(`${failed} failed`));
+    await turn();
+    assert.equal(f.shutdown.getPhase(), 'stopping');
+    for (const [name, gate] of Object.entries(gates))
+      if (name !== failed) gate.resolve();
+    await closing;
+    assert.equal(f.shutdown.getPhase(), 'failed');
+    assert.equal(f.shutdown.isStopping(), true);
+    assert.equal(f.shutdown.canCloseWindow(), false);
+    assert.match(f.states.at(-1)[1], new RegExp(`${failed} failed`));
+    assert.equal(f.calls.includes('close'), false);
+  });
+}
+
+test('synchronous shutdown failure does not skip Workers or MCP', async () => {
+  const f = shutdownFixture({
+    native: () => {
+      throw new Error('synchronous failure');
+    },
+  });
+  await f.shutdown.requestClose();
+  assert.deepEqual(f.calls, ['native', 'workers', 'mcp']);
+  assert.equal(f.shutdown.getPhase(), 'failed');
+  assert.match(f.states.at(-1)[1], /Native I\/O:.*synchronous failure/);
+});
+
+test('window close failure revokes permission and retries without reconfirming or reopening admission', async () => {
+  let attempts = 0;
+  const f = shutdownFixture({
+    dirty: true,
+    close: () => {
+      if (++attempts === 1) throw new Error('close failed');
+    },
+  });
+  await f.shutdown.requestClose();
+  assert.equal(f.shutdown.getPhase(), 'failed');
+  assert.equal(f.shutdown.canCloseWindow(), false);
+  assert.equal(f.shutdown.isStopping(), true);
+  await f.shutdown.requestClose();
+  assert.equal(f.shutdown.getPhase(), 'closed');
+  assert.equal(f.calls.filter((name) => name === 'confirm').length, 1);
+  assert.equal(attempts, 2);
+});
+
+test('confirmation failure does not start shutdown', async () => {
+  const f = shutdownFixture({
+    dirty: true,
+    confirm: () => {
+      throw new Error('dialog failed');
+    },
+  });
+  await f.shutdown.requestClose();
+  assert.deepEqual(f.calls, ['confirm']);
+  assert.equal(f.shutdown.getPhase(), 'failed');
+  assert.equal(f.shutdown.isStopping(), false);
+  assert.equal(f.shutdown.canCloseWindow(), false);
+});
+
+test('shutdown display observer failure cannot bypass or prevent cleanup', async () => {
+  const gate = deferred();
+  const f = shutdownFixture({
+    native: () => gate.promise,
+    onState: () => {
+      throw new Error('display failed');
+    },
+  });
+  const closing = f.shutdown.requestClose();
+  assert.equal(f.shutdown.canCloseWindow(), false);
+  gate.resolve();
+  await closing;
+  assert.equal(f.shutdown.getPhase(), 'closed');
+});
+
+const workerRegistry = () =>
+  load('../../../service/lifecycle/worker-lifecycle.ts').default.create();
+
+test('worker registry starts every disposal immediately and closes admission irreversibly', async () => {
+  const registry = workerRegistry(),
+    a = deferred(),
+    b = deferred(),
+    calls = [];
+  registry.register(() => {
+    calls.push('a');
+    return a.promise;
+  });
+  registry.register(() => {
+    calls.push('b');
+    return b.promise;
+  });
+  const closing = registry.stopAll();
+  assert.deepEqual(calls, ['a', 'b']);
+  assert.equal(closing, registry.stopAll());
+  assert.throws(() => registry.assertOpen(), /shutting down/);
+  assert.throws(() => registry.register(async () => {}), /shutting down/);
+  let finished = false;
+  void closing.then(() => {
+    finished = true;
+  });
+  a.resolve();
+  await turn();
+  assert.equal(finished, false);
+  b.resolve();
+  await closing;
+  assert.throws(() => registry.assertOpen(), /shutting down/);
+});
+
+test('worker registry waits for held owners after synchronous failure and retains failure', async () => {
+  const registry = workerRegistry(),
+    gate = deferred();
+  registry.register(() => {
+    throw new Error('failed owner');
+  });
+  registry.register(() => gate.promise);
+  const closing = registry.stopAll();
+  const rejected = assert.rejects(closing, /failed owner/);
+  let finished = false;
+  void rejected.then(() => {
+    finished = true;
+  });
+  await turn();
+  assert.equal(finished, false);
+  gate.resolve();
+  await rejected;
+  assert.equal(closing, registry.stopAll());
+  await assert.rejects(registry.stopAll(), /failed owner/);
+});
+
+test('already released worker owners can unregister idempotently', async () => {
+  const registry = workerRegistry();
+  let called = false;
+  const unregister = registry.register(async () => {
+    called = true;
+  });
+  unregister();
+  unregister();
+  await registry.stopAll();
+  assert.equal(called, false);
+});
+
+const adapterFixture = () => {
+  const registry = workerRegistry(),
+    workers = [],
+    calls = [],
+    initializations = [],
+    disposals = [];
+  class FakeWorker {
+    posted = [];
+    stops = 0;
+    constructor() {
+      workers.push(this);
+    }
+    postMessage(value) {
+      this.posted.push(value);
+    }
+    terminate() {
+      this.stops++;
+    }
+  }
+  const { default: Adapter } = load(
+    'ui/worker-adapter.ts',
+    {
+      '@tauri-apps/api/core': {
+        invoke: (command, args) => {
+          calls.push({ command, args });
+          if (command === 'worker_init' || command === 'worker_dispose') {
+            const gate = deferred();
+            (command === 'worker_init' ? initializations : disposals).push(
+              gate,
+            );
+            return gate.promise;
+          }
+          return Promise.resolve();
+        },
+      },
+      '../../../../service/lifecycle/worker-lifecycle': {
+        applicationWorkers: registry,
+      },
+    },
+    {
+      Worker: FakeWorker,
+      crypto: { randomUUID: () => `adapter-${workers.length}` },
+    },
+  );
+  return {
+    registry,
+    workers,
+    calls,
+    initializations,
+    disposals,
+    use: () => Adapter.use(() => {}),
+  };
+};
+
+test('production adapter stops all WebWorkers immediately but waits for late init and native dispose', async () => {
+  const f = adapterFixture(),
+    a = f.use(),
+    b = f.use();
+  a.init();
+  b.init();
+  f.workers[0].onmessage({
+    data: {
+      type: 'invoke',
+      id: 'init',
+      command: 'worker_init',
+      args: { executionId: a.getExecutionId() },
+    },
+  });
+  const closing = f.registry.stopAll();
+  assert.deepEqual(
+    f.workers.map((worker) => worker.stops),
+    [1, 1],
+  );
+  assert.deepEqual(
+    f.workers.map((worker) => worker.onmessage),
+    [null, null],
+  );
+  assert.throws(() => a.init(), /shutting down/);
+  assert.throws(() => b.start({}), /shutting down/);
+  assert.throws(() => f.use(), /shutting down/);
+  await turn();
+  assert.equal(f.disposals.length, 1);
+  f.initializations[0].resolve();
+  await turn();
+  assert.equal(f.disposals.length, 2);
+  assert.equal(f.workers[0].posted.length, 0);
+  let finished = false;
+  void closing.then(() => {
+    finished = true;
+  });
+  f.disposals[0].resolve();
+  await turn();
+  assert.equal(finished, false);
+  f.disposals[1].resolve();
+  await closing;
+});
+
+test('production adapter keeps an earlier UI disposal registered until native cleanup completes', async () => {
+  const f = adapterFixture(),
+    session = f.use();
+  session.init();
+  const disposed = session.dispose();
+  const closing = f.registry.stopAll();
+  let finished = false;
+  void closing.then(() => {
+    finished = true;
+  });
+  await turn();
+  assert.equal(f.disposals.length, 1);
+  assert.equal(finished, false);
+  f.disposals[0].resolve();
+  await Promise.all([disposed, closing]);
+  assert.equal(f.workers[0].stops, 1);
+});
+
+test('production adapter retains a previously failed disposal for application shutdown', async () => {
+  const f = adapterFixture(),
+    session = f.use();
+  session.init();
+  const rejected = assert.rejects(session.dispose(), /native dispose failed/);
+  await turn();
+  f.disposals[0].reject(new Error('native dispose failed'));
+  await rejected;
+  await assert.rejects(f.registry.stopAll(), /native dispose failed/);
+  assert.equal(f.disposals.length, 1);
+});
+
 const executeProps = {
   type: 'execute',
   sourceMapText: 'source-map',
@@ -221,10 +600,11 @@ test('every native file command is covered by the worker ownership policy', () =
   const policy = load('runtime/native-io-policy.ts').default;
   assert.ok(commands.every(policy.isOwnedCommand));
   assert.equal(policy.isOwnedCommand('scan_directory'), true);
+  assert.equal(policy.isOwnedCommand('excel_parse_file'), true);
   assert.equal(policy.isOwnedCommand('append_lines'), false);
 });
 
-for (const command of [...fileCommands, 'scan_directory']) {
+for (const command of [...fileCommands, 'scan_directory', 'excel_parse_file']) {
   test(`${command} binds the current execution, has no detached RPC deadline, and blocks premature done`, async () => {
     let handler, posted;
     const api = load(
@@ -458,6 +838,53 @@ test('terminal delivery waits for native stop confirmation', async () => {
   await f.session.dispose();
 });
 
+test('admission rejection preserves accepted native ownership and waits for saturated cleanup before reporting failure', async () => {
+  const source = readFileSync(
+    path.join(app, 'src-tauri/src/resource_limits.rs'),
+    'utf8',
+  );
+  const capacity = Number(
+    source.match(/pub const NATIVE_IO_MAX_OPERATIONS: usize = (\d+);/)[1],
+  );
+  const accepted = deferred(),
+    stopped = deferred();
+  let requests = 0;
+  const error = `Execution native I/O concurrency limit exceeded (${capacity})`;
+  const f = sessionFixture({
+    invoke: (command) => {
+      if (command === 'worker_stop') return stopped.promise;
+      if (command === 'read_file') {
+        if (++requests > capacity) throw new Error(error);
+        return accepted.promise;
+      }
+    },
+  });
+  for (let index = 0; index <= capacity; index++)
+    f.send(invokeEvent('read_file', `request-${index}`));
+  await turn();
+  const reply = f.workers[0].posted.find((e) => e.type === 'invoke-error');
+  assert.equal(reply.id, `request-${capacity}`);
+  assert.ok(reply.callsiteStack.includes(error));
+  assert.match(reply.callsiteStack, /at work/);
+  assert.equal(
+    f.workers[0].posted.some((e) => e.type === 'invoke-result'),
+    false,
+  );
+  assert.deepEqual(f.events, []);
+  f.send({ type: 'runtime-error', stack: error, sourceMap: 'source-map' });
+  await turn();
+  assert.equal(f.calls.filter((c) => c.command === 'worker_stop').length, 1);
+  assert.deepEqual(f.events, []);
+  accepted.reject(new Error('File I/O cancelled'));
+  stopped.resolve();
+  await turn();
+  assert.equal(f.events.length, 1);
+  assert.equal(f.events[0].type, 'runtime-error');
+  assert.equal('vfs' in f.events[0], false);
+  assert.deepEqual(f.observerErrors, []);
+  await f.session.dispose();
+});
+
 test('unfinished native work is cancelled and never exposes a transaction', async () => {
   const request = deferred();
   const f = sessionFixture({
@@ -583,9 +1010,11 @@ const workerFixture = (options = {}) => {
       },
     },
     '../util/context-data-util': {
-      createObjects: (_, preparation) => {
+      createObjects: (data, preparation, rustCache) => {
         if (options.contextFailure) throw new Error('context failed');
         preparations.push(structuredClone(preparation));
+        if (options.useProductionContext)
+          return contextApi.createObjects(data, preparation, rustCache);
         return [];
       },
     },
@@ -606,14 +1035,39 @@ const workerFixture = (options = {}) => {
     },
     globals,
   ).default;
+  const parserApi = load(
+    'util/parser/dcl-parser.ts',
+    {
+      '../../../../../util/data/data-util': {},
+      './dom-parser': {},
+      '../worker-invoke': mocks['../util/worker-invoke'],
+    },
+    globals,
+  ).default;
+  const netApi = load('util/dcl-net.ts', {
+    './worker-invoke': mocks['../util/worker-invoke'],
+  }).default;
+  const contextApi = load('util/context-data-util.ts', {
+    '../../../../util/data/data-util': {
+      getAppliedEnvValue: (value) => value,
+      decodeBinary: (bytes) => new TextDecoder().decode(bytes),
+    },
+    '../../../../util/data/file-util': {},
+    './worker-invoke': mocks['../util/worker-invoke'],
+    '../../../../state/model/license-state': {},
+    '../../../../util/typescript-util': {},
+    './parser/dcl-parser': parserApi,
+    './declare-util': {},
+    '../../logic/util/logic-signature-cache': {},
+  }).default;
   reserveApi = load(
     'util/declare-util.ts',
     {
       '../worker-invoke': mocks['../util/worker-invoke'],
       './fs/dcl-file-system': {},
-      './dcl-net': {},
+      './dcl-net': netApi,
       './dcl-state': {},
-      './parser/dcl-parser': {},
+      './parser/dcl-parser': parserApi,
       '../../../../state/model/license-state': { isPro: () => false },
     },
     globals,
@@ -741,6 +1195,60 @@ test('malformed scan root fails preparation instead of injecting a false target'
   assert.deepEqual(f.preparations, []);
 });
 
+test('scan resource overflow prevents preparation, user execution and transaction exposure', async () => {
+  const error = 'Scan entry limit exceeded (100000)';
+  const f = workerFixture({
+    invoke: (command) => {
+      if (command === 'scan_directory') throw new Error(error);
+    },
+  });
+  await f.run('$println("must not execute"); $tx();', {
+    usableUtils: ['println', 'tx'],
+    contextData: dynamicDatasets,
+  });
+  assert.equal(terminal(f).length, 1);
+  assert.equal(terminal(f)[0].type, 'runtime-error');
+  assert.ok(terminal(f)[0].stack.includes(error));
+  assert.equal('vfs' in terminal(f)[0], false);
+  assert.deepEqual(f.preparations, []);
+  assert.equal(
+    f.events.some((e) => e.type === 'prepared'),
+    false,
+  );
+  assert.equal(
+    f.calls.some((c) => c.command === 'append_lines'),
+    false,
+  );
+  assert.equal(f.calls[0].command, 'worker_init');
+  assert.equal(f.calls[0].args.executionId, 'worker-run');
+});
+
+test('scan admission rejection prevents user execution and dataset injection', async () => {
+  const error = 'Execution native I/O concurrency limit exceeded (32)';
+  const f = workerFixture({
+    invoke: (command) => {
+      if (command === 'scan_directory') throw new Error(error);
+    },
+  });
+  await f.run('$println("must not run"); $tx();', {
+    usableUtils: ['println', 'tx'],
+    contextData: dynamicDatasets,
+  });
+  assert.equal(terminal(f).length, 1);
+  assert.equal(terminal(f)[0].type, 'runtime-error');
+  assert.ok(terminal(f)[0].stack.includes(error));
+  assert.equal('vfs' in terminal(f)[0], false);
+  assert.deepEqual(f.preparations, []);
+  assert.equal(
+    f.events.some((e) => e.type === 'prepared'),
+    false,
+  );
+  assert.equal(
+    f.calls.some((c) => c.command === 'append_lines'),
+    false,
+  );
+});
+
 for (const [command, source] of [
   ['read_file', 'await $fs.readText("C:\\\\data.txt");'],
   ['exists_path', 'await $fs.exists("C:\\\\data.txt");'],
@@ -782,6 +1290,266 @@ test('production file API permits awaited success without changing public argume
     [['content', '']],
   );
 });
+
+test('production Excel failure keeps earlier output but prevents worker transaction exposure', async () => {
+  const f = workerFixture({ failCommand: 'excel_parse_file' });
+  await f.run(
+    '$tx(); $println("before Excel"); await $parser.excel("C:/data.xlsx");',
+    {
+      usableUtils: ['tx', 'println', 'parser'],
+    },
+  );
+  assert.deepEqual(f.calls.find((c) => c.command === 'excel_parse_file').args, {
+    filePath: 'C:/data.xlsx',
+  });
+  assert.equal(terminal(f).length, 1);
+  assert.equal(terminal(f)[0].type, 'runtime-error');
+  assert.match(terminal(f)[0].stack, /excel_parse_file failed/);
+  assert.equal('vfs' in terminal(f)[0], false);
+  assert.deepEqual(
+    f.events.slice(-2).map((e) => e.type),
+    ['receive_stream', 'runtime-error'],
+  );
+});
+
+test('Excel resource overflow retains earlier output but never exposes a partial book or transaction', async () => {
+  const error = 'Excel range cell limit exceeded (1000000)';
+  const f = workerFixture({
+    invoke: (command) => {
+      if (command === 'excel_parse_file') throw new Error(error);
+    },
+  });
+  await f.run(
+    '$tx(); $println("before Excel"); const book = await $parser.excel("C:/data.xlsx"); $println(book.sheet("Data").name);',
+    {
+      usableUtils: ['tx', 'println', 'parser'],
+    },
+  );
+  assert.equal(terminal(f).length, 1);
+  assert.equal(terminal(f)[0].type, 'runtime-error');
+  assert.ok(terminal(f)[0].stack.includes(error));
+  assert.equal('vfs' in terminal(f)[0], false);
+  assert.deepEqual(
+    f.calls.find((c) => c.command === 'append_lines').args.batches,
+    [['before Excel', '']],
+  );
+});
+
+test('awaited Excel parsing waits for native completion and preserves Book, Sheet, Row and Cell APIs', async () => {
+  const gate = deferred();
+  const f = workerFixture({
+    invoke: (command) =>
+      command === 'excel_parse_file' ? gate.promise : undefined,
+  });
+  const run = f.run(
+    `
+    const book = await $parser.excel("C:/data.xlsx");
+    const sheet = book.sheet("Data");
+    if (book.sheet("missing") !== null) throw new Error("missing sheet");
+    if (sheet.maxRow !== 3 || sheet.maxCol !== 2) throw new Error("range bounds");
+    if (sheet.rowAt(3).cellAt(1).address !== "B4") throw new Error("cell address");
+    if (sheet.cellAt("$C$4").value !== "3") throw new Error("cell value");
+    $println(JSON.stringify(sheet.toTable(2)));
+    $tx();
+  `,
+    { usableUtils: ['parser', 'println', 'tx'] },
+  );
+  await turn();
+  assert.deepEqual(terminal(f), []);
+  gate.resolve({
+    sheets: [
+      {
+        name: 'Data',
+        maxRow: 3,
+        maxCol: 2,
+        rows: [
+          {
+            index: 2,
+            cells: [
+              { row: 2, col: 1, value: 'name' },
+              { row: 2, col: 2, value: 'count' },
+            ],
+          },
+          {
+            index: 3,
+            cells: [
+              { row: 3, col: 1, value: 'alpha' },
+              { row: 3, col: 2, value: '3' },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+  await run;
+  assert.equal(terminal(f)[0].type, 'done');
+  assert.ok(terminal(f)[0].vfs);
+  assert.deepEqual(
+    f.calls.find((c) => c.command === 'append_lines').args.batches,
+    [['[{"name":"alpha","count":"3"}]', '']],
+  );
+});
+
+test('a Work may explicitly catch an Excel failure and continue', async () => {
+  const f = workerFixture({ failCommand: 'excel_parse_file' });
+  await f.run(
+    `
+    try { await $parser.excel("C:/data.xlsx"); }
+    catch { $println("handled"); }
+  `,
+    { usableUtils: ['parser', 'println'] },
+  );
+  assert.equal(terminal(f)[0].type, 'done');
+  assert.deepEqual(
+    f.calls.find((c) => c.command === 'append_lines').args.batches,
+    [['handled', '']],
+  );
+});
+
+for (const [command, source, utility, error] of [
+  [
+    'read_file',
+    'await $fs.readText("C:/data.txt");',
+    'fs',
+    'Execution native I/O concurrency limit exceeded (32)',
+  ],
+  [
+    'excel_parse_file',
+    'await $parser.excel("C:/data.xlsx");',
+    'parser',
+    'Execution native I/O concurrency limit exceeded (32)',
+  ],
+  [
+    'load_http',
+    'await $net.getText("http://local");',
+    'net',
+    'ConcurrencyLimitExceeded',
+  ],
+  [
+    'load_html_from_url',
+    'await $net.getHtml("http://local");',
+    'net',
+    'ConcurrencyLimitExceeded',
+  ],
+]) {
+  test(`${command} admission rejection retains earlier output and prevents success or transaction exposure`, async () => {
+    const f = workerFixture({
+      invoke: (name) => {
+        if (name === command) throw new Error(error);
+        if (name === 'stat') return { isFile: true, size: 1 };
+      },
+    });
+    await f.run(`$tx(); $println("before request"); ${source}`, {
+      usableUtils: ['tx', 'println', utility],
+    });
+    assert.equal(terminal(f).length, 1);
+    assert.equal(terminal(f)[0].type, 'runtime-error');
+    assert.ok(terminal(f)[0].stack.includes(error));
+    assert.equal('vfs' in terminal(f)[0], false);
+    assert.deepEqual(
+      f.calls.find((c) => c.command === 'append_lines').args.batches,
+      [['before request', '']],
+    );
+  });
+}
+
+test('a Work may explicitly handle admission rejection without failing execution cleanup', async () => {
+  const f = workerFixture({
+    invoke: (command) => {
+      if (command === 'load_http') throw new Error('ConcurrencyLimitExceeded');
+    },
+  });
+  await f.run(
+    'try { await $net.getText("http://local"); } catch (error) { $println("handled"); }',
+    { usableUtils: ['net', 'println'] },
+  );
+  assert.equal(terminal(f).length, 1);
+  assert.equal(terminal(f)[0].type, 'done');
+  assert.deepEqual(
+    f.calls.find((c) => c.command === 'append_lines').args.batches,
+    [['handled', '']],
+  );
+});
+
+for (const [command, source, error] of [
+  ['load_http', 'await $net.getText("http://local");', 'ResponseTooLarge'],
+  [
+    'load_html_from_url',
+    'await $net.getHtml("http://local");',
+    'ResponseTooLarge',
+  ],
+  ['load_http', 'await $net.getText("http://local");', 'ResourceExhausted'],
+]) {
+  test(`${command} ${error} preserves prior output and prevents partial HTTP success or VFS exposure`, async () => {
+    const f = workerFixture({
+      invoke: (name) => {
+        if (name === command) throw new Error(error);
+      },
+    });
+    await f.run(`$tx(); $println("before request"); ${source}`, {
+      usableUtils: ['tx', 'println', 'net'],
+    });
+    assert.equal(terminal(f).length, 1);
+    assert.equal(terminal(f)[0].type, 'runtime-error');
+    assert.match(terminal(f)[0].stack, new RegExp(error));
+    assert.equal('vfs' in terminal(f)[0], false);
+    assert.equal(
+      f.calls.find((c) => c.command === command).args.executionId,
+      'worker-run',
+    );
+    assert.deepEqual(
+      f.calls.find((c) => c.command === 'append_lines').args.batches,
+      [['before request', '']],
+    );
+  });
+}
+
+for (const error of [
+  'Process output exceeded combined stdout/stderr limit (16777216 bytes)',
+  'Execution native I/O concurrency limit exceeded (32)',
+]) {
+  test(`production process API ${error} does not decode a partial result or expose a transaction`, async () => {
+    const f = workerFixture({
+      useProductionContext: true,
+      invoke: (command) => {
+        if (command === 'run_process') throw new Error(error);
+      },
+    });
+    await f.run('$tx(); $println("before process"); await $process.run();', {
+      usableUtils: ['tx', 'println'],
+      contextData: {
+        envs: [],
+        resources: [],
+        datasets: [],
+        logics: [],
+        processes: [
+          {
+            funcName: 'run',
+            prgPath: 'C:/program.exe',
+            scriptArgs: [],
+            cmdArgs: [],
+            cwd: '',
+            stdin: '',
+            timeout: 25_000,
+            encoding: { stdin: 'utf8', stdout: 'utf8', stderr: 'utf8' },
+          },
+        ],
+      },
+    });
+    assert.equal(terminal(f).length, 1);
+    assert.equal(terminal(f)[0].type, 'runtime-error');
+    assert.ok(terminal(f)[0].stack.includes(error));
+    assert.equal('vfs' in terminal(f)[0], false);
+    assert.equal(
+      f.calls.find((c) => c.command === 'run_process').args.executionId,
+      'worker-run',
+    );
+    assert.deepEqual(
+      f.calls.find((c) => c.command === 'append_lines').args.batches,
+      [['before process', '']],
+    );
+  });
+}
 
 for (const ending of ['', 'return;', '$runtime.exit();']) {
   test(`worker drains real scheduler before done: ${ending || 'normal'}`, async () => {
@@ -1195,6 +1963,20 @@ for (const failure of ['id', 'listen', 'invoke', 'root', 'observer']) {
     assert.deepEqual(f.trees, []);
   });
 }
+
+test('editor scan resource overflow reports an error and releases its listener without installing a partial tree', async () => {
+  const f = uiScanFixture({
+    invoke: () => {
+      throw new Error('Scan directory depth limit exceeded (64)');
+    },
+  });
+  await f.start();
+  assert.equal(f.removed.length, 1);
+  assert.deepEqual(f.searches, [false]);
+  assert.deepEqual(f.trees, []);
+  assert.equal(f.alerts.length, 1);
+  assert.match(f.alerts[0], /Scan directory depth limit exceeded/);
+});
 
 test('listener cleanup failure still releases editor search state', async () => {
   const f = uiScanFixture({ failure: 'unlisten' });

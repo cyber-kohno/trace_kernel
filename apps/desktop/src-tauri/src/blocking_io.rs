@@ -89,6 +89,9 @@ mod tests {
         let io = ExecutionIo::new();
         let operation = io.register().unwrap();
         let mut observer = io.register().unwrap();
+        let held = (2..crate::resource_limits::NATIVE_IO_MAX_OPERATIONS)
+            .map(|_| io.register().unwrap())
+            .collect::<Vec<_>>();
         let (started, ready) = oneshot::channel();
         let (release, gate) = std::sync::mpsc::channel();
         let completed = Arc::new(AtomicBool::new(false));
@@ -118,12 +121,17 @@ mod tests {
         ready.await.unwrap();
         caller.abort();
         assert!(caller.await.unwrap_err().is_cancelled());
+        assert!(matches!(
+            io.register(),
+            Err(crate::execution_io::RegisterError::ConcurrencyLimitExceeded { .. })
+        ));
         let stop = tokio::spawn({
             let io = io.clone();
             async move { io.stop().await }
         });
         observer.cancelled().await;
         drop(observer);
+        drop(held);
         let stopped_early = stop.is_finished();
         release.send(()).unwrap();
         stop.await.unwrap().unwrap();
@@ -152,6 +160,9 @@ mod tests {
             let io = ExecutionIo::new();
             let operation = io.register().unwrap();
             let mut observer = io.register().unwrap();
+            let held = (2..crate::resource_limits::NATIVE_IO_MAX_OPERATIONS)
+                .map(|_| io.register().unwrap())
+                .collect::<Vec<_>>();
             let executed = Arc::new(AtomicBool::new(false));
             let request = run(Some(operation), {
                 let executed = executed.clone();
@@ -166,12 +177,17 @@ mod tests {
                 _ = &mut request => panic!("blocking pool is occupied"),
                 _ = tokio::task::yield_now() => {}
             }
+            assert!(matches!(
+                io.register(),
+                Err(crate::execution_io::RegisterError::ConcurrencyLimitExceeded { .. })
+            ));
             let stop = tokio::spawn({
                 let io = io.clone();
                 async move { io.stop().await }
             });
             observer.cancelled().await;
             drop(observer);
+            drop(held);
             let stopped_early = stop.is_finished();
             release.send(()).unwrap();
             assert!(request.await.unwrap_err().contains("cancelled"));

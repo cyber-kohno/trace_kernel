@@ -19,9 +19,29 @@
   import WorkspaceRecoveryUtil from './util/data/workspace-recovery-util';
   import { handleMcpWorkspaceRequest } from './mcp/mcp-workspace-handler';
   import { cancelWorkUpdateProposalByRequestId } from './mcp/work-update-proposal';
+  import ApplicationShutdown from './service/lifecycle/application-shutdown';
+  import { applicationWorkers } from './service/lifecycle/worker-lifecycle';
 
   let args: string[] | null = null;
-  let isClosing = false;
+  let shutdownPhase: ApplicationShutdown.Phase = 'idle';
+  let shutdownError = '';
+  const shutdown = ApplicationShutdown.create({
+    needsConfirmation: () =>
+      get(workspaceStore).workspace != null && get(dirtyStore),
+    confirmClose: () =>
+      ask('There are unsaved changes. Do you want to close Trace Kernel?', {
+        title: 'Unsaved Changes',
+        kind: 'warning',
+      }),
+    shutdownNative: () => invoke('shutdown_native_io'),
+    stopWorkers: () => applicationWorkers.stopAll(),
+    stopMcp: () => invoke('mcp_stop_session'),
+    closeWindow: () => Window.getCurrent().close(),
+    onState: (phase, error) => {
+      shutdownPhase = phase;
+      shutdownError = error;
+    },
+  });
 
   async function revealMainWindow() {
     const mainWindow = Window.getCurrent();
@@ -35,7 +55,11 @@
     try {
       await listen<string[]>('file-drop', async (event) => {
         const files: string[] = event.payload;
-        if (files.length === 1 && $workspaceStore.workspace == null) {
+        if (
+          !shutdown.isStopping() &&
+          files.length === 1 &&
+          $workspaceStore.workspace == null
+        ) {
           const filePath = files[0];
           await FileUtil.loadWorkspaceFile(filePath);
         }
@@ -45,6 +69,10 @@
       const isRecoveryRestored = await WorkspaceRecoveryUtil.restoreOnStartup();
 
       window.addEventListener('keydown', (e) => {
+        if (shutdown.isStopping()) {
+          e.preventDefault();
+          return;
+        }
         if (e.ctrlKey && e.key === 's') {
           e.preventDefault();
           e.stopPropagation();
@@ -68,40 +96,10 @@
       });
 
       const mainWindow = Window.getCurrent();
-      await mainWindow.onCloseRequested(async (event) => {
-        if (isClosing) return;
-        const stopMcp = async () => {
-          try {
-            await invoke('mcp_stop_session');
-          } catch (error) {
-            console.warn('Could not stop MCP session during shutdown.', error);
-          }
-        };
-
-        if (get(workspaceStore).workspace == null) {
-          await stopMcp();
-          return;
-        }
-        if (!get(dirtyStore)) {
-          await stopMcp();
-          return;
-        }
-
+      await mainWindow.onCloseRequested((event) => {
+        if (shutdown.canCloseWindow()) return;
         event.preventDefault();
-
-        const shouldClose = await ask(
-          'There are unsaved changes. Do you want to close Trace Kernel?',
-          {
-            title: 'Unsaved Changes',
-            kind: 'warning',
-          },
-        );
-
-        if (shouldClose) {
-          isClosing = true;
-          await stopMcp();
-          await mainWindow.close();
-        }
+        void shutdown.requestClose();
       });
 
       await listen<{ id: string; method: string; params: unknown }>(
@@ -109,6 +107,8 @@
         async (event) => {
           console.info('MCP request received', event.payload);
           try {
+            if (shutdown.isStopping())
+              throw new Error('Application is shutting down.');
             const result = await handleMcpWorkspaceRequest({
               id: event.payload.id,
               method: event.payload.method,
@@ -173,23 +173,70 @@
 </script>
 
 {#if args != null}
-  <SystemMenu />
-  <div class="workspace-content">
-    {#if $appStore.migration != null}
-      <WorkspaceMigrationScreen />
-    {:else if $appStore.apiWarning != null}
-      <ApiWarningScreen />
-    {:else if $workspaceStore.workspace != null}
-      <WorkspaceSplitView />
-    {:else}
-      <StartFrame />
-    {/if}
+  <div
+    class="app-content"
+    inert={shutdownPhase === 'stopping' ||
+      shutdownPhase === 'closing' ||
+      (shutdownPhase === 'failed' && shutdown.isStopping())}
+  >
+    <SystemMenu />
+    <div class="workspace-content">
+      {#if $appStore.migration != null}
+        <WorkspaceMigrationScreen />
+      {:else if $appStore.apiWarning != null}
+        <ApiWarningScreen />
+      {:else if $workspaceStore.workspace != null}
+        <WorkspaceSplitView />
+      {:else}
+        <StartFrame />
+      {/if}
+    </div>
+    <DialogManager />
+    <ToastFrame />
   </div>
-  <DialogManager />
-  <ToastFrame />
+{/if}
+
+{#if shutdownPhase === 'stopping' || shutdownPhase === 'closing' || shutdownPhase === 'failed'}
+  <div class="shutdown-overlay">
+    <div class="shutdown-panel" role="alert">
+      {#if shutdownPhase === 'failed'}
+        <p>Trace Kernel could not close safely. The window will remain open.</p>
+        <pre>{shutdownError}</pre>
+        <button on:click={() => void shutdown.requestClose()}
+          >Retry close</button
+        >
+      {:else}
+        <p>Stopping work and waiting for native operations to finish…</p>
+      {/if}
+    </div>
+  </div>
 {/if}
 
 <style>
+  .app-content {
+    height: 100%;
+  }
+  .shutdown-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: grid;
+    place-items: center;
+    background: #0009;
+  }
+  .shutdown-panel {
+    max-width: 80vw;
+    padding: 24px;
+    background: #fff;
+    color: #222;
+    font-size: 14px;
+    line-height: 1.5;
+    border-radius: 6px;
+  }
+  .shutdown-panel pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
   .workspace-content {
     position: relative;
     z-index: 0;

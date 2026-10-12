@@ -18,8 +18,8 @@ async fn run(
     req: ScanRequest,
     mut report: impl FnMut(&Progress) + Send + 'static,
 ) -> Result<ScanResponse, String> {
-    let operation = execution_id.map(|id| state.register_io(&id)).transpose()?;
-    blocking_io::run_checked(operation, move |check| {
+    let operation = state.register_native_io(execution_id.as_deref())?;
+    blocking_io::run_checked(Some(operation), move |check| {
         scan::scan_directory(req, &mut report, check)
     })
     .await
@@ -68,6 +68,7 @@ mod tests {
                 },
             )])),
             recovery_snapshot: Mutex::new(None),
+            ..AppState::default()
         }
     }
 
@@ -108,6 +109,41 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn saturated_execution_rejects_before_scan_progress_without_blocking_editor_scan() {
+        let f = Fixture::new();
+        let io = ExecutionIo::new();
+        let state = state(&io);
+        let held = (0..crate::resource_limits::NATIVE_IO_MAX_OPERATIONS)
+            .map(|_| io.register().unwrap())
+            .collect::<Vec<_>>();
+        let error = run(&state, Some("work".into()), f.req(), |_| {
+            panic!("overload must not scan")
+        })
+        .await
+        .unwrap_err();
+        assert!(error.contains("concurrency limit exceeded (32)"), "{error}");
+        assert!(run(&state, None, f.req(), |_| {}).await.is_ok());
+        drop(held);
+        assert!(run(&state, Some("work".into()), f.req(), |_| {})
+            .await
+            .is_ok());
+        io.stop().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn application_shutdown_rejects_editor_scan_before_progress() {
+        let f = Fixture::new();
+        let state = state(&ExecutionIo::new());
+        state.shutdown_native_io().await.unwrap();
+        let error = run(&state, None, f.req(), |_| {
+            panic!("closed application must not scan")
+        })
+        .await
+        .unwrap_err();
+        assert!(error.contains("shutting down"));
+    }
+
+    #[tokio::test]
     async fn editor_and_owned_scans_return_the_same_result() {
         let f = Fixture::new();
         let io = ExecutionIo::new();
@@ -121,6 +157,31 @@ mod tests {
             serde_json::to_value(owned).unwrap()
         );
         io.stop().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn scan_condition_limit_error_releases_owned_io_without_a_partial_tree() {
+        let f = Fixture::new();
+        let io = ExecutionIo::new();
+        let state = state(&io);
+        let conditions = vec![
+            serde_json::json!({ "pattern": "*", "isExclude": false });
+            crate::resource_limits::SCAN_MAX_CONDITIONS + 1
+        ];
+        let req = serde_json::from_value(
+            serde_json::json!({ "rootPath": f.0, "dirConds": [], "fileConds": conditions }),
+        )
+        .unwrap();
+        let error = run(&state, Some("work".into()), req, |_| {
+            panic!("limit must reject before progress")
+        })
+        .await
+        .unwrap_err();
+        assert!(error.contains("condition limit"), "{error}");
+        tokio::time::timeout(std::time::Duration::from_secs(5), io.stop())
+            .await
+            .unwrap()
+            .unwrap();
     }
 
     #[tokio::test]
