@@ -1,98 +1,43 @@
 import { invoke } from '@tauri-apps/api/core';
-import PostUtil from '../post-util';
-import type { MessageProps } from '../runtime/worker';
-import type RuntimeUtil from '../runtime/runtime-util';
-import type DclChannel from '../util/channel/dcl-channel';
+import WorkerSession from '../runtime/worker-session';
+import type WorkerProtocol from '../runtime/worker-protocol';
 
 namespace WorkerAdapter {
-  type StatePayload = {
-    [K in PostUtil.StateMethod]: {
-      method: K;
-    } & PostUtil.StateMethodMap[K];
-  }[PostUtil.StateMethod];
+  export type WorkerEvent = WorkerProtocol.Event;
 
-  export type StateEvent = {
-    type: 'state';
-  } & StatePayload;
-
-  export type WorkerEvent =
-    // | { type: "log"; value: string }
-    | { type: 'create_stream'; props: DclChannel.Props }
-    | { type: 'receive_stream'; channelId: string }
-    | { type: 'prepared' }
-    | {
-        type: 'invoke';
-        command: string;
-        args: any;
-        id: string;
-        callsiteStack: string;
-      }
-    | { type: 'runtime-error'; stack: string; sourceMap: string }
-    | { type: 'done'; vfs: RuntimeUtil.VFSState | null }
-    | { type: 'progress'; cur: number; total?: number }
-    | StateEvent;
-
-  export const post = (e: WorkerEvent) => {
-    postMessage(e);
-  };
-
-  export const use = (onEvent: (e: WorkerEvent) => void) => {
-    let worker: Worker;
-    let executionId = '';
-
-    const init = () => {
-      executionId = crypto.randomUUID();
-      // worker.ts を生成して別スレッドで実行
-      worker = new Worker(new URL('../runtime/worker.ts', import.meta.url), {
-        type: 'module',
-      });
-      worker.onmessage = async (e) => {
-        const data = e.data;
-        // 解析だけして
-        onEvent({ ...data });
-      };
-      // console.log(worker);
-    };
-
-    const terminate = async () => {
-      const disposeExecutionId = executionId;
-      worker.terminate();
-      if (disposeExecutionId !== '') {
-        await invoke('worker_dispose', { executionId: disposeExecutionId });
-      }
-    };
-    const start = (props: Omit<MessageProps, 'executionId'>) => {
-      worker.postMessage({ ...props, executionId });
-    };
-    const getExecutionId = () => executionId;
-
-    const postInvoke = async (e: {
-      type: 'invoke';
-      command: string;
-      args: any;
-      id: string;
-      callsiteStack: string;
-    }) => {
-      try {
-        const result = await invoke(e.command, e.args);
-        worker.postMessage({ type: 'invoke-result', id: e.id, result });
-      } catch (err: any) {
-        const callsiteStackArr = (e.callsiteStack as string).split('\n');
-        callsiteStackArr[0] = err;
-        worker.postMessage({
-          type: 'invoke-error',
-          id: e.id,
-          callsiteStack: callsiteStackArr.join('\n'),
-        });
-      }
-    };
-    return {
-      init,
-      terminate,
-      start,
-      postInvoke,
-      getExecutionId,
-    };
-  };
+  export const use = (onEvent: (event: WorkerEvent) => void | Promise<void>) =>
+    WorkerSession.create({
+      createWorker: () => {
+        const worker = new Worker(
+          new URL('../runtime/worker.ts', import.meta.url),
+          {
+            type: 'module',
+          },
+        );
+        return {
+          setHandlers(handlers) {
+            worker.onmessage = handlers
+              ? (event) => handlers.message(event.data)
+              : null;
+            worker.onerror = handlers
+              ? (event) => {
+                  event.preventDefault();
+                  handlers.error(event.message);
+                }
+              : null;
+            worker.onmessageerror = handlers
+              ? () => handlers.messageError()
+              : null;
+          },
+          postMessage: (value) => worker.postMessage(value),
+          terminate: () => worker.terminate(),
+        };
+      },
+      createId: () => crypto.randomUUID(),
+      invoke,
+      onEvent,
+      onObserverError: (error) =>
+        console.error('Worker event handler failed', error),
+    });
 }
 export default WorkerAdapter;

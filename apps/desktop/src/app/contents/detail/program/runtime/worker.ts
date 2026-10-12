@@ -2,16 +2,17 @@
 import type WorkState from '../../../../state/model/workspace/work-state';
 import type TauriDto from '../../../../infra/tauri/tauri-dto';
 import DataUtil from '../../../../util/data/data-util';
-import WorkerAdapter from '../ui/worker-adapter';
+import post from './worker-post';
 import DeclareUtil from '../util/declare-util';
 import ContextDataUtil from '../util/context-data-util';
 import DclRuntime from '../util/dcl-runtime';
 import WorkerInvoke from '../util/worker-invoke';
 import RuntimeUtil from './runtime-util';
+import DatasetScanResult from './dataset-scan-result';
 import { createFlushScheduler } from './stream-flush';
 
 export interface MessageProps {
-  type: 'execute' | 'invoke-result';
+  type: 'execute';
   executionId: string;
   outputText: string;
   sourceMapText: string;
@@ -33,12 +34,8 @@ const scheduler = createFlushScheduler({
     return queue.splice(0, queue.length);
   },
 
-  hasPending(channelId) {
-    const queue = cache.rust.logQueues.get(channelId);
-    return !!queue && queue.length > 0;
-  },
-
   async appendToRuntime(channelId, batches) {
+    await cache.rust.channelReady?.get(channelId);
     await WorkerInvoke.call('append_lines', {
       executionId: cache.rust.executionId,
       channelId,
@@ -47,7 +44,7 @@ const scheduler = createFlushScheduler({
   },
 
   notifyUI(channelId) {
-    WorkerAdapter.post({ type: 'receive_stream', channelId });
+    post({ type: 'receive_stream', channelId });
   },
   getActiveChannelIds() {
     return Array.from(cache.rust.logQueues.keys());
@@ -85,6 +82,7 @@ const cache: RuntimeUtil.WorkerCache = {
   },
 };
 
+let started = false;
 self.onmessage = async (e: MessageEvent<MessageProps>) => {
   const {
     type,
@@ -96,107 +94,123 @@ self.onmessage = async (e: MessageEvent<MessageProps>) => {
     executionId,
   } = e.data;
   if (type === 'execute') {
+    if (started) return;
+    started = true;
     cache.rust.executionId = executionId;
     self.fetch = undefined as any;
-
-    const $done = () => WorkerAdapter.post({ type: 'done', vfs: cache.vfs });
-
-    // 予約オブジェクト群
-    const reserveObjects: { name: string; value: any }[] = usableUtils.map(
-      (r) => {
-        return { name: `$${r}`, value: DeclareUtil.createUtilObject(r, cache) };
-      },
-    );
-
-    // 遅延ロード（ランタイム時検索）
-    const tasks = contextData.datasets
-      .filter((d) => d.targets == null)
-      .map(async (ds) => {
-        const req: TauriDto.ScanRequest = {
-          rootPath: DataUtil.getAppliedEnvValue(
-            ds.rootPath,
-            contextData.envs,
-          ),
-          ...ds.scanOption,
-        };
-        const res = await WorkerInvoke.call<DatasetState.ScanResponse>(
-          'scan_directory',
-          { req },
-        );
-        const list: string[] = [];
-        const rec = (node: DatasetState.PayloadNode, curPath: string) => {
-          const nextPath = `${curPath}\\${node.name}`;
-          // 相対パスの先頭がルートのディレクトリと重複するので間引く
-          if (node.children == null)
-            list.push(`\\${nextPath.split('\\').slice(2).join('\\')}`);
-          else node.children.forEach((n) => rec(n, nextPath));
-        };
-        rec(res.node, '');
-        cache.preparation.datasetMap.push({ key: ds.varName, targets: list });
-      });
-    if (tasks.length > 0) {
-      await Promise.all(tasks);
-    }
-
-    // Initialize the runtime execution before executing user code.
-    const currentExecutionId = cache.rust.executionId;
-    await WorkerInvoke.call('worker_init', { executionId: currentExecutionId });
-    WorkerAdapter.post({
-      type: 'prepared',
-    });
-    if (outputMethod === 'plain') {
-      WorkerAdapter.post({
-        type: 'create_stream',
-        props: {
-          id: RuntimeUtil.PLAIN_CHANNEL_ID,
-          view: 'text',
-          detail: {},
-        },
-      });
-      await WorkerInvoke.call('add_channel', {
-        executionId: currentExecutionId,
-        channelId: RuntimeUtil.PLAIN_CHANNEL_ID,
-      });
-    }
-
-    const contextObjects = ContextDataUtil.createObjects(
-      contextData,
-      cache.preparation,
-      cache.rust,
-    );
-
-    // ユーザーコードの return でも正常終了できるよう、done 通知は外側で行う
-    const wrappedCode = `return (async () => {${outputText}\n})()`;
-    const func = new Function(
-      ...reserveObjects
-        .map((f) => f.name)
-        .concat(contextObjects.map((d) => d.name)),
-      wrappedCode,
-    );
-
-    let shouldNotifyDone = false;
+    let failed = false;
+    let failure: unknown;
     try {
-      await func(
-        ...reserveObjects
-          .map((f) => f.value)
-          .concat(contextObjects.map((d) => d.value)),
+      // Preparation also performs native I/O owned by this execution.
+      const currentExecutionId = cache.rust.executionId;
+      await WorkerInvoke.call('worker_init', {
+        executionId: currentExecutionId,
+      });
+      // 予約オブジェクト群
+      const reserveObjects: { name: string; value: any }[] = usableUtils.map(
+        (r) => {
+          return {
+            name: `$${r}`,
+            value: DeclareUtil.createUtilObject(r, cache),
+          };
+        },
       );
-      shouldNotifyDone = true;
-    } catch (err: any) {
-      if (DclRuntime.isExitSignal(err)) {
-        shouldNotifyDone = true;
-      } else {
-        console.log();
-        WorkerAdapter.post({
-          type: 'runtime-error',
-          stack: err.stack,
-          sourceMap: sourceMapText,
+
+      // 遅延ロード（ランタイム時検索）
+      const tasks = contextData.datasets
+        .filter((d) => d.targets == null)
+        .map(async (ds) => {
+          const req: TauriDto.ScanRequest = {
+            rootPath: DataUtil.getAppliedEnvValue(
+              ds.rootPath,
+              contextData.envs,
+            ),
+            ...ds.scanOption,
+          };
+          const res = await WorkerInvoke.call<DatasetState.ScanResponse>(
+            'scan_directory',
+            { req },
+          );
+          cache.preparation.datasetMap.push({
+            key: ds.varName,
+            targets: DatasetScanResult.getTargets(res.node),
+          });
+        });
+      if (tasks.length > 0) {
+        await Promise.all(tasks);
+      }
+
+      post({
+        type: 'prepared',
+      });
+      if (outputMethod === 'plain') {
+        post({
+          type: 'create_stream',
+          props: {
+            id: RuntimeUtil.PLAIN_CHANNEL_ID,
+            view: 'text',
+            detail: {},
+          },
+        });
+        await WorkerInvoke.call('add_channel', {
+          executionId: currentExecutionId,
+          channelId: RuntimeUtil.PLAIN_CHANNEL_ID,
         });
       }
-    } finally {
-      if (shouldNotifyDone) {
-        $done();
+
+      const contextObjects = ContextDataUtil.createObjects(
+        contextData,
+        cache.preparation,
+        cache.rust,
+      );
+
+      // ユーザーコードの return でも正常終了できるよう、done 通知は外側で行う
+      const wrappedCode = `return (async () => {${outputText}\n})()`;
+      const func = new Function(
+        ...reserveObjects
+          .map((f) => f.name)
+          .concat(contextObjects.map((d) => d.name)),
+        wrappedCode,
+      );
+
+      try {
+        await func(
+          ...reserveObjects
+            .map((f) => f.value)
+            .concat(contextObjects.map((d) => d.value)),
+        );
+      } catch (err) {
+        if (!DclRuntime.isExitSignal(err)) throw err;
       }
+    } catch (err) {
+      failed = true;
+      failure = err;
+    }
+
+    try {
+      // Registration is also observed for empty channels. Flush emitted lines on errors too.
+      await Promise.all(cache.rust.channelReady?.values() ?? []);
+    } catch (err) {
+      if (!failed) failure = err;
+      failed = true;
+    }
+    try {
+      await scheduler.finish();
+    } catch (err) {
+      if (!failed) failure = err;
+      failed = true;
+    }
+    if (failed) {
+      post({
+        type: 'runtime-error',
+        stack:
+          failure instanceof Error
+            ? (failure.stack ?? failure.message)
+            : String(failure),
+        sourceMap: sourceMapText,
+      });
+    } else {
+      post({ type: 'done', vfs: cache.vfs });
     }
   }
 };

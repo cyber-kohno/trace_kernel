@@ -204,9 +204,14 @@ namespace ContextDataUtil {
                 );
               }
             });
-            const res = await WorkerInvoke.call<InvokeType>('run_process', {
-              req,
-            });
+            const res = await WorkerInvoke.call<InvokeType>(
+              'run_process',
+              {
+                executionId: rustCache.executionId,
+                req,
+              },
+              null,
+            );
             return {
               stdout: DataUtil.decodeBinary(
                 new Uint8Array(res.stdout),

@@ -42,12 +42,17 @@ impl ChannelStore {
     }
 }
 #[tauri::command]
-pub fn add_channel(state: State<AppState>, execution_id: String, channel_id: String) {
+pub fn add_channel(
+    state: State<AppState>,
+    execution_id: String,
+    channel_id: String,
+) -> Result<(), String> {
     let mut executions = state.executions.lock().unwrap();
 
-    if let Some(execution) = executions.get_mut(&execution_id) {
-        let _ = execution.channel_store.add_channel(channel_id);
-    }
+    let execution = executions
+        .get_mut(&execution_id)
+        .ok_or("execution not found")?;
+    execution.channel_store.add_channel(channel_id)
 }
 
 #[tauri::command]
@@ -56,12 +61,13 @@ pub fn append_lines(
     execution_id: String,
     channel_id: String,
     batches: Vec<Vec<String>>,
-) {
+) -> Result<(), String> {
     let mut executions = state.executions.lock().unwrap();
 
-    if let Some(w) = executions.get_mut(&execution_id) {
-        let _ = w.channel_store.append_lines(&channel_id, batches);
-    }
+    let execution = executions
+        .get_mut(&execution_id)
+        .ok_or("execution not found")?;
+    execution.channel_store.append_lines(&channel_id, batches)
 }
 
 #[tauri::command]
@@ -111,4 +117,41 @@ pub fn get_line_len(
             }
         })
         .unwrap_or(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ChannelStore;
+
+    #[test]
+    fn duplicate_channel_is_an_error() {
+        let mut store = ChannelStore::new();
+        store.add_channel("output".into()).unwrap();
+        assert!(store.add_channel("output".into()).is_err());
+    }
+
+    #[test]
+    fn missing_channel_append_is_an_error_without_creating_channel() {
+        let mut store = ChannelStore::new();
+        assert!(store
+            .append_lines("missing", vec![vec!["line".into()]])
+            .is_err());
+        assert!(store.channels.is_empty());
+    }
+
+    #[test]
+    fn batches_are_saved_in_order() {
+        let mut store = ChannelStore::new();
+        store.add_channel("output".into()).unwrap();
+        store
+            .append_lines(
+                "output",
+                vec![
+                    vec!["first".into(), "".into()],
+                    vec!["second".into(), "".into()],
+                ],
+            )
+            .unwrap();
+        assert_eq!(store.channels["output"].lines, vec!["first", "second", ""]);
+    }
 }

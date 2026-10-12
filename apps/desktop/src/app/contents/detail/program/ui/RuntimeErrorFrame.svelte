@@ -2,8 +2,8 @@
   import { SourceMapConsumer, type NullableMappedPosition } from 'source-map';
   import mappingsWasm from 'source-map/lib/mappings.wasm?url';
 
-  let exceptionMsg: string;
-  let dispLines: string[];
+  let exceptionMsg = '';
+  let dispLines: string[] = [];
   let targetIndex: number = -1;
 
   let sourceMapReady = false;
@@ -14,6 +14,10 @@
     tsCode: string,
     setRuntimeErrorMarker: (pos: NullableMappedPosition, msg: string) => void,
   ) => {
+    exceptionMsg = stack.split('\n')[0];
+    dispLines = [];
+    targetIndex = -1;
+    if (!sourceMap) return;
     async function ensureSourceMap() {
       if (sourceMapReady) return;
       (SourceMapConsumer as any).initialize({
@@ -23,7 +27,12 @@
     }
 
     await ensureSourceMap();
-    const consumer = await new SourceMapConsumer(sourceMap); //line: 126
+    let consumer: SourceMapConsumer;
+    try {
+      consumer = await new SourceMapConsumer(sourceMap);
+    } catch {
+      return;
+    }
 
     const evalMatch = stack.match(/<anonymous>:(\d+):(\d+)/); // JS line:col
     if (evalMatch) {

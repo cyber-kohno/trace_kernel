@@ -13,7 +13,6 @@ use std::io::Seek;
 use std::io::SeekFrom;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tauri::command;
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")] // ここでキャメルケースに変換
@@ -37,7 +36,7 @@ pub enum Encoding {
     Sjis,
 }
 impl Encoding {
-    pub fn to_rs_encoding(&self) -> &'static RsEncoding {
+    pub fn to_rs_encoding(self) -> &'static RsEncoding {
         match self {
             Encoding::Utf8 => UTF_8,
             Encoding::Sjis => SHIFT_JIS,
@@ -45,12 +44,10 @@ impl Encoding {
     }
 }
 
-#[tauri::command]
-pub fn exists_path(path: String) -> bool {
-    std::path::Path::new(&path).exists()
+pub fn exists_path(path: String) -> Result<bool, String> {
+    Path::new(&path).try_exists().map_err(|e| e.to_string())
 }
 
-#[tauri::command]
 pub fn glob_path(pattern: String) -> Result<Vec<String>, String> {
     // ① 絶対パスチェック
     if !Path::new(&pattern).is_absolute() {
@@ -60,34 +57,22 @@ pub fn glob_path(pattern: String) -> Result<Vec<String>, String> {
     let mut results = Vec::new();
 
     for entry in glob(&pattern).map_err(|e| e.msg)? {
-        match entry {
-            Ok(path) => {
-                results.push(path.to_string_lossy().to_string());
-            }
-            Err(_) => {
-                // 個別エラーは無視（UNIX glob 的挙動）
-            }
-        }
+        let path = entry.map_err(|e| e.to_string())?;
+        results.push(path.to_string_lossy().to_string());
     }
 
     Ok(results)
 }
 
-#[command]
 pub fn read_binary(file_path: String) -> Result<ByteBuf, String> {
     std::fs::read(&file_path)
         .map(ByteBuf::from)
         .map_err(|e| e.to_string())
 }
 
-#[command]
-pub fn read_file(req: FileRequest) -> String {
-    // println!("{}", req.file_path);
-    let content = match read_file_to_string(req.file_path, req.encoding.unwrap_or(Encoding::Utf8)) {
-        Ok(text) => text,
-        Err(err) => err.to_string(),
-    };
-    content
+pub fn read_file(req: FileRequest) -> Result<String, String> {
+    read_file_to_string(req.file_path, req.encoding.unwrap_or(Encoding::Utf8))
+        .map_err(|e| e.to_string())
 }
 
 pub fn read_file_to_string<P: AsRef<std::path::Path>>(
@@ -117,7 +102,6 @@ fn decode_bytes(bytes: &[u8], encoding: Encoding) -> String {
     text.into_owned()
 }
 
-#[command]
 pub fn read_tail_file(req: TailFileRequest) -> Result<String, String> {
     if req.line_count == 0 {
         return Ok(String::new());
@@ -182,7 +166,6 @@ pub struct DirBelong {
     is_dir: bool,
 }
 
-#[command]
 pub fn read_dir(dir: String) -> Result<Vec<DirBelong>, String> {
     let mut result = Vec::new();
     let entries = fs::read_dir(dir).map_err(|e| e.to_string())?;
@@ -193,7 +176,7 @@ pub fn read_dir(dir: String) -> Result<Vec<DirBelong>, String> {
 
         result.push(DirBelong {
             name: entry.file_name().to_string_lossy().to_string(),
-            is_dir: path.is_dir(),
+            is_dir: fs::metadata(path).map_err(|e| e.to_string())?.is_dir(),
         });
     }
 
@@ -217,7 +200,6 @@ fn to_epoch_millis(time: SystemTime) -> u128 {
         .unwrap_or(0)
 }
 
-#[tauri::command]
 pub fn stat(path: String) -> Result<FileStatDto, String> {
     let meta = std::fs::metadata(&path).map_err(|e| e.to_string())?;
 
@@ -231,29 +213,24 @@ pub fn stat(path: String) -> Result<FileStatDto, String> {
     })
 }
 
-#[tauri::command]
 pub fn save_text(path: String, content: String) -> Result<(), String> {
     fs::write(path, content).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
 pub fn save_binary(path: String, bytes: Vec<u8>) -> Result<(), String> {
     std::fs::write(path, bytes).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
 pub fn rename(from: String, to: String) -> Result<(), String> {
     std::fs::rename(&from, &to).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
 pub fn copy_file(src: String, dest: String) -> Result<(), String> {
     std::fs::copy(&src, &dest)
         .map(|_| ())
         .map_err(|e| e.to_string())
 }
 
-#[tauri::command]
 pub fn make_dir(dir_path: String) -> Result<(), String> {
     std::fs::create_dir_all(&dir_path).map_err(|e| e.to_string())
 }
@@ -266,10 +243,6 @@ enum DeleteTarget {
 
 fn delete_path_internal(path: &str, target: DeleteTarget) -> Result<(), String> {
     let p = Path::new(path);
-
-    if !p.exists() {
-        return Err(format!("Path does not exist: {}", path));
-    }
 
     let metadata = std::fs::metadata(p).map_err(|e| e.to_string())?;
     let is_dir = metadata.is_dir();
@@ -298,17 +271,189 @@ fn delete_path_internal(path: &str, target: DeleteTarget) -> Result<(), String> 
     }
 }
 
-#[tauri::command]
 pub fn delete_file(path: String) -> Result<(), String> {
     delete_path_internal(&path, DeleteTarget::File)
 }
 
-#[tauri::command]
 pub fn delete_dir(path: String) -> Result<(), String> {
     delete_path_internal(&path, DeleteTarget::Dir)
 }
 
-#[tauri::command]
 pub fn delete_dir_all(path: String) -> Result<(), String> {
     delete_path_internal(&path, DeleteTarget::DirAll)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    struct Fixture {
+        root: PathBuf,
+    }
+
+    impl Fixture {
+        fn new() -> Self {
+            let root =
+                std::env::temp_dir().join(format!("trace-kernel-fs-test-{}", uuid::Uuid::new_v4()));
+            fs::create_dir(&root).unwrap();
+            Self { root }
+        }
+
+        fn path(&self, name: &str) -> String {
+            self.root.join(name).to_string_lossy().into_owned()
+        }
+    }
+
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            // Only remove the known fixtures; never recursively remove a directory.
+            let _ = fs::remove_file(self.root.join("occupied").join("keep.txt"));
+            for name in ["source.txt", "destination.txt"] {
+                let _ = fs::remove_file(self.root.join(name));
+            }
+            for name in ["empty", "occupied"] {
+                let _ = fs::remove_dir(self.root.join(name));
+            }
+            let _ = fs::remove_dir(&self.root);
+        }
+    }
+
+    #[test]
+    fn delete_file_removes_a_file_and_rejects_a_directory() {
+        let fixture = Fixture::new();
+        save_text(fixture.path("source.txt"), "content".into()).unwrap();
+        delete_file(fixture.path("source.txt")).unwrap();
+        assert!(!exists_path(fixture.path("source.txt")).unwrap());
+
+        fs::create_dir(fixture.path("empty")).unwrap();
+        assert!(delete_file(fixture.path("empty")).is_err());
+        assert!(fixture.root.join("empty").is_dir());
+    }
+
+    #[test]
+    fn delete_dir_removes_only_empty_directories() {
+        let fixture = Fixture::new();
+        fs::create_dir(fixture.path("empty")).unwrap();
+        delete_dir(fixture.path("empty")).unwrap();
+        assert!(!exists_path(fixture.path("empty")).unwrap());
+
+        fs::create_dir(fixture.path("occupied")).unwrap();
+        let child = fixture.root.join("occupied").join("keep.txt");
+        fs::write(&child, b"preserve").unwrap();
+        assert!(delete_dir(fixture.path("occupied")).is_err());
+        assert_eq!(fs::read(child).unwrap(), b"preserve");
+
+        save_text(fixture.path("source.txt"), "content".into()).unwrap();
+        assert!(delete_dir(fixture.path("source.txt")).is_err());
+        assert!(fixture.root.join("source.txt").is_file());
+    }
+
+    #[test]
+    fn rename_preserves_content_and_removes_the_source() {
+        let fixture = Fixture::new();
+        save_text(fixture.path("source.txt"), "content".into()).unwrap();
+        rename(fixture.path("source.txt"), fixture.path("destination.txt")).unwrap();
+        assert!(!exists_path(fixture.path("source.txt")).unwrap());
+        assert_eq!(
+            read_binary(fixture.path("destination.txt"))
+                .unwrap()
+                .as_ref(),
+            b"content"
+        );
+    }
+
+    #[test]
+    fn save_binary_round_trips_bytes_and_reports_missing_files() {
+        let fixture = Fixture::new();
+        let bytes = vec![0, 0x82, 0xa0, 255];
+        save_binary(fixture.path("source.txt"), bytes.clone()).unwrap();
+        assert_eq!(
+            read_binary(fixture.path("source.txt")).unwrap().as_ref(),
+            bytes.as_slice()
+        );
+        assert!(read_binary(fixture.path("destination.txt")).is_err());
+    }
+
+    #[test]
+    fn text_read_preserves_encoding_and_rejects_missing_files_and_directories() {
+        let fixture = Fixture::new();
+        let read = |name: &str, encoding| {
+            read_file(FileRequest {
+                file_path: fixture.path(name),
+                encoding,
+            })
+        };
+        save_text(fixture.path("source.txt"), "one\ntwo\n".into()).unwrap();
+        assert_eq!(read("source.txt", None).unwrap(), "one\ntwo\n");
+        let text = "\u{3042}\u{3044}";
+        let (bytes, _, _) = SHIFT_JIS.encode(text);
+        save_binary(fixture.path("source.txt"), bytes.into_owned()).unwrap();
+        assert_eq!(read("source.txt", Some(Encoding::Sjis)).unwrap(), text);
+        assert!(read("missing.txt", None).is_err());
+        fs::create_dir(fixture.path("empty")).unwrap();
+        assert!(read("empty", None).is_err());
+    }
+
+    #[test]
+    fn existence_distinguishes_missing_paths_from_invalid_io() {
+        let fixture = Fixture::new();
+        assert!(exists_path(fixture.path("")).unwrap());
+        assert!(!exists_path(fixture.path("missing.txt")).unwrap());
+        assert!(exists_path("invalid\0path".into()).is_err());
+    }
+
+    #[test]
+    fn directory_and_glob_reads_propagate_errors_and_keep_result_shapes() {
+        let fixture = Fixture::new();
+        save_text(fixture.path("source.txt"), "content".into()).unwrap();
+        fs::create_dir(fixture.path("empty")).unwrap();
+        let entries = read_dir(fixture.path("")).unwrap();
+        assert_eq!(entries.len(), 2);
+        assert!(entries.iter().any(|e| e.name == "source.txt" && !e.is_dir));
+        assert!(entries.iter().any(|e| e.name == "empty" && e.is_dir));
+        assert!(read_dir(fixture.path("source.txt")).is_err());
+        assert!(read_dir(fixture.path("missing")).is_err());
+        assert_eq!(
+            glob_path(fixture.path("*.txt")).unwrap(),
+            vec![fixture.path("source.txt")]
+        );
+        assert!(glob_path(fixture.path("[")).is_err());
+        assert!(glob_path("*.txt".into()).is_err());
+    }
+
+    #[test]
+    fn tail_read_returns_requested_lines_and_propagates_missing_file_errors() {
+        let fixture = Fixture::new();
+        save_text(fixture.path("source.txt"), "one\r\ntwo\r\nthree\r\n".into()).unwrap();
+        let read = |name: &str, line_count| {
+            read_tail_file(TailFileRequest {
+                file_path: fixture.path(name),
+                line_count,
+                encoding: None,
+            })
+        };
+        assert_eq!(read("source.txt", 2).unwrap(), "two\nthree");
+        assert_eq!(read("source.txt", 9).unwrap(), "one\ntwo\nthree");
+        assert_eq!(read("source.txt", 0).unwrap(), "");
+        assert!(read("missing.txt", 2).is_err());
+    }
+
+    #[test]
+    fn copy_and_stat_preserve_bytes_and_report_missing_sources() {
+        let fixture = Fixture::new();
+        save_binary(fixture.path("source.txt"), vec![0, 255, 3]).unwrap();
+        copy_file(fixture.path("source.txt"), fixture.path("destination.txt")).unwrap();
+        let info = stat(fixture.path("destination.txt")).unwrap();
+        assert_eq!(info.size, 3);
+        assert!(info.is_file && !info.is_dir);
+        assert_eq!(
+            read_binary(fixture.path("destination.txt"))
+                .unwrap()
+                .as_ref(),
+            &[0, 255, 3]
+        );
+        assert!(copy_file(fixture.path("missing.txt"), fixture.path("destination.txt")).is_err());
+        assert!(stat(fixture.path("missing.txt")).is_err());
+    }
 }

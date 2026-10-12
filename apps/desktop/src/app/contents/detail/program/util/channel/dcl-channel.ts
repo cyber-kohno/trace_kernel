@@ -1,5 +1,5 @@
 import RuntimeUtil from '../../runtime/runtime-util';
-import WorkerAdapter from '../../ui/worker-adapter';
+import post from '../../runtime/worker-post';
 import WorkerInvoke from '../worker-invoke';
 
 namespace DclChannel {
@@ -86,11 +86,20 @@ namespace DclChannel {
     createAppendTableCallback: (channelId: string) => (record: any) => void,
   ): ChannelAPI => {
     const addChannel = (props: Props) => {
-      WorkerAdapter.post({ type: 'create_stream', props });
-      WorkerInvoke.call('add_channel', {
-        executionId: workerCache.rust.executionId,
-        channelId: props.id,
-      });
+      if (workerCache.rust.channelReady?.has(props.id)) {
+        throw new Error(`A stream with ID "${props.id}" already exists.`);
+      }
+      post({ type: 'create_stream', props });
+      const ready = Promise.resolve(
+        WorkerInvoke.call<void>('add_channel', {
+          executionId: workerCache.rust.executionId,
+          channelId: props.id,
+        }),
+      );
+      workerCache.rust.channelReady ??= new Map();
+      workerCache.rust.channelReady.set(props.id, ready);
+      // The output barrier observes failures even if no lines were printed.
+      void ready.catch(() => {});
     };
 
     return {

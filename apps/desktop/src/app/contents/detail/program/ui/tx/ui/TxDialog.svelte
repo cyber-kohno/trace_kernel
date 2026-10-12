@@ -17,8 +17,10 @@
   import TxDetail from './detail/TxDetail.svelte';
 
   export let vfs: RuntimeUtil.VFSState;
+  export let visible = true;
   export let close: () => void;
   const orders = TxPlanNormalize.convertVfsToOrder(vfs);
+  const session = TxExecutor.createSession(orders);
 
   const orderRows = writable<TxExecutor.OrderRow[]>(
     orders.map((order) => ({
@@ -38,76 +40,87 @@
   let phase = writable<TxExecutor.Phase>('confirm');
 
   $: commit = async () => {
+    if ($isProcessing || $phase === 'commit') return;
     $isProcessing = true;
-
-    await TxExecutor.run({
-      setPhase: (v) => ($phase = v),
-      rows: $orderRows,
-      progressTick: () => {
-        $progress++;
-      },
-    });
-    $progress = 0;
-    $isProcessing = false;
-    $orderRows = $orderRows.slice();
+    try {
+      await session.run((snapshot) => {
+        $phase =
+          snapshot.state === 'verifying' ||
+          snapshot.state === 'verification-failed'
+            ? 'verify'
+            : 'commit';
+        $progress = snapshot.completedCount;
+        $orderRows = snapshot.operations.map(({ order, status }) => ({
+          order,
+          status: { ...status },
+        }));
+      });
+    } finally {
+      $progress = 0;
+      $isProcessing = false;
+      $orderRows = $orderRows.slice();
+    }
   };
 </script>
 
-<Blind zIndex={6} bgColor={'rgba(0, 0, 0, 0.398)'}>
-  <Wrap margin={20}>
-    <div class="frame">
-      <!-- レコードの詳細情報（前面表示） -->
-      {#if $detail != null}
-        <TxDetail detail={$detail} close={() => setDetail(null)} />
-      {/if}
-      <RecordDiv height={30} bgColor={'#555'} align="right">
-        <Column width={280}>
-          <TxPhaseMonitor phase={$phase} />
-        </Column>
-        <Column surplus={280}>
-          <OrderSummary rows={$orderRows} />
-        </Column>
-      </RecordDiv>
-      <RecordDiv surplus={60}>
-        <Wrap margin={2}>
-          {#each $orderRows as row}
-            <OrderRow {row} {setDetail} />
-          {/each}
-        </Wrap>
-        {#if $isProcessing}
-          <div class="lock">
-            <div class="info">
-              {#if $phase === 'verify'}
-                <BusyIndicator>
-                  <div class="msg">Verifying transaction...</div>
-                </BusyIndicator>
-              {:else if $phase === 'commit'}
-                <ProgressBar rate={($progress / orders.length) * 100} />
-              {/if}
-            </div>
-          </div>
+{#if visible}
+  <Blind zIndex={6} bgColor={'rgba(0, 0, 0, 0.398)'}>
+    <Wrap margin={20}>
+      <div class="frame">
+        <!-- レコードの詳細情報（前面表示） -->
+        {#if $detail != null}
+          <TxDetail detail={$detail} close={() => setDetail(null)} />
         {/if}
-      </RecordDiv>
-      <RecordDiv height={30} bgColor={'#555'} align="right">
-        <OperationButton
-          name={orders.length >= 1 && $phase !== 'commit' ? 'Later' : 'close'}
-          isLineup
-          width={150}
-          callback={close}
-        />
-        <OperationButton
-          name={'Commit'}
-          isLineup
-          width={150}
-          callback={() => {
-            commit();
-          }}
-          isDisable={orders.length === 0 || $phase === 'commit'}
-        />
-      </RecordDiv>
-    </div>
-  </Wrap>
-</Blind>
+        <RecordDiv height={30} bgColor={'#555'} align="right">
+          <Column width={280}>
+            <TxPhaseMonitor phase={$phase} />
+          </Column>
+          <Column surplus={280}>
+            <OrderSummary rows={$orderRows} />
+          </Column>
+        </RecordDiv>
+        <RecordDiv surplus={60}>
+          <Wrap margin={2}>
+            {#each $orderRows as row}
+              <OrderRow {row} {setDetail} />
+            {/each}
+          </Wrap>
+          {#if $isProcessing}
+            <div class="lock">
+              <div class="info">
+                {#if $phase === 'verify'}
+                  <BusyIndicator>
+                    <div class="msg">Verifying transaction...</div>
+                  </BusyIndicator>
+                {:else if $phase === 'commit'}
+                  <ProgressBar rate={($progress / orders.length) * 100} />
+                {/if}
+              </div>
+            </div>
+          {/if}
+        </RecordDiv>
+        <RecordDiv height={30} bgColor={'#555'} align="right">
+          <OperationButton
+            name={orders.length >= 1 && $phase !== 'commit' ? 'Later' : 'close'}
+            isLineup
+            width={150}
+            callback={close}
+            isDisable={$isProcessing}
+          />
+          <OperationButton
+            name={'Commit'}
+            isLineup
+            width={150}
+            callback={() => {
+              commit();
+            }}
+            isDisable={orders.length === 0 || $phase === 'commit'}
+          />
+        </RecordDiv>
+      </div>
+    </Wrap>
+  </Blind>
+{/if}
 
 <style>
   .frame {

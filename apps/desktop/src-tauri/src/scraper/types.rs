@@ -33,8 +33,12 @@ pub struct HttpResponse {
     pub fetched_at: i64,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub enum LoadError {
+    Cancelled,
+    Timeout,
+    ExecutionUnavailable,
+    InvalidTimeout,
     InvalidUrl,
     InvalidMethod,
     UnsupportedScheme,

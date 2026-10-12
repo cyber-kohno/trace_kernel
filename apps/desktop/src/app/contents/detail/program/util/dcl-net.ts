@@ -1,4 +1,5 @@
 import WorkerInvoke from './worker-invoke';
+import type RuntimeUtil from '../runtime/runtime-util';
 
 namespace DclNet {
   type QueryValue = string | number | boolean | null | undefined;
@@ -42,18 +43,27 @@ namespace DclNet {
     };
   };
 
-  export const getObject = () => {
+  export const getObject = (rustCache: RuntimeUtil.RustCache) => {
+    const call = <T>(command: string, args: object) =>
+      WorkerInvoke.call<T>(
+        command,
+        {
+          ...args,
+          executionId: rustCache.executionId,
+        },
+        null,
+      );
     return {
       getHtml: (url: string) => {
-        return WorkerInvoke.call('load_html_from_url', { url });
+        return call('load_html_from_url', { url });
       },
       request: (req: RequestOptions) => {
-        return WorkerInvoke.call<ResponsePayload>('load_http', {
+        return call<ResponsePayload>('load_http', {
           req: buildRequest(req),
         });
       },
       getText: async (url: string, options?: Omit<RequestOptions, 'url'>) => {
-        const res = await WorkerInvoke.call<ResponsePayload>('load_http', {
+        const res = await call<ResponsePayload>('load_http', {
           req: buildRequest({ url, ...options }),
         });
         return res.body;
@@ -62,7 +72,7 @@ namespace DclNet {
         url: string,
         options?: Omit<RequestOptions, 'url'>,
       ): Promise<T> => {
-        const res = await WorkerInvoke.call<ResponsePayload>('load_http', {
+        const res = await call<ResponsePayload>('load_http', {
           req: buildRequest({ url, ...options }),
         });
         return JSON.parse(res.body) as T;

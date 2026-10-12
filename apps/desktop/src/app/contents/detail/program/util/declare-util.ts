@@ -97,7 +97,7 @@ namespace DeclareUtil {
       case 'runtime':
         return DclRuntime.getObject();
       case 'net':
-        return DclNet.getObject();
+        return DclNet.getObject(rustCache);
       case 'state':
         return DclState.getObject(workerCache);
       case 'parser':

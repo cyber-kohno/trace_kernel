@@ -33,9 +33,7 @@ namespace TxPlanUtil {
     dest: string;
   }
 
-  export type CommitResult =
-    | { kind: 'success' }
-    | { kind: 'error'; detail: string };
+  export type CommitResult = TxExecutor.CommitResult;
 
   export const convertVfsToPlan = (vfs: RuntimeUtil.VFSState): TxPlanModel => {
     const fileChanges: FileChangeProps[] = [];
@@ -65,7 +63,8 @@ namespace TxPlanUtil {
     | 'verify-warn'
     | 'verify-error'
     | 'commit-ok'
-    | 'commit-error';
+    | 'commit-error'
+    | 'commit-skipped';
 
   export const getStatus = (order: TxExecutor.Status): TxStatus => {
     if (!order.verify) return 'idle';
@@ -84,6 +83,8 @@ namespace TxPlanUtil {
         return 'commit-ok';
       case 'error':
         return 'commit-error';
+      case 'skipped':
+        return 'commit-skipped';
     }
   };
 
@@ -101,6 +102,8 @@ namespace TxPlanUtil {
         return '✔';
       case 'commit-error':
         return '🚫';
+      case 'commit-skipped':
+        return '-';
     }
   };
 }

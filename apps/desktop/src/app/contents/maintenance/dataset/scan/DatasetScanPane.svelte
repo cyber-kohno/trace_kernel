@@ -1,6 +1,7 @@
 ﻿<script lang="ts">
   import DirectoryFilterConditions from './DirectoryFilterConditions.svelte';
   import { writable } from 'svelte/store';
+  import { onDestroy } from 'svelte';
   import FileFilterConditions from './FileFilterConditions.svelte';
   import NumberInput from '../../../../util/form/NumberInput.svelte';
   import OperationButton from '../../../../util/button/OperationButton.svelte';
@@ -17,10 +18,19 @@
   let count = writable<number>(-1);
   let isSearch = writable(false);
   let scanningDispDir = writable<string[]>([]);
+  let scanObserver: AbortController | undefined;
+  let scanDataset: DatasetState.Props | undefined;
+  onDestroy(() => scanObserver?.abort());
 
   export let dataset: DatasetState.Props;
   export let setPhase: (phase: DatasetState.DatasetPhase) => void;
   export let validate: () => void;
+
+  $: if (scanDataset && scanDataset !== dataset) {
+    scanObserver?.abort();
+    scanDataset = undefined;
+    $isSearch = false;
+  }
 
   $: scanOption = (() => {
     if (dataset.scanOption == null) throw new Error();
@@ -53,21 +63,32 @@
       dataset.rootPath,
     );
 
-    DatasetScanUtil.buildDirectoryTree({
+    scanObserver?.abort();
+    scanObserver = new AbortController();
+    scanDataset = dataset;
+    const requestedDataset = dataset;
+    const requestedIndex = $uiStore.target?.index ?? -1;
+    void DatasetScanUtil.buildDirectoryTree({
+      signal: scanObserver.signal,
       setCounter: (n) => ($count = n),
       setScanningDispDir: (s) => ($scanningDispDir = s),
       setSearch: (b) => ($isSearch = b),
       scanRequest: { rootPath: newFilePath, ...scanOption },
       endProc: (res) => {
+        if (
+          dataset !== requestedDataset ||
+          ($uiStore.target?.index ?? -1) !== requestedIndex
+        )
+          return;
         const fileCnt = DatasetChooseUtil.getDispRecords(res, true).length;
         if (fileCnt === 0) {
           ToastService.show({ text: 'No matching files found.' });
           return;
         }
-        CacheState.addDatasetChoose($uiStore.target?.index ?? -1, res);
+        CacheState.addDatasetChoose(requestedIndex, res);
         setPhase('choose');
       },
-    });
+    }).catch((error) => console.error('Scan observer cleanup failed', error));
   };
 </script>
 

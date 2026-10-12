@@ -1,5 +1,6 @@
 ﻿<script lang="ts">
   import { invoke } from '@tauri-apps/api/core';
+  import ToastService from '../../../../service/toast-service';
   import type DatasetState from '../../../../state/model/workspace/dataset-state';
 
   export let item: DatasetState.NodeDispProps;
@@ -34,21 +35,25 @@
   $: dispFile = () => {
     if (item.node.child != undefined) return;
     // alert(item.node.path);
-    invoke('read_file', { req: { filePath: item.node.path } }).then((str) => {
-      let language = '';
-      const fileName = item.node.name;
-      const dot = fileName.lastIndexOf('.');
-      const extention = dot !== -1 ? fileName.slice(dot + 1) : '';
-      switch (extention) {
-        case 'java':
-          language = 'java';
-          break;
-      }
-      // $store.preview = {
-      //   language,
-      //   src: str as string,
-      // };
-    });
+    invoke('read_file', { req: { filePath: item.node.path } })
+      .then((str) => {
+        let language = '';
+        const fileName = item.node.name;
+        const dot = fileName.lastIndexOf('.');
+        const extention = dot !== -1 ? fileName.slice(dot + 1) : '';
+        switch (extention) {
+          case 'java':
+            language = 'java';
+            break;
+        }
+        // $store.preview = {
+        //   language,
+        //   src: str as string,
+        // };
+      })
+      .catch((error) => {
+        ToastService.show({ text: `File reading failed: ${String(error)}` });
+      });
   };
 
   $: child = item.node.child;

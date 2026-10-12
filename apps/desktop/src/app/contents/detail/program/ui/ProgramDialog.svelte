@@ -5,7 +5,7 @@
   import ScriptEditor from '../../../../util/monaco/ScriptEditor.svelte';
   import OperationButton from '../../../../util/button/OperationButton.svelte';
   import TypescriptUtil from '../../../../util/typescript-util';
-  import { onDestroy, onMount } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import { get, writable } from 'svelte/store';
   import Record from '../../../../util/layout/RecordDiv.svelte';
   import WorkspaceState from '../../../../state/model/workspace/workspace-state';
@@ -57,6 +57,10 @@
   let isDispTxDialog = writable(false);
 
   let monacoRef: ScriptEditor;
+  let alive = true;
+  let revision = 0;
+  let cancelling = false;
+  let snapshotSave: Promise<void> | null = null;
 
   $: workspace = WorkspaceState.getWorkspace($workspaceStore);
   $: contextData = ContextDataUtil.getUsableData(
@@ -90,6 +94,11 @@
   };
 
   onDestroy(() => {
+    alive = false;
+    revision++;
+    void dispose().catch((error) =>
+      console.error('Worker cleanup failed', error),
+    );
     $uiStore.shortcutEvent = null;
     if ($uiStore.workEditorId === editorId) {
       $uiStore.workEditorId = null;
@@ -100,8 +109,26 @@
     }
   });
 
-  const { init, terminate, start, postInvoke, getExecutionId } =
-    WorkerAdapter.use(async (e) => {
+  const showError = async (stack: string, sourceMap = '') => {
+    if (!alive) return;
+    const currentRevision = revision;
+    $phase = 'error';
+    $txCache = null;
+    $isDispTxDialog = false;
+    await tick();
+    if (!alive || revision !== currentRevision) return;
+    await errorFrameRef.init(
+      sourceMap,
+      stack,
+      work.source,
+      (monacoRef as any).setRuntimeErrorMarker,
+    );
+  };
+
+  const { init, terminate, dispose, start, getExecutionId } = WorkerAdapter.use(
+    async (e) => {
+      if (!alive) return;
+      const currentRevision = revision;
       switch (e.type) {
         case 'create_stream': {
           if ($channels.some((ch) => ch.id === e.props.id)) {
@@ -113,24 +140,31 @@
           if ($channels.length === 1) {
             $activeChannelIdx = 0;
           }
+          await tick();
           break;
         }
         case 'receive_stream': {
           if (activeChannel == undefined) break;
           if (e.channelId === activeChannel.id) {
-            if (!streamRef) throw new Error();
-            streamRef.receiveStream();
+            await tick();
+            if (!alive || revision !== currentRevision) return;
+            if (!streamRef) throw new Error('Output view is unavailable.');
+            await streamRef.receiveStream();
           }
           break;
         }
-        case 'invoke':
-          postInvoke(e);
-          break;
         case 'prepared':
           $phase = 'executing';
           break;
         case 'done':
-          await clearRecoverySnapshot();
+          try {
+            await clearRecoverySnapshot();
+          } catch (error) {
+            if (alive && revision === currentRevision)
+              await showError(String(error));
+            return;
+          }
+          if (!alive || revision !== currentRevision) return;
           $phase = 'done';
           streamRef?.end();
 
@@ -140,17 +174,14 @@
           }
           break;
         case 'runtime-error': {
-          await clearRecoverySnapshot();
-          $phase = 'error';
-          const { sourceMap, stack } = e;
-          setTimeout(() => {
-            errorFrameRef.init(
-              sourceMap,
-              stack,
-              work.source,
-              (monacoRef as any).setRuntimeErrorMarker,
-            );
-          }, 0);
+          let stack = e.stack;
+          try {
+            if (!e.cleanupFailed) await clearRecoverySnapshot();
+          } catch (error) {
+            stack = `${stack.split('\n')[0]} (Recovery cleanup failed: ${String(error)})\n${stack}`;
+          }
+          if (alive && revision === currentRevision)
+            await showError(stack, e.sourceMap);
           break;
         }
         case 'state': {
@@ -171,15 +202,22 @@
           break;
         }
       }
-    });
+    },
+  );
 
   onMount(async () => {
-    init();
+    try {
+      init();
+    } catch (error) {
+      await showError(String(error));
+    }
+    if (!alive) return;
 
     $uiStore.shortcutEvent = (e) => {
       if (e.altKey && e.key === 'ArrowLeft' && $phase !== 'coding') {
         cancel();
       } else if (e.key === 'Escape') {
+        if ($isDispTxDialog) return;
         $uiStore.dialog = null;
       } else if (e.key === 'F5' || (e.altKey && e.key === 'Enter')) {
         runScript();
@@ -187,42 +225,71 @@
     };
   });
 
-  $: cancel = async () => {
-    if ($phase === 'coding' || $isDispTxDialog) return;
-    await terminate();
-    await clearRecoverySnapshot();
-    $channels = [];
-    $phase = 'coding';
-    $progress = getInitialProgress();
-    $monitorLines = [];
-    $txCache = null;
-    init();
+  const cancel = async () => {
+    if (!alive || cancelling || $phase === 'coding' || $isDispTxDialog) return;
+    cancelling = true;
+    revision++;
+    try {
+      await terminate();
+      // A pending save must not recreate the recovery snapshot after cancellation.
+      if (snapshotSave) await Promise.allSettled([snapshotSave]);
+      await clearRecoverySnapshot();
+      if (!alive) return;
+      $channels = [];
+      $phase = 'coding';
+      $progress = getInitialProgress();
+      $monitorLines = [];
+      $txCache = null;
+      init();
+    } catch (error) {
+      if (alive) await showError(String(error));
+    } finally {
+      cancelling = false;
+    }
   };
 
   $: executeDisable = $phase !== 'coding' || $hasError;
 
-  $: runScript = async () => {
-    if ($uiStore.dialog !== 'program' || $phase !== 'coding' || $hasError)
+  const runScript = async () => {
+    if (
+      !alive ||
+      cancelling ||
+      $uiStore.dialog !== 'program' ||
+      $phase !== 'coding' ||
+      $hasError
+    )
       return;
 
     (document.activeElement as HTMLElement)?.blur();
     document.body.focus();
 
     $phase = 'preparing';
-    await setRecoverySnapshot();
+    const currentRevision = revision;
+    try {
+      const save = setRecoverySnapshot();
+      snapshotSave = save;
+      try {
+        await save;
+      } finally {
+        if (snapshotSave === save) snapshotSave = null;
+      }
+      if (!alive || revision !== currentRevision) return;
 
-    const { outputText, sourceMapText } = TypescriptUtil.transpileTsToJs(
-      work.source,
-    );
-    if (!sourceMapText) throw new Error();
-    start({
-      type: 'execute',
-      outputText,
-      sourceMapText,
-      contextData,
-      usableUtils,
-      outputMethod: work.method,
-    });
+      const { outputText, sourceMapText } = TypescriptUtil.transpileTsToJs(
+        work.source,
+      );
+      if (!sourceMapText) throw new Error();
+      start({
+        type: 'execute',
+        outputText,
+        sourceMapText,
+        contextData,
+        usableUtils,
+        outputMethod: work.method,
+      });
+    } catch (error) {
+      if (alive && revision === currentRevision) await showError(String(error));
+    }
   };
 </script>
 
@@ -370,8 +437,12 @@
       </div>
     </div>
 
-    {#if $txCache != null && $isDispTxDialog}
-      <TxDialog vfs={$txCache} close={() => ($isDispTxDialog = false)} />
+    {#if $txCache != null}
+      <TxDialog
+        vfs={$txCache}
+        visible={$isDispTxDialog}
+        close={() => ($isDispTxDialog = false)}
+      />
     {/if}
   </Record>
 </div>

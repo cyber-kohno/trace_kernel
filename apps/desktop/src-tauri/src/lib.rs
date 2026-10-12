@@ -1,31 +1,35 @@
+mod blocking_io;
+mod execution_io;
 mod file_system;
+mod file_system_commands;
 mod mcp;
 mod parser;
 mod process;
 mod runtime;
 mod scan;
+mod scan_commands;
 mod stream;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri::WindowEvent;
 use tauri::{DragDropEvent, Emitter};
 
-use file_system::copy_file;
-use file_system::delete_dir;
-use file_system::delete_dir_all;
-use file_system::delete_file;
-use file_system::exists_path;
-use file_system::glob_path;
-use file_system::make_dir;
-use file_system::read_binary;
-use file_system::read_dir;
-use file_system::read_file;
-use file_system::read_tail_file;
-use file_system::rename;
-use file_system::save_binary;
-use file_system::save_text;
-use file_system::stat;
-use scan::scan_directory;
+use file_system_commands::copy_file;
+use file_system_commands::delete_dir;
+use file_system_commands::delete_dir_all;
+use file_system_commands::delete_file;
+use file_system_commands::exists_path;
+use file_system_commands::glob_path;
+use file_system_commands::make_dir;
+use file_system_commands::read_binary;
+use file_system_commands::read_dir;
+use file_system_commands::read_file;
+use file_system_commands::read_tail_file;
+use file_system_commands::rename;
+use file_system_commands::save_binary;
+use file_system_commands::save_text;
+use file_system_commands::stat;
+use scan_commands::scan_directory;
 
 use process::run_process;
 
@@ -48,6 +52,7 @@ use crate::runtime::get_recovery_snapshot;
 use crate::runtime::set_recovery_snapshot;
 use crate::runtime::worker_dispose;
 use crate::runtime::worker_init;
+use crate::runtime::worker_stop;
 use crate::runtime::AppState;
 use scraper::api::load_html_from_url;
 use scraper::api::load_http;
@@ -109,6 +114,7 @@ pub fn run() {
             load_http,
             worker_init,
             worker_dispose,
+            worker_stop,
             set_recovery_snapshot,
             get_recovery_snapshot,
             clear_recovery_snapshot,

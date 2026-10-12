@@ -2,7 +2,9 @@
   import PathUtil from '../../../../../../../util/data/path-util';
   import type TxPlanNormalize from '../../util/tx-plan-normalize';
 
-  export let order: TxPlanNormalize.MakeDirOrder;
+  export let order:
+    | TxPlanNormalize.MakeDirOrder
+    | TxPlanNormalize.DeleteDirOrder;
 </script>
 
 <div class="wrap">

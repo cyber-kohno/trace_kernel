@@ -1,60 +1,25 @@
 import type RuntimeUtil from '../../../runtime/runtime-util';
 
+import type TransactionModel from '../../../runtime/transaction/transaction-model';
+
 namespace TxPlanNormalize {
-  export type Order =
-    | CreateFileOrder
-    | ModifyFileOrder
-    | DeleteFileOrder
-    | RenameFileOrder
-    | CopyFileOrder
-    | MakeDirOrder;
-
-  type Snapshot = {
-    mtimeMs: number;
-    size: number;
-  };
-  export interface CreateFileOrder {
-    type: 'create_file';
-    path: string;
-    content: string;
-    encoding: 'utf8' | 'sjis';
-    existVirtualDir: boolean;
-  }
-
-  export interface ModifyFileOrder {
-    type: 'modify_file';
-    path: string;
-    snapshot: Snapshot;
-    original: string;
-    current: string;
-    encoding: 'utf8' | 'sjis';
-  }
-
-  export interface DeleteFileOrder {
-    type: 'delete_file';
-    path: string;
-  }
-  export interface RenameFileOrder {
-    type: 'rename_file';
-    from: string;
-    to: string;
-  }
-  export interface CopyFileOrder {
-    type: 'copy_file';
-    from: string;
-    to: string;
-    existVirtualDir: boolean;
-  }
-  export interface MakeDirOrder {
-    type: 'create_dir';
-    path: string;
-  }
+  export type Order = TransactionModel.Order;
+  export type CreateFileOrder = TransactionModel.CreateFileOrder;
+  export type ModifyFileOrder = TransactionModel.ModifyFileOrder;
+  export type DeleteFileOrder = TransactionModel.DeleteFileOrder;
+  export type RenameFileOrder = TransactionModel.RenameFileOrder;
+  export type CopyFileOrder = TransactionModel.CopyFileOrder;
+  export type MakeDirOrder = TransactionModel.MakeDirOrder;
+  export type DeleteDirOrder = TransactionModel.DeleteDirOrder;
 
   export const convertVfsToOrder = (vfs: RuntimeUtil.VFSState): Order[] => {
     const orders: Order[] = [];
 
     for (const [_, state] of vfs.dirTable.entries()) {
-      orders.push({ type: 'create_dir', path: state.path });
+      orders.push({
+        type: state.intent === 'create' ? 'create_dir' : 'delete_dir',
+        path: state.path,
+      });
     }
     vfs.copyOps.forEach((op) => {
       orders.push({

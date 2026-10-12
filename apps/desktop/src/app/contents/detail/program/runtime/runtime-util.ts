@@ -17,6 +17,7 @@ namespace RuntimeUtil {
   export type RustCache = {
     executionId: string;
     logQueues: Map<string, string[][]>;
+    channelReady?: Map<string, Promise<void>>;
   };
 
   type ProgressProps = {

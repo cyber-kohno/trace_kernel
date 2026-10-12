@@ -9,7 +9,7 @@
   import CopyFileRow from './CopyFileRow.svelte';
   import CreateFileRow from './CreateFileRow.svelte';
   import DeleteFileRow from './DeleteFileRow.svelte';
-  import MakeDirRow from './MakeDirRow.svelte';
+  import DirectoryRow from './DirectoryRow.svelte';
   import ModifyFileRow from './ModifyFileRow.svelte';
   import RenameFileRow from './RenameFileRow.svelte';
 
@@ -27,6 +27,7 @@
   const targetPath = ((): string => {
     switch (order.type) {
       case 'create_dir':
+      case 'delete_dir':
         return order.path;
       case 'rename_file':
       case 'copy_file':
@@ -42,6 +43,8 @@
     switch (order.type) {
       case 'create_dir':
         return 'mkdir';
+      case 'delete_dir':
+        return 'rmdir';
       case 'copy_file':
         return 'copy';
       case 'create_file':
@@ -84,8 +87,8 @@
         </RecordDiv>
       {:else if order.type === 'copy_file'}
         <CopyFileRow {order} />
-      {:else if order.type === 'create_dir'}
-        <MakeDirRow {order} />
+      {:else if order.type === 'create_dir' || order.type === 'delete_dir'}
+        <DirectoryRow {order} />
       {/if}
     </div>
     <CommitStatus {status} />
@@ -161,7 +164,8 @@
   .kind[data--kind='rename_file'] {
     color: rgb(102, 0, 255);
   }
-  .kind[data--kind='delete_file'] {
+  .kind[data--kind='delete_file'],
+  .kind[data--kind='delete_dir'] {
     color: rgb(255, 0, 0);
   }
 </style>
