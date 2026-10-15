@@ -15,7 +15,12 @@ pub fn mcp_start_session(
         .app_local_data_dir()
         .map_err(|e| e.to_string())?
         .join("mcp/sessions");
-    mcp::start_session(events(app), &state, &directory)
+    mcp::start_session(
+        events(app),
+        &state,
+        &directory,
+        crate::product_info::get_product_info(),
+    )
 }
 #[tauri::command]
 pub fn mcp_stop_session(app: AppHandle, state: State<'_, McpState>) -> Result<(), String> {
@@ -24,6 +29,10 @@ pub fn mcp_stop_session(app: AppHandle, state: State<'_, McpState>) -> Result<()
 #[tauri::command]
 pub fn mcp_session_status(state: State<'_, McpState>) -> Result<bool, String> {
     mcp::session_status(&state)
+}
+#[tauri::command]
+pub fn mcp_diagnostics(state: State<'_, McpState>) -> Result<mcp::McpDiagnostics, String> {
+    mcp::session_diagnostics(&state)
 }
 #[tauri::command]
 pub fn mcp_respond(state: State<'_, McpState>, response: McpResponse) -> Result<(), String> {

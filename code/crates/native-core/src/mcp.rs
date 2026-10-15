@@ -10,11 +10,20 @@ use std::sync::{
 };
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
+use trace_kernel_mcp_protocol::{
+    check_compatibility, compatibility_failure, decode_contract, BridgeRequest, HealthResponse,
+    ProductIdentity, SessionDescriptor,
+};
 use uuid::Uuid;
 
 /// Enqueue a host event. Publication holds the pending-request lock to keep it
 /// ordered with stop; the callback must not synchronously call respond/stop.
 pub type EventSink = Arc<dyn Fn(&str, serde_json::Value) -> Result<(), String> + Send + Sync>;
+
+#[path = "mcp_diagnostics.rs"]
+mod diagnostics;
+pub use diagnostics::McpDiagnostics;
+use diagnostics::SessionRuntime;
 
 const MAX_BODY_BYTES: usize = 4 * 1024 * 1024;
 const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
@@ -36,31 +45,17 @@ pub struct BridgeResponse {
 }
 
 struct ActiveSession {
+    runtime: Arc<SessionRuntime>,
     descriptor_path: std::path::PathBuf,
     stop: Arc<AtomicBool>,
     thread: Option<JoinHandle<Result<(), String>>>,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct McpSessionInfo {
     pub session_id: String,
     pub endpoint: String,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct SessionDescriptor {
-    session_id: String,
-    endpoint: String,
-    token: String,
-}
-
-#[derive(Deserialize)]
-struct BridgeRequest {
-    method: String,
-    #[serde(default)]
-    params: serde_json::Value,
 }
 
 fn response(stream: &mut TcpStream, status: &str, value: serde_json::Value) {
@@ -77,7 +72,9 @@ fn handle(
     token: &str,
     pending: &Arc<Mutex<HashMap<String, mpsc::Sender<BridgeResponse>>>>,
     stop: &AtomicBool,
+    runtime: &SessionRuntime,
 ) {
+    let identity = &runtime.identity;
     let _ = stream.set_read_timeout(Some(REQUEST_IO_POLL));
     let _ = stream.set_write_timeout(Some(Duration::from_secs(2)));
     let read_deadline = Instant::now() + REQUEST_READ_DEADLINE;
@@ -188,16 +185,26 @@ fn handle(
         );
         return;
     }
-    let request_line = headers.lines().next().unwrap_or_default();
-    if request_line.starts_with("GET /health") {
+    let request_line: Vec<_> = headers
+        .lines()
+        .next()
+        .unwrap_or_default()
+        .split_whitespace()
+        .collect();
+    if request_line.get(0..2) == Some(&["GET", "/health"]) {
         response(
             &mut stream,
             "200 OK",
-            json!({"ok":true,"sessionId":session_id}),
+            json!(HealthResponse {
+                ok: true,
+                session_id: session_id.into(),
+                contract: Some(json!(identity.bridge_contract())),
+                identity: Some(json!(identity))
+            }),
         );
         return;
     }
-    if !request_line.starts_with("POST /bridge") {
+    if request_line.get(0..2) != Some(&["POST", "/bridge"]) {
         response(&mut stream, "404 Not Found", json!({"error":"not found"}));
         return;
     }
@@ -206,10 +213,36 @@ fn handle(
         response(
             &mut stream,
             "400 Bad Request",
-            json!({"error":"invalid json"}),
+            json!({"ok":false,"error":{"code":"MCP_INVALID_REQUEST","message":"Invalid bridge request."}}),
         );
         return;
     };
+    let expected = identity.bridge_contract();
+    let actual = decode_contract(request.contract.as_ref());
+    let compatible = actual
+        .as_ref()
+        .map_err(Clone::clone)
+        .and_then(|actual| check_compatibility(&expected, Some(actual)));
+    if let Err(failure) = compatible {
+        runtime.rejected(
+            &failure,
+            actual.as_ref().ok().map(|value| value.bridge_protocol_gen),
+        );
+        response(
+            &mut stream,
+            "409 Conflict",
+            compatibility_failure(&failure, &expected, actual.as_ref().ok()),
+        );
+        return;
+    }
+    if request.session_id.as_deref() != Some(session_id) {
+        response(
+            &mut stream,
+            "409 Conflict",
+            json!({"ok":false,"error":{"code":"MCP_SESSION_MISMATCH","message":"Desktop session changed. Discover sessions again before retrying."}}),
+        );
+        return;
+    }
     let request_id = Uuid::new_v4().to_string();
     let is_work_proposal = request.method == "proposeWorkUpdate";
     let (sender, receiver) = mpsc::channel();
@@ -238,6 +271,7 @@ fn handle(
         );
         return;
     }
+    runtime.accepted(expected.bridge_protocol_gen);
     let timeout = if is_work_proposal {
         WORK_PROPOSAL_TIMEOUT
     } else {
@@ -286,6 +320,7 @@ fn run(
     token: String,
     pending: Arc<Mutex<HashMap<String, mpsc::Sender<BridgeResponse>>>>,
     stop: Arc<AtomicBool>,
+    runtime: Arc<SessionRuntime>,
 ) -> Result<(), String> {
     let mut threads = Vec::new();
     let mut failures = Vec::new();
@@ -307,6 +342,7 @@ fn run(
                 let thread_token = token.clone();
                 let thread_pending = Arc::clone(&pending);
                 let thread_stop = Arc::clone(&stop);
+                let thread_runtime = runtime.clone();
                 match thread::Builder::new()
                     .name("trace-kernel-mcp-request".into())
                     .spawn(move || {
@@ -317,6 +353,7 @@ fn run(
                             &thread_token,
                             &thread_pending,
                             &thread_stop,
+                            &thread_runtime,
                         )
                     }) {
                     Ok(thread) => threads.push(thread),
@@ -350,7 +387,9 @@ pub fn start_session(
     app: EventSink,
     state: &McpState,
     descriptor_directory: &Path,
+    identity: ProductIdentity,
 ) -> Result<McpSessionInfo, String> {
+    identity.validate().map_err(|error| error.to_string())?;
     let mut active = state
         .active
         .lock()
@@ -372,6 +411,8 @@ pub fn start_session(
         session_id: session_id.clone(),
         endpoint: format!("http://{address}"),
         token: token.clone(),
+        contract: Some(json!(identity.bridge_contract())),
+        identity: Some(json!(identity)),
     };
     if let Err(error) = std::fs::write(
         &descriptor_path,
@@ -389,6 +430,12 @@ pub fn start_session(
         });
     }
     let stop = Arc::new(AtomicBool::new(false));
+    let info = McpSessionInfo {
+        session_id: session_id.clone(),
+        endpoint: format!("http://{address}"),
+    };
+    let runtime = Arc::new(SessionRuntime::new(identity, info.clone()));
+    let thread_runtime = runtime.clone();
     let thread_stop = Arc::clone(&stop);
     let thread_app = app.clone();
     let thread_id = session_id.clone();
@@ -404,6 +451,7 @@ pub fn start_session(
                 thread_token,
                 pending,
                 thread_stop,
+                thread_runtime,
             )
         }) {
         Ok(thread) => thread,
@@ -418,14 +466,29 @@ pub fn start_session(
         }
     };
     *active = Some(ActiveSession {
+        runtime,
         descriptor_path,
         stop,
         thread: Some(thread),
     });
-    Ok(McpSessionInfo {
-        session_id,
-        endpoint: format!("http://{address}"),
-    })
+    Ok(info)
+}
+
+pub fn session_diagnostics(state: &McpState) -> Result<McpDiagnostics, String> {
+    let active = state
+        .active
+        .lock()
+        .map_err(|_| "MCP state unavailable".to_string())?;
+    match active.as_ref() {
+        Some(session) => session.runtime.snapshot(
+            !session.stop.load(Ordering::SeqCst)
+                && session
+                    .thread
+                    .as_ref()
+                    .is_some_and(|thread| !thread.is_finished()),
+        ),
+        None => Ok(McpDiagnostics::default()),
+    }
 }
 
 fn stop_active_session(
@@ -525,6 +588,19 @@ pub fn respond(state: &McpState, response: McpResponse) -> Result<(), String> {
 mod tests {
     use super::*;
 
+    fn identity() -> ProductIdentity {
+        ProductIdentity {
+            release_version: "0.2.0".into(),
+            bridge_protocol_gen: 1,
+            api_gen: "1".into(),
+            workspace_gen: "0".into(),
+        }
+    }
+
+    fn request_body(session_id: &str, method: &str) -> String {
+        json!({"sessionId":session_id,"method":method,"params":{"value":3},"contract":identity().bridge_contract()}).to_string()
+    }
+
     fn fixture() -> (
         McpState,
         EventSink,
@@ -541,7 +617,7 @@ mod tests {
                 .send((event.into(), payload))
                 .map_err(|e| e.to_string())
         });
-        let info = start_session(events.clone(), &state, &root).unwrap();
+        let info = start_session(events.clone(), &state, &root, identity()).unwrap();
         let descriptor: serde_json::Value = serde_json::from_slice(
             &std::fs::read(root.join(format!("{}.json", info.session_id))).unwrap(),
         )
@@ -575,14 +651,11 @@ mod tests {
         assert!(session_status(&state).unwrap());
         assert!(exchange(&info.endpoint, "incorrect", None).starts_with("HTTP/1.1 401"));
         assert!(exchange(&info.endpoint, &token, None).contains(&info.session_id));
+        assert_eq!(session_diagnostics(&state).unwrap().accepted_requests, 0);
         let endpoint = info.endpoint.clone();
-        let request = thread::spawn(move || {
-            exchange(
-                &endpoint,
-                &token,
-                Some(r#"{"method":"inspect","params":{"value":3}}"#),
-            )
-        });
+        let body = request_body(&info.session_id, "inspect");
+        let thread_token = token.clone();
+        let request = thread::spawn(move || exchange(&endpoint, &thread_token, Some(&body)));
         let (name, payload) = receiver.recv_timeout(Duration::from_secs(3)).unwrap();
         assert_eq!(name, "trace-kernel://mcp/request");
         assert_eq!(payload["method"], "inspect");
@@ -600,6 +673,14 @@ mod tests {
         let response = request.join().unwrap();
         assert!(response.starts_with("HTTP/1.1 200"));
         assert!(response.contains(r#""answer":4"#));
+        let diagnostics = session_diagnostics(&state).unwrap();
+        assert_eq!(diagnostics.accepted_requests, 1);
+        assert_eq!(diagnostics.last_peer_generation, Some(1));
+        assert!(diagnostics.last_accepted_at.is_some());
+        assert!(diagnostics.published);
+        assert!(!serde_json::to_string(&diagnostics)
+            .unwrap()
+            .contains(&token));
         assert!(respond(
             &state,
             McpResponse {
@@ -611,6 +692,7 @@ mod tests {
         .is_err());
         stop_session(&events, &state).unwrap();
         assert!(!session_status(&state).unwrap());
+        assert!(session_diagnostics(&state).unwrap().session.is_none());
         assert!(!root.join(format!("{}.json", info.session_id)).exists());
         assert!(TcpStream::connect(info.endpoint.strip_prefix("http://").unwrap()).is_err());
         std::fs::remove_dir(root).unwrap();
@@ -620,9 +702,8 @@ mod tests {
     fn real_pending_bridge_is_cancelled_before_stop_joins_its_request_thread() {
         let (state, events, receiver, root, info, token) = fixture();
         let endpoint = info.endpoint.clone();
-        let request = thread::spawn(move || {
-            exchange(&endpoint, &token, Some(r#"{"method":"proposeWorkUpdate"}"#))
-        });
+        let body = request_body(&info.session_id, "proposeWorkUpdate");
+        let request = thread::spawn(move || exchange(&endpoint, &token, Some(&body)));
         let (_, payload) = receiver.recv_timeout(Duration::from_secs(3)).unwrap();
         let started = Instant::now();
         stop_session(&events, &state).unwrap();
@@ -641,7 +722,7 @@ mod tests {
         let root = std::env::temp_dir().join(format!("trace-kernel-mcp-native-{}", Uuid::new_v4()));
         let state = McpState::default();
         let events: EventSink = Arc::new(|_, _| Err("host unavailable".into()));
-        let info = start_session(events.clone(), &state, &root).unwrap();
+        let info = start_session(events.clone(), &state, &root, identity()).unwrap();
         let descriptor: serde_json::Value = serde_json::from_slice(
             &std::fs::read(root.join(format!("{}.json", info.session_id))).unwrap(),
         )
@@ -649,9 +730,116 @@ mod tests {
         let response = exchange(
             &info.endpoint,
             descriptor["token"].as_str().unwrap(),
-            Some(r#"{"method":"inspect"}"#),
+            Some(&request_body(&info.session_id, "inspect")),
         );
         assert!(response.starts_with("HTTP/1.1 503"));
+        assert!(state.pending.lock().unwrap().is_empty());
+        stop_session(&events, &state).unwrap();
+        std::fs::remove_dir(root).unwrap();
+    }
+
+    #[test]
+    fn contracts_are_checked_before_any_event_or_pending_registration() {
+        let (state, events, receiver, root, info, token) = fixture();
+        for method in [
+            "getWorkContext",
+            "createWork",
+            "proposeWorkUpdate",
+            "unknownMethod",
+        ] {
+            for (contract, code) in [
+                (None, "MCP_CONTRACT_REQUIRED"),
+                (Some(json!(null)), "MCP_CONTRACT_REQUIRED"),
+                (
+                    Some(json!({"bridgeProtocolGen":2})),
+                    "MCP_BRIDGE_GENERATION_MISMATCH",
+                ),
+                (
+                    Some(json!({"bridgeProtocolGen":0})),
+                    "MCP_BRIDGE_GENERATION_INVALID",
+                ),
+                (
+                    Some(json!({"bridgeProtocolGen":"1"})),
+                    "MCP_CONTRACT_INVALID",
+                ),
+                (
+                    Some(json!({"bridgeProtocolGen":1,"token":"must-not-be-echoed"})),
+                    "MCP_CONTRACT_INVALID",
+                ),
+            ] {
+                let mut body = json!({"sessionId":info.session_id,"method":method,"params":{"source":"must-not-be-echoed"}});
+                if let Some(contract) = contract {
+                    body["contract"] = contract;
+                }
+                let result = exchange(&info.endpoint, &token, Some(&body.to_string()));
+                assert!(result.starts_with("HTTP/1.1 409"), "{result}");
+                assert!(result.contains(code));
+                assert!(!result.contains("must-not-be-echoed"));
+                assert!(!result.contains(&token));
+                assert!(state.pending.lock().unwrap().is_empty());
+                assert!(receiver.try_recv().is_err());
+            }
+        }
+        let diagnostics = session_diagnostics(&state).unwrap();
+        assert_eq!(diagnostics.rejected_requests, 24);
+        assert_eq!(diagnostics.accepted_requests, 0);
+        assert!(diagnostics.last_accepted_at.is_none());
+        assert!(diagnostics.published);
+        assert!(!diagnostics.rejections.is_empty());
+        assert!(!serde_json::to_string(&diagnostics)
+            .unwrap()
+            .contains(&token));
+        stop_session(&events, &state).unwrap();
+        let restarted = start_session(events.clone(), &state, &root, identity()).unwrap();
+        assert_ne!(info.session_id, restarted.session_id);
+        let diagnostics = session_diagnostics(&state).unwrap();
+        assert_eq!(diagnostics.rejected_requests, 0);
+        assert!(diagnostics.rejections.is_empty());
+        stop_session(&events, &state).unwrap();
+        std::fs::remove_dir(root).unwrap();
+    }
+
+    #[test]
+    fn health_and_descriptor_publish_the_same_secret_free_contract() {
+        let (state, events, _, root, info, token) = fixture();
+        let descriptor: SessionDescriptor = serde_json::from_slice(
+            &std::fs::read(root.join(format!("{}.json", info.session_id))).unwrap(),
+        )
+        .unwrap();
+        let response = exchange(&info.endpoint, &token, None);
+        let body: serde_json::Value =
+            serde_json::from_str(response.split_once("\r\n\r\n").unwrap().1).unwrap();
+        assert_eq!(body["contract"], descriptor.contract.unwrap());
+        assert_eq!(body["identity"], descriptor.identity.unwrap());
+        assert!(!response.contains(&token));
+        let unauthorized = exchange(
+            &info.endpoint,
+            "incorrect",
+            Some(r#"{"method":"createWork"}"#),
+        );
+        assert!(unauthorized.starts_with("HTTP/1.1 401"));
+        assert!(!unauthorized.contains("expectedContract"));
+        assert!(!unauthorized.contains("releaseVersion"));
+        let diagnostics = session_diagnostics(&state).unwrap();
+        assert_eq!(diagnostics.accepted_requests, 0);
+        assert_eq!(diagnostics.rejected_requests, 0);
+        stop_session(&events, &state).unwrap();
+        std::fs::remove_dir(root).unwrap();
+    }
+
+    #[test]
+    fn wrong_session_and_invalid_envelope_never_reach_the_host() {
+        let (state, events, receiver, root, info, token) = fixture();
+        for session in [None, Some("wrong-session")] {
+            let mut body = json!({"method":"createWork","contract":identity().bridge_contract()});
+            if let Some(session) = session {
+                body["sessionId"] = json!(session);
+            }
+            assert!(exchange(&info.endpoint, &token, Some(&body.to_string()))
+                .contains("MCP_SESSION_MISMATCH"));
+        }
+        assert!(exchange(&info.endpoint, &token, Some("not json")).contains("MCP_INVALID_REQUEST"));
+        assert!(receiver.try_recv().is_err());
         assert!(state.pending.lock().unwrap().is_empty());
         stop_session(&events, &state).unwrap();
         std::fs::remove_dir(root).unwrap();
@@ -679,6 +867,13 @@ mod tests {
             Ok(())
         });
         let mut active = Some(ActiveSession {
+            runtime: Arc::new(SessionRuntime::new(
+                identity(),
+                McpSessionInfo {
+                    session_id: "test".into(),
+                    endpoint: "http://127.0.0.1:1".into(),
+                },
+            )),
             descriptor_path: descriptor_path.clone(),
             stop: Arc::clone(&stop),
             thread: Some(thread),
@@ -702,6 +897,13 @@ mod tests {
             std::env::temp_dir().join(format!("trace-kernel-mcp-{}", Uuid::new_v4()));
         std::fs::create_dir(&descriptor_path).unwrap();
         let mut active = Some(ActiveSession {
+            runtime: Arc::new(SessionRuntime::new(
+                identity(),
+                McpSessionInfo {
+                    session_id: "test".into(),
+                    endpoint: "http://127.0.0.1:1".into(),
+                },
+            )),
             descriptor_path: descriptor_path.clone(),
             stop: Arc::new(AtomicBool::new(false)),
             thread: None,

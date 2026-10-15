@@ -5,6 +5,7 @@
   import FileUtil from '../../util/data/file-util';
   import RecordDiv from '../../util/layout/RecordDiv.svelte';
   import { CURRENT_GEN } from '../../gen/gen-version.js';
+  import { PRODUCT_INFO } from '../../product-info';
 
   const createBlank = async () => {
     $workspaceStore.workspace = WorkspaceState.getInitial();
@@ -24,6 +25,7 @@
       <div>{`version ${FileUtil.VERSION}`}</div>
       <div>{`workspace gen: ${CURRENT_GEN.workspace}`}</div>
       <div>{`api gen: ${CURRENT_GEN.api}`}</div>
+      <div>{`mcp gen: ${PRODUCT_INFO.bridgeProtocolGen}`}</div>
     </div>
     <div class="record">
       <RecordDiv align={'center'} height={65}>

@@ -5,6 +5,7 @@ mod file_system_commands;
 mod mcp;
 mod parser;
 mod process;
+mod product_info;
 mod resource_limits;
 mod runtime;
 mod scan;
@@ -105,6 +106,7 @@ pub fn run() {
             stat,
             rename,
             get_cli_args,
+            product_info::get_product_info,
             save_text,
             save_binary,
             load_html_from_url,
@@ -137,6 +139,7 @@ pub fn run() {
             mcp::mcp_start_session,
             mcp::mcp_stop_session,
             mcp::mcp_session_status,
+            mcp::mcp_diagnostics,
             mcp::mcp_respond,
         ])
         .run(tauri::generate_context!())

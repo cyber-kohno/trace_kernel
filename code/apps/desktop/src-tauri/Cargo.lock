@@ -4817,7 +4817,7 @@ checksum = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
 
 [[package]]
 name = "trace-kernel"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "calamine",
  "chrono",
@@ -4841,10 +4841,19 @@ dependencies = [
  "tauri-plugin-store",
  "thiserror 1.0.69",
  "tokio",
+ "trace-kernel-mcp-protocol",
  "trace-kernel-native-core",
  "url",
  "uuid",
  "zip",
+]
+
+[[package]]
+name = "trace-kernel-mcp-protocol"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -4867,6 +4876,7 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
+ "trace-kernel-mcp-protocol",
  "url",
  "uuid",
  "zip",

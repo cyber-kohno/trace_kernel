@@ -1901,6 +1901,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
 
 [[package]]
+name = "trace-kernel-mcp-protocol"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "trace-kernel-native-core"
 version = "0.1.0"
 dependencies = [
@@ -1920,6 +1928,7 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
+ "trace-kernel-mcp-protocol",
  "url",
  "uuid",
  "zip",

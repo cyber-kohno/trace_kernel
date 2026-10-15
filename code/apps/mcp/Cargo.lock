@@ -674,16 +674,26 @@ dependencies = [
 
 [[package]]
 name = "trace-kernel-mcp"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "rmcp",
  "serde",
  "serde_json",
  "tokio",
+ "trace-kernel-mcp-protocol",
  "tracing",
  "tracing-subscriber",
+ "uuid",
  "windows-sys",
+]
+
+[[package]]
+name = "trace-kernel-mcp-protocol"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

@@ -88,10 +88,10 @@ pub fn read(uri: &str) -> Option<ResourceContents> {
         _ => return None,
     };
     Some(
-        ResourceContents::text(text, uri)
+        ResourceContents::text(guidance(text), uri)
             .with_mime_type("text/markdown")
             .with_meta(MetaObject(
-                serde_json::json!({"traceKernel/knowledgeVersion":"1"})
+                serde_json::json!({"traceKernel/knowledgeVersion":"1","traceKernel/identity":crate::product_info::identity(),"traceKernel/contract":crate::product_info::identity().bridge_contract()})
                     .as_object()
                     .unwrap()
                     .clone(),
@@ -99,9 +99,34 @@ pub fn read(uri: &str) -> Option<ResourceContents> {
     )
 }
 
+pub fn guidance(text: &str) -> String {
+    let identity = crate::product_info::identity();
+    format!("Guidance target: MCP bridge generation {}, product {}, Work API generation {}. This is embedded guidance, not confirmation of any Desktop session. Select a compatible session and use its live declarations and capabilities.\n\n{}", identity.bridge_protocol_gen, identity.release_version, identity.api_gen, text)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn embedded_guidance_identifies_its_target_without_claiming_a_live_connection() {
+        let identity = crate::product_info::identity();
+        let value = serde_json::to_value(read(CORE_URI).unwrap()).unwrap();
+        assert_eq!(
+            value["_meta"]["traceKernel/contract"]["bridgeProtocolGen"],
+            identity.bridge_protocol_gen
+        );
+        assert_eq!(
+            value["_meta"]["traceKernel/identity"]["releaseVersion"],
+            identity.release_version
+        );
+        assert!(value["text"]
+            .as_str()
+            .unwrap()
+            .contains("not confirmation of any Desktop session"));
+        assert!(guidance(api_reference("network").unwrap()).contains("MCP bridge generation"));
+        assert!(!value.to_string().contains("token"));
+    }
 
     #[test]
     fn every_api_topic_has_a_reference_and_resource_uri() {
@@ -281,8 +306,9 @@ mod tests {
                     "add",
                 ],
                 &[
-                    include_str!("../../desktop/src/app/contents/detail/program/util/channel/dcl-channel.ts"),
-                    include_str!("../../desktop/src/app/contents/detail/program/util/declare-util.ts"),
+                    include_str!("../../../packages/runtime-core/src/api/dcl-channel.ts"),
+                    include_str!("../../../packages/runtime-core/src/execution/create-reserved-api.ts"),
+                    include_str!("../../../packages/runtime-core/src/declarations/api-declarations.ts"),
                 ],
             ),
             (
@@ -297,8 +323,9 @@ mod tests {
                     "useMonitor",
                 ],
                 &[
-                    include_str!("../../desktop/src/app/contents/detail/program/util/dcl-runtime.ts"),
-                    include_str!("../../desktop/src/app/contents/detail/program/util/dcl-state.ts"),
+                    include_str!("../../../packages/runtime-core/src/api/dcl-runtime.ts"),
+                    include_str!("../../../packages/runtime-core/src/api/dcl-state.ts"),
+                    include_str!("../../../packages/runtime-core/src/execution/create-reserved-api.ts"),
                 ],
             ),
             (
@@ -340,11 +367,11 @@ mod tests {
                     "debug",
                 ],
                 &[
-                    include_str!("../../desktop/src/app/contents/detail/program/util/parser/dcl-parser.ts"),
-                    include_str!("../../desktop/src/app/contents/detail/program/util/parser/excel-parser.ts"),
-                    include_str!("../../desktop/src/app/contents/detail/program/util/parser/dom-parser.ts"),
-                    include_str!("../../desktop/src/app/contents/detail/program/util/parser/inspector/table-inspector.ts"),
-                    include_str!("../../desktop/src/app/contents/detail/program/util/parser/inspector/json-inspector.ts"),
+                    include_str!("../../../packages/runtime-core/src/api/parser/dcl-parser.ts"),
+                    include_str!("../../../packages/runtime-core/src/api/parser/excel-parser.ts"),
+                    include_str!("../../../packages/runtime-core/src/api/parser/dom-parser.ts"),
+                    include_str!("../../../packages/runtime-core/src/api/parser/inspector/table-inspector.ts"),
+                    include_str!("../../../packages/runtime-core/src/api/parser/inspector/json-inspector.ts"),
                 ],
             ),
             (
@@ -372,8 +399,9 @@ mod tests {
                     "renameFileByToken",
                 ],
                 &[
-                    include_str!("../../desktop/src/app/contents/detail/program/util/fs/dcl-file-system.ts"),
-                    include_str!("../../desktop/src/app/contents/detail/program/util/fs/tx/dcl-fs-transaction.ts"),
+                    include_str!("../../../packages/runtime-core/src/api/fs/dcl-file-system.ts"),
+                    include_str!("../../../packages/runtime-core/src/api/fs/tx/dcl-fs-transaction.ts"),
+                    include_str!("../../../packages/runtime-core/src/api/fs/real-fs-writer.ts"),
                 ],
             ),
             (
@@ -394,7 +422,7 @@ mod tests {
                     "contentType",
                     "fetchedAt",
                 ],
-                &[include_str!("../../desktop/src/app/contents/detail/program/util/dcl-net.ts")],
+                &[include_str!("../../../packages/runtime-core/src/api/dcl-net.ts")],
             ),
             (
                 "context",
@@ -414,8 +442,9 @@ mod tests {
                     "exitCode",
                 ],
                 &[
-                    include_str!("../../desktop/src/app/contents/detail/program/util/context-data-util.ts"),
-                    include_str!("../../desktop/src/app/contents/maintenance/program/injection/program-injection-util.ts"),
+                    include_str!("../../../packages/runtime-core/src/declarations/context-declarations.ts"),
+                    include_str!("../../../packages/runtime-core/src/execution/create-work-context.ts"),
+                    include_str!("../../../packages/runtime-core/src/execution/create-io-context.ts"),
                 ],
             ),
         ];

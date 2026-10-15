@@ -4,6 +4,15 @@ Trace Kernel is a desktop TypeScript workbench. A workspace contains context and
 
 ## Agent policy
 
+Desktop compatibility is determined only by the MCP bridge generation. Use
+`list_development_sessions` and select a session with `compatible: true`.
+Product, API and Workspace versions are diagnostic information, not additional
+connection conditions. Legacy/incompatible sessions are listed with a reason and
+cannot be controlled. Install matching-generation applications and restart updated
+MCP processes when required; do not automatically alter client settings.
+Embedded guidance identifies this MCP's target generation, not a verified Desktop
+session. Live declarations and current licensing still govern available APIs.
+
 - Inspect the live workspace before proposing code.
 - Existing entries are read-only through MCP.
 - `validate_work` checks a candidate without changing the workspace.

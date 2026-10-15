@@ -13,9 +13,10 @@ import createApiWarningState from '../../gen/api-warning';
 import prepareWorkspaceLoad from '../../service/workspace/prepare-workspace-load';
 import ValidationService from '../../service/validation-service';
 import { appStore, dirtyStore, workspaceStore } from '../../state/store';
+import { PRODUCT_INFO } from '../../product-info';
 
 namespace FileUtil {
-  export const VERSION = `v${0}.${2}.${0}`;
+  export const VERSION = `v${PRODUCT_INFO.releaseVersion}`;
   export const APP_NAME = `Trace Kernel ${VERSION}`;
   const FILE_EXTENSION: string = `${VERSION}.trk`;
 

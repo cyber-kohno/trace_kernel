@@ -13,7 +13,9 @@
 | `apps/license-server` | ライセンス発行サーバー |
 | `apps/generate-license-keypair` | ライセンス署名の鍵生成ツール |
 | `crates/native-core` | 共通Rust。ファイル・process・HTTP・DOM・Excel・channel・MCP等 |
+| `crates/mcp-protocol` | Desktop/MCPの軽量な識別情報・通信契約・通信世代による互換判定 |
 | `packages/runtime-core` | 共通TypeScript。Workspace・型検証・Work実行・API・VFS等 |
+| `release` | Desktop/MCPのリリース正本・ビルド検査・更新手順（CLIとは別） |
 | `experiments` | QuickJS/V8の比較・回帰確認用ホストとスクリプト |
 
 `apps/cli`は承認済み引数・ライセンス仕様を実装した。ビルド・利用方法・終了コードは [CLI README](apps/cli/README.md) を参照する。
@@ -33,7 +35,19 @@ npm --prefix code/apps/desktop run tauri -- dev
 
 ## Desktop・共通基盤の検証
 
+Desktop/MCP互換性の自動検証をまとめて実行する入口（既存依存を使用、offline/locked、GUIや実Workspaceへの接続なし）:
+
 ```powershell
+node code/release/check-desktop-mcp-suite.mjs
+```
+
+実GUI・ライセンス・社内入替の確認手順は [組み合わせ検証と社内移行](../ai_context/develop/task/2_runtime_foundation/50_DesktopとMCPの組み合わせ検証と社内移行.md) を参照。
+
+```powershell
+node code/release/check-desktop-mcp.mjs
+node code/release/test-desktop-mcp.mjs
+cargo test --locked --manifest-path code/crates/mcp-protocol/Cargo.toml
+cargo test --locked --manifest-path code/apps/mcp/Cargo.toml
 npm --prefix code/apps/desktop run check
 npm --prefix code/apps/desktop run test:shared-runtime-dev
 npm --prefix code/apps/desktop run build

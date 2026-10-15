@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { desktopMcpIdentityPlugin } from '../../release/desktop-mcp.mjs';
 import { loadTypeScriptLibraries } from '../../packages/runtime-core/build/standard-libs.mjs';
 // @ts-expect-error Node.js built-ins are available to the Vite config runtime
 import path from 'node:path';
@@ -57,7 +58,7 @@ const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
-  plugins: [traceKernelTsLibs(), sveltekit()],
+  plugins: [desktopMcpIdentityPlugin(), traceKernelTsLibs(), sveltekit()],
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //

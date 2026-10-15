@@ -1,3 +1,4 @@
+use crate::bridge::{call_session, call_session_with_timeout, sessions};
 use rmcp::service::RequestContext;
 use rmcp::{
     handler::server::{router::tool::ToolRouter, wrapper::Parameters},
@@ -9,10 +10,7 @@ use rmcp::{
     schemars, tool, tool_handler, tool_router, ErrorData as McpError, RoleServer, ServerHandler,
 };
 use serde::{Deserialize, Serialize};
-use std::io::{Read, Write};
-use std::net::TcpStream;
 use std::time::Duration;
-use std::{env, fs, path::PathBuf};
 
 #[derive(Clone)]
 pub struct TraceKernelMcpServer {
@@ -96,124 +94,6 @@ struct WorkUpdateProposalRequest {
     proposed_source: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct SessionDescriptor {
-    session_id: String,
-    endpoint: String,
-    token: String,
-}
-
-fn sessions_dir() -> Option<PathBuf> {
-    #[cfg(windows)]
-    {
-        return env::var_os("LOCALAPPDATA")
-            .map(PathBuf::from)
-            .map(|p| p.join("jp.hkdev.tk/mcp/sessions"));
-    }
-    #[cfg(not(windows))]
-    {
-        env::var_os("XDG_DATA_HOME")
-            .map(PathBuf::from)
-            .map(|p| p.join("jp.hkdev.tk/mcp/sessions"))
-    }
-}
-
-fn sessions() -> Vec<SessionDescriptor> {
-    sessions_dir()
-        .and_then(|dir| fs::read_dir(dir).ok())
-        .into_iter()
-        .flatten()
-        .filter_map(Result::ok)
-        .filter_map(|entry| fs::read(entry.path()).ok())
-        .filter_map(|bytes| serde_json::from_slice(&bytes).ok())
-        .filter(|session: &SessionDescriptor| session_is_live(session))
-        .collect()
-}
-
-fn session_is_live(session: &SessionDescriptor) -> bool {
-    let Some(endpoint) = session.endpoint.strip_prefix("http://") else {
-        return false;
-    };
-    let Ok(mut stream) = TcpStream::connect_timeout(
-        &endpoint
-            .parse()
-            .unwrap_or_else(|_| "127.0.0.1:0".parse().unwrap()),
-        Duration::from_millis(500),
-    ) else {
-        return false;
-    };
-    let request = format!("GET /health HTTP/1.1\r\nHost: {endpoint}\r\nAuthorization: Bearer {}\r\nConnection: close\r\n\r\n", session.token);
-    if stream.write_all(request.as_bytes()).is_err() {
-        return false;
-    }
-    let mut response = Vec::new();
-    if stream.read_to_end(&mut response).is_err() {
-        return false;
-    }
-    response.starts_with(b"HTTP/1.1 200 ")
-        && String::from_utf8_lossy(&response).contains(&session.session_id)
-}
-
-fn call_session(
-    session_id: &str,
-    method: &str,
-    params: serde_json::Value,
-) -> Result<serde_json::Value, String> {
-    call_session_with_timeout(session_id, method, params, Duration::from_secs(35))
-}
-
-fn call_session_with_timeout(
-    session_id: &str,
-    method: &str,
-    params: serde_json::Value,
-    timeout: Duration,
-) -> Result<serde_json::Value, String> {
-    let session = sessions()
-        .into_iter()
-        .find(|s| s.session_id == session_id)
-        .ok_or("Session not found.")?;
-    let endpoint = session
-        .endpoint
-        .strip_prefix("http://")
-        .ok_or("Invalid session endpoint.")?;
-    let mut stream = TcpStream::connect(endpoint).map_err(|e| e.to_string())?;
-    stream
-        .set_read_timeout(Some(timeout))
-        .map_err(|e| e.to_string())?;
-    let body = serde_json::to_vec(&serde_json::json!({"method": method, "params": params}))
-        .map_err(|e| e.to_string())?;
-    let request = format!("POST /bridge HTTP/1.1\r\nHost: {endpoint}\r\nAuthorization: Bearer {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", session.token, body.len());
-    stream
-        .write_all(request.as_bytes())
-        .and_then(|_| stream.write_all(&body))
-        .map_err(|e| e.to_string())?;
-    let mut response = Vec::new();
-    stream
-        .read_to_end(&mut response)
-        .map_err(|e| e.to_string())?;
-    let start = response
-        .windows(4)
-        .position(|w| w == b"\r\n\r\n")
-        .ok_or("Invalid bridge response.")?
-        + 4;
-    let value: serde_json::Value =
-        serde_json::from_slice(&response[start..]).map_err(|e| e.to_string())?;
-    if value.get("ok").and_then(|v| v.as_bool()) == Some(true) {
-        Ok(value
-            .get("result")
-            .cloned()
-            .unwrap_or(serde_json::Value::Null))
-    } else {
-        Err(value
-            .get("error")
-            .and_then(|v| v.get("message"))
-            .and_then(|v| v.as_str())
-            .unwrap_or("Trace Kernel request failed.")
-            .to_string())
-    }
-}
-
 fn call_result(value: Result<serde_json::Value, String>) -> Result<CallToolResult, McpError> {
     match value {
         Ok(value) => Ok(CallToolResult::success(vec![ContentBlock::text(
@@ -234,7 +114,7 @@ impl TraceKernelMcpServer {
     #[tool(description = "Check whether the Trace Kernel MCP adapter is running.")]
     async fn ping(&self) -> Result<CallToolResult, McpError> {
         Ok(CallToolResult::success(vec![ContentBlock::text(
-            r#"{"application":"Trace Kernel","status":"ok"}"#,
+            serde_json::json!({"application":"Trace Kernel","status":"ok","identity":crate::product_info::identity()}).to_string(),
         )]))
     }
 
@@ -250,14 +130,19 @@ impl TraceKernelMcpServer {
                 "Unknown API topic. Use overview, context, output, runtime-state, parser, filesystem, or network.",
             )]));
         };
-        Ok(CallToolResult::success(vec![ContentBlock::text(reference)]))
+        Ok(CallToolResult::success(vec![ContentBlock::text(
+            crate::resources::guidance(reference),
+        )]))
     }
 
     #[tool(
-        description = "List active Trace Kernel desktop sessions that are available for MCP control."
+        description = "List Trace Kernel desktop sessions with per-session compatibility status. Only compatible=true sessions can be controlled; legacy/incompatible/unavailable sessions include a reason. Product versions need not match."
     )]
     async fn list_development_sessions(&self) -> Result<CallToolResult, McpError> {
-        let result = serde_json::to_string(&sessions())
+        let sessions = tokio::task::spawn_blocking(sessions)
+            .await
+            .map_err(|_| McpError::internal_error("Session discovery failed.", None))?;
+        let result = serde_json::to_string(&sessions)
             .map_err(|e| McpError::internal_error(e.to_string(), None))?;
         Ok(CallToolResult::success(vec![ContentBlock::text(result)]))
     }
@@ -269,18 +154,11 @@ impl TraceKernelMcpServer {
         &self,
         Parameters(request): Parameters<SessionRequest>,
     ) -> Result<CallToolResult, McpError> {
-        let Some(session) = sessions()
-            .into_iter()
-            .find(|s| s.session_id == request.session_id)
-        else {
-            return Ok(CallToolResult::error(vec![ContentBlock::text(
-                "Session not found.",
-            )]));
-        };
-        Ok(CallToolResult::success(vec![ContentBlock::text(
-            serde_json::json!({"sessionId":session.session_id,"endpoint":session.endpoint})
-                .to_string(),
-        )]))
+        let result =
+            tokio::task::spawn_blocking(move || crate::bridge::probe_session(&request.session_id))
+                .await
+                .map_err(|_| McpError::internal_error("Session probe failed.", None))?;
+        call_result(result)
     }
 
     #[tool(
@@ -462,7 +340,7 @@ impl TraceKernelMcpServer {
                 &session_id,
                 "proposeWorkUpdate",
                 params,
-                Duration::from_secs(600),
+                Duration::from_secs(605),
             )
         })
         .await
@@ -505,7 +383,7 @@ impl ServerHandler for TraceKernelMcpServer {
             )
             .with_protocol_version(ProtocolVersion::V_2024_11_05)
             .with_instructions(
-                "Read trace-kernel://knowledge/core first, then api-and-validation. Discover an open project with list_development_sessions. Before authoring a Work, inspect relevant Resources and samples, call get_api_reference for the needed API areas, then call get_work_context and follow its live declarations. Call validate_work before create_work; never replace an existing Work. To revise an open Work, read get_ui_state and get_work, retain editorId and exact baseline source, validate the full replacement, and submit propose_work_update; only the app user's approval applies it.",
+                "Read trace-kernel://knowledge/core first, then api-and-validation. Discover an open project with list_development_sessions and select only a compatible=true session. Compatibility is exact bridge generation, not product version; follow incompatibility diagnostics and restart updated MCP processes. Embedded guidance targets this MCP's bridge generation, not an unverified Desktop. Before authoring a Work, inspect relevant Resources and samples, call get_api_reference for the needed API areas, then call get_work_context and follow its live declarations. Call validate_work before create_work; never replace an existing Work. To revise an open Work, read get_ui_state and get_work, retain editorId and exact baseline source, validate the full replacement, and submit propose_work_update; only the app user's approval applies it.",
             )
     }
 }
@@ -529,5 +407,19 @@ mod tests {
         assert!(info.capabilities.tools.is_some());
         assert!(info.capabilities.resources.is_some());
         assert_eq!(crate::resources::list().len(), 8);
+    }
+
+    #[tokio::test]
+    async fn ping_reports_the_compiled_product_identity_without_a_desktop_session() {
+        let result = TraceKernelMcpServer::new().ping().await.unwrap();
+        let result = serde_json::to_value(result).unwrap();
+        let payload: serde_json::Value =
+            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        assert_eq!(payload["status"], "ok");
+        assert_eq!(
+            payload["identity"],
+            serde_json::to_value(crate::product_info::identity()).unwrap()
+        );
+        assert!(payload.get("token").is_none());
     }
 }

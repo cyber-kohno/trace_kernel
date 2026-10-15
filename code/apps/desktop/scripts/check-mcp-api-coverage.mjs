@@ -1,4 +1,6 @@
+import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
@@ -12,62 +14,44 @@ const readMcp = (relativePath) =>
   readFileSync(path.join(repoAppsDir, 'mcp', relativePath), 'utf8');
 const ledger = readMcp('API_COVERAGE.md');
 
-const findVariable = (source, variableName) => {
-  const file = ts.createSourceFile(
-    'source.ts',
-    source,
-    ts.ScriptTarget.Latest,
-    true,
+// Execute the shared declaration factory used by get_work_context, not a
+// reconstruction of selected string literals from its implementation.
+const coreDir = path.resolve(appDir, '../../packages/runtime-core');
+const coreSourceDir = path.join(coreDir, 'src');
+const requireCore = createRequire(path.join(coreDir, 'package.json'));
+const modules = new Map();
+const loadCore = (file) => {
+  assert.ok(file.startsWith(coreSourceDir + path.sep), `Host import: ${file}`);
+  if (modules.has(file)) return modules.get(file).exports;
+  const module = { exports: {} };
+  modules.set(file, module);
+  const compiled = ts.transpileModule(readFileSync(file, 'utf8'), {
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+      esModuleInterop: true,
+    },
+  }).outputText;
+  new Function('require', 'exports', 'module', compiled)(
+    (name) =>
+      name.startsWith('.')
+        ? loadCore(path.resolve(path.dirname(file), name + '.ts'))
+        : requireCore(name),
+    module.exports,
+    module,
   );
-  let found;
-  const visit = (node) => {
-    if (
-      ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      node.name.text === variableName
-    ) {
-      found = node.initializer;
-    }
-    if (!found) ts.forEachChild(node, visit);
-  };
-  visit(file);
-  return found;
+  return module.exports;
 };
-
-const getTypeDeclaration = (relativePath, functionName) => {
-  const initializer = findVariable(read(relativePath), functionName);
-  const body =
-    initializer && ts.isArrowFunction(initializer) ? initializer.body : null;
-  if (
-    body == null ||
-    (!ts.isTemplateExpression(body) &&
-      !ts.isNoSubstitutionTemplateLiteral(body))
-  ) {
-    throw new Error(
-      `Could not find ${functionName} template in ${relativePath}`,
-    );
-  }
-  if (ts.isTemplateExpression(body) && body.templateSpans.length > 0) {
-    throw new Error(
-      `${functionName} in ${relativePath} must remain a static declaration template`,
-    );
-  }
-  return body.text;
+const api = loadCore(
+  path.join(coreSourceDir, 'declarations/api-declarations.ts'),
+).default;
+const declarations = (name) => {
+  const { typeDec, valueDec } = api.createUtilDeclareDef(name);
+  return `${typeDec}\ndeclare const $${name}: ${valueDec};`;
 };
-
-const getStringArray = (relativePath, variableName) => {
-  const initializer = findVariable(read(relativePath), variableName);
-  if (initializer == null || !ts.isArrayLiteralExpression(initializer)) {
-    throw new Error(`Could not find ${variableName} array in ${relativePath}`);
-  }
-  return initializer.elements.map((element) => {
-    if (!ts.isStringLiteral(element)) {
-      throw new Error(
-        `${variableName} in ${relativePath} must contain string literals`,
-      );
-    }
-    return element.text;
-  });
+const coverageDeclaration = (name) => {
+  const { typeDec, valueDec } = api.createUtilDeclareDef(name);
+  return `${typeDec}\ntype CoverageAPI = ${valueDec};`;
 };
 
 const collectTypeMembers = (declarations, rootNames, family) => {
@@ -131,27 +115,14 @@ const collectTypeMembers = (declarations, rootNames, family) => {
   return members;
 };
 
-const typeDeclarationsFromArray = (items) =>
-  items.filter((item) => item.startsWith('type ')).join(';\n');
-const memberDeclarationsFromArray = (items) =>
-  items.filter((item) => !item.startsWith('type ')).join(';\n');
-const runtimeApiItems = getStringArray(
-  '../../packages/runtime-core/src/api/dcl-runtime.ts',
-  'apis',
-);
-const networkApiItems = getStringArray(
-  '../../packages/runtime-core/src/api/dcl-net.ts',
-  'apis',
-);
-
 const apiDeclarationSources = {
-  plain: `declare const $print: (value: string) => void;\ndeclare const $println: (value: string) => void;`,
-  channel: `${getTypeDeclaration('../../packages/runtime-core/src/api/dcl-channel.ts', 'getTypeDeclare')}\ndeclare const $channel: ChannelAPI;`,
-  runtime: `type RuntimeAPI = {${memberDeclarationsFromArray(runtimeApiItems).replace(/;?$/, ';')}}\ndeclare const $runtime: RuntimeAPI;`,
-  state: `${getTypeDeclaration('../../packages/runtime-core/src/api/dcl-state.ts', 'getTypeDeclare')}\ndeclare const $state: StateAPI;`,
-  parser: `${getTypeDeclaration('../../packages/runtime-core/src/api/parser/dcl-parser.ts', 'getTypeDeclare')}\ndeclare const $parser: ParserAPI;`,
-  filesystem: `${getTypeDeclaration('../../packages/runtime-core/src/api/fs/dcl-file-system.ts', 'getTypeDeclare')}\ndeclare const $fs: FileSystemAPI;`,
-  network: `${typeDeclarationsFromArray(networkApiItems)}\ntype NetworkAPI = {${memberDeclarationsFromArray(networkApiItems).replace(/;?$/, ';')}}\ndeclare const $net: NetworkAPI;`,
+  plain: `${declarations('print')}\n${declarations('println')}`,
+  channel: declarations('channel'),
+  runtime: declarations('runtime'),
+  state: declarations('state'),
+  parser: declarations('parser'),
+  filesystem: declarations('fs'),
+  network: declarations('net'),
 };
 
 const commonExampleDeclarations = `
@@ -187,7 +158,11 @@ const exampleApiFamilies = (guide, code) => {
   }
 };
 
-const getDiagnostics = (source, selectedFamilies) => {
+const getDiagnostics = (
+  source,
+  selectedFamilies,
+  declarationSources = apiDeclarationSources,
+) => {
   const virtualFiles = new Map([
     ['/__api_example__/context.d.ts', commonExampleDeclarations],
     ['/__api_example__/work.ts', `async function __example() {\n${source}\n}`],
@@ -195,7 +170,7 @@ const getDiagnostics = (source, selectedFamilies) => {
   for (const family of selectedFamilies) {
     virtualFiles.set(
       `/__api_example__/${family}.d.ts`,
-      apiDeclarationSources[family],
+      declarationSources[family],
     );
   }
 
@@ -206,7 +181,10 @@ const getDiagnostics = (source, selectedFamilies) => {
     strictNullChecks: true,
     noUnusedLocals: true,
     noUnusedParameters: true,
-    skipLibCheck: true,
+    // Work declarations must not inherit ambient @types from the test host.
+    types: [],
+    // Missing types in a declaration must not silently become any.
+    skipLibCheck: false,
   };
   const host = ts.createCompilerHost(options);
   const originalGetSourceFile = host.getSourceFile.bind(host);
@@ -227,9 +205,8 @@ const getDiagnostics = (source, selectedFamilies) => {
     virtualFiles.get(fileName) ?? originalReadFile(fileName);
 
   const program = ts.createProgram([...virtualFiles.keys()], options, host);
-  const workFile = program.getSourceFile('/__api_example__/work.ts');
   return ts
-    .getPreEmitDiagnostics(program, workFile)
+    .getPreEmitDiagnostics(program)
     .filter((diagnostic) => !diagnostic.reportsUnnecessary);
 };
 
@@ -271,11 +248,8 @@ const families = [
   {
     name: 'channel output',
     docs: readMcp('resources/api-output.md'),
-    declarations: getTypeDeclaration(
-      '../../packages/runtime-core/src/api/dcl-channel.ts',
-      'getTypeDeclare',
-    ),
-    roots: ['ChannelAPI'],
+    declarations: coverageDeclaration('channel'),
+    roots: ['CoverageAPI'],
     sourceFiles: [
       '../../packages/runtime-core/src/api/dcl-channel.ts',
       '../../packages/runtime-core/src/execution/create-reserved-api.ts',
@@ -284,18 +258,15 @@ const families = [
   {
     name: 'runtime',
     docs: readMcp('resources/api-runtime-state.md'),
-    declarations: `type RuntimeAPI = {${memberDeclarationsFromArray(runtimeApiItems).replace(/;?$/, ';')}}`,
-    roots: ['RuntimeAPI'],
+    declarations: coverageDeclaration('runtime'),
+    roots: ['CoverageAPI'],
     sourceFiles: ['../../packages/runtime-core/src/api/dcl-runtime.ts'],
   },
   {
     name: 'state',
     docs: readMcp('resources/api-runtime-state.md'),
-    declarations: getTypeDeclaration(
-      '../../packages/runtime-core/src/api/dcl-state.ts',
-      'getTypeDeclare',
-    ),
-    roots: ['StateAPI'],
+    declarations: coverageDeclaration('state'),
+    roots: ['CoverageAPI'],
     sourceFiles: [
       '../../packages/runtime-core/src/api/dcl-state.ts',
       '../../packages/runtime-core/src/execution/create-reserved-api.ts',
@@ -304,11 +275,8 @@ const families = [
   {
     name: 'parser',
     docs: readMcp('resources/api-parser.md'),
-    declarations: getTypeDeclaration(
-      '../../packages/runtime-core/src/api/parser/dcl-parser.ts',
-      'getTypeDeclare',
-    ),
-    roots: ['ParserAPI'],
+    declarations: coverageDeclaration('parser'),
+    roots: ['CoverageAPI'],
     sourceFiles: [
       '../../packages/runtime-core/src/api/parser/dcl-parser.ts',
       '../../packages/runtime-core/src/api/parser/excel-parser.ts',
@@ -320,11 +288,8 @@ const families = [
   {
     name: 'filesystem',
     docs: readMcp('resources/api-filesystem.md'),
-    declarations: getTypeDeclaration(
-      '../../packages/runtime-core/src/api/fs/dcl-file-system.ts',
-      'getTypeDeclare',
-    ),
-    roots: ['FileSystemAPI'],
+    declarations: coverageDeclaration('fs'),
+    roots: ['CoverageAPI'],
     sourceFiles: [
       '../../packages/runtime-core/src/api/fs/dcl-file-system.ts',
       '../../packages/runtime-core/src/api/fs/tx/dcl-fs-transaction.ts',
@@ -333,8 +298,8 @@ const families = [
   {
     name: 'network',
     docs: readMcp('resources/api-network.md'),
-    declarations: `${typeDeclarationsFromArray(networkApiItems)}\ntype NetworkAPI = {${memberDeclarationsFromArray(networkApiItems).replace(/;?$/, ';')}}`,
-    roots: ['NetworkAPI'],
+    declarations: coverageDeclaration('net'),
+    roots: ['CoverageAPI'],
     sourceFiles: ['../../packages/runtime-core/src/api/dcl-net.ts'],
   },
 ];
@@ -376,7 +341,7 @@ for (const guide of [
   compileDocumentExamples(guide, readMcp(`resources/${guide}.md`));
 }
 
-for (const [description, source, selected] of [
+for (const [description, source, selected, expectedCode] of [
   ['plain output argument type', '$println(123);', ['plain']],
   [
     'channel table record type',
@@ -398,31 +363,112 @@ for (const [description, source, selected] of [
     'await $fs.readText(filePath);',
     ['plain'],
   ],
+  [
+    'network request URL type',
+    'await $net.request({ url: 123 });',
+    ['network'],
+    2322,
+  ],
+  [
+    'network request timeout type',
+    'await $net.request({ url: "https://example.invalid", timeoutMs: "slow" });',
+    ['network'],
+    2322,
+  ],
+  [
+    'network query value type',
+    'await $net.request({ url: "https://example.invalid", query: { nested: {} } });',
+    ['network'],
+    2322,
+  ],
+  [
+    'network convenience method options',
+    'await $net.getText("https://example.invalid", { timeoutMs: "slow" });',
+    ['network'],
+    2322,
+  ],
+  [
+    'network response property',
+    'const response = await $net.request({ url: "https://example.invalid" }); response.nonexistentField;',
+    ['network'],
+    2339,
+  ],
+  [
+    'network response status type',
+    'const response = await $net.request({ url: "https://example.invalid" }); const status: string = response.status; status.toUpperCase();',
+    ['network'],
+    2322,
+  ],
 ]) {
-  if (getDiagnostics(source, selected).length === 0) {
+  const errors = getDiagnostics(source, selected);
+  if (errors.length === 0) {
     throw new Error(`Expected a TypeScript error for ${description}`);
+  }
+  if (expectedCode != null) {
+    assert.ok(
+      errors.some((error) => error.code === expectedCode),
+      `Expected TS${expectedCode} for ${description}, not an unrelated error`,
+    );
   }
   console.log(`${description}: representative misuse is rejected`);
 }
 
-// The runtime/network snippets are assembled from declaration strings rather
-// than static TypeScript templates; parse them in exactly that combined shape.
-for (const [relativePath, items] of [
-  ['../../packages/runtime-core/src/api/dcl-runtime.ts', runtimeApiItems],
-  ['../../packages/runtime-core/src/api/dcl-net.ts', networkApiItems],
-]) {
-  const aliases = typeDeclarationsFromArray(items);
-  const properties = memberDeclarationsFromArray(items);
-  const combined = `${aliases}; type InlineAPI = { ${properties}; };`;
-  const parsed = ts.createSourceFile(
-    'inline-api.d.ts',
-    combined,
-    ts.ScriptTarget.Latest,
-    true,
+// Validate declaration files themselves, including references not exercised by
+// a particular documentation snippet. Syntax-only checks miss unresolved aliases.
+for (const family of Object.keys(apiDeclarationSources)) {
+  assert.deepEqual(
+    getDiagnostics('', [family]).map((error) =>
+      ts.flattenDiagnosticMessageText(error.messageText, '\n'),
+    ),
+    [],
+    `Invalid shared ${family} declaration`,
   );
-  if (parsed.parseDiagnostics.length > 0) {
-    throw new Error(
-      `Generated API declarations in ${relativePath} are not valid TypeScript`,
-    );
-  }
 }
+
+assert.deepEqual(
+  getDiagnostics(
+    'const response = await $net.request({ url: "https://example.invalid", query: { page: 1, active: true, omitted: null }, timeoutMs: 100 }); const status: number = response.status; const body: string = response.body; status + body.length;',
+    ['network'],
+  ).map((error) => ts.flattenDiagnosticMessageText(error.messageText, '\n')),
+  [],
+  'Valid network request and response must remain typed and accepted',
+);
+const networkMembers = collectTypeMembers(
+  coverageDeclaration('net'),
+  ['CoverageAPI'],
+  'network',
+);
+for (const member of [
+  'method',
+  'query',
+  'headers',
+  'body',
+  'timeoutMs',
+  'status',
+  'ok',
+  'contentType',
+  'fetchedAt',
+]) {
+  assert.ok(
+    networkMembers.has(member),
+    `Missing network alias member: ${member}`,
+  );
+}
+
+const missingAliasErrors = getDiagnostics('', ['network'], {
+  network:
+    'declare const $net: { request: (req: MissingNetRequest) => Promise<MissingNetResponse> };',
+});
+for (const name of ['MissingNetRequest', 'MissingNetResponse']) {
+  assert.ok(
+    missingAliasErrors.some(
+      (error) =>
+        error.code === 2304 &&
+        ts.flattenDiagnosticMessageText(error.messageText, '\n').includes(name),
+    ),
+    `Missing declaration alias ${name} must not silently become any`,
+  );
+}
+console.log(
+  'Shared declarations, network aliases and unresolved-type regression checks passed.',
+);

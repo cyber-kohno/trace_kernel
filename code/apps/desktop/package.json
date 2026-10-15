@@ -1,9 +1,12 @@
 {
   "name": "trace-kernel-desktop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "",
   "type": "module",
   "scripts": {
+    "check:release": "node ../../release/check-desktop-mcp.mjs && node ../../release/test-desktop-mcp.mjs",
+    "precheck": "npm run check:release",
+    "precheck:watch": "node ../../release/check-desktop-mcp.mjs",
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
@@ -17,7 +20,8 @@
     "test:work-execution-plan": "node scripts/test-work-execution-plan.mjs",
     "test:io-context": "node scripts/test-io-context.mjs",
     "test:execute-work": "node scripts/test-execute-work.mjs",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && node ./scripts/check-mcp-api-coverage.mjs && node ./scripts/test-mcp-api-behavior.mjs && node ./scripts/test-mcp-context-consistency.mjs && npm run test:transaction && npm run test:runtime-lifecycle && npm run test:workspace-load && npm run test:work-execution-plan && npm run test:io-context && npm run test:execute-work && npm run test:runtime-core",
+    "test:mcp-diagnostics": "node scripts/test-mcp-diagnostics.mjs",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && node ./scripts/check-mcp-api-coverage.mjs && node ./scripts/test-mcp-api-behavior.mjs && node ./scripts/test-mcp-context-consistency.mjs && npm run test:transaction && npm run test:runtime-lifecycle && npm run test:workspace-load && npm run test:work-execution-plan && npm run test:io-context && npm run test:execute-work && npm run test:mcp-diagnostics && npm run test:runtime-core",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "workspace:fixture": "node ./scripts/export-workspace-fixture.mjs",
     "tauri": "tauri",

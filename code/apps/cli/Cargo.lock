@@ -2964,6 +2964,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "trace-kernel-mcp-protocol"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "trace-kernel-native-core"
 version = "0.1.0"
 dependencies = [
@@ -2983,6 +2991,7 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
+ "trace-kernel-mcp-protocol",
  "url",
  "uuid",
  "zip",

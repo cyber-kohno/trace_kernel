@@ -1,29 +1,36 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import type {
     McpSessionInfo,
-    McpSessionSnapshot,
+    McpDiagnostics,
     McpSessionState,
   } from './mcp-session-types';
+  import { emptyDiagnostics } from './mcp-diagnostics';
+  import { PRODUCT_INFO } from '../product-info';
+  import McpDiagnosticsDialog from './McpDiagnosticsDialog.svelte';
 
   export let isOpenProject: boolean;
   export let state: McpSessionState = 'stopped';
   export let session: McpSessionInfo | null = null;
-  export let snapshot: McpSessionSnapshot = {
-    clients: 0,
-    requestCount: 0,
-    lastRequestAt: null,
-  };
+  export let diagnostics: McpDiagnostics = emptyDiagnostics();
+  export let diagnosticError = '';
   export let busy = false;
   export let onToggle: () => void;
   export let dialogOpen = false;
 
   let expanded = false;
+  let showDiagnostics = false;
   let copied = '';
+  let copyFailed = false;
+  let copyTimer: ReturnType<typeof setTimeout> | undefined;
+  let disposed = false;
   let root: HTMLDivElement;
   let badge: HTMLButtonElement;
 
-  $: if (!isOpenProject || dialogOpen) expanded = false;
+  $: if (!isOpenProject || dialogOpen) {
+    expanded = false;
+    showDiagnostics = false;
+  }
 
   onMount(() => {
     const dismissOutside = (event: Event) => {
@@ -41,6 +48,8 @@
     document.addEventListener('focusin', dismissOutside, true);
     document.addEventListener('keydown', dismissEscape, true);
     return () => {
+      disposed = true;
+      clearTimeout(copyTimer);
       document.removeEventListener('pointerdown', dismissOutside, true);
       document.removeEventListener('focusin', dismissOutside, true);
       document.removeEventListener('keydown', dismissEscape, true);
@@ -50,29 +59,63 @@
   const labels: Record<McpSessionState, string> = {
     stopped: 'OFF',
     starting: 'Starting',
-    available: 'Available',
-    connected: 'Connected',
+    available: 'Published',
+    verified: 'Verified request',
     stopping: 'Stopping',
     error: 'Error',
   };
 
   const copy = async (label: string, value: string) => {
-    await navigator.clipboard.writeText(value);
-    copied = label;
-    setTimeout(() => (copied = ''), 1200);
-  };
-
-  const formatLastRequest = () => {
-    if (snapshot.lastRequestAt == null) return 'Never';
-    const seconds = Math.max(
-      0,
-      Math.floor((Date.now() - snapshot.lastRequestAt) / 1000),
-    );
-    return seconds < 2 ? 'Just now' : `${seconds}s ago`;
+    try {
+      await navigator.clipboard.writeText(value);
+      if (disposed) return;
+      copyFailed = false;
+      copied = label;
+      clearTimeout(copyTimer);
+      copyTimer = setTimeout(() => (copied = ''), 1200);
+    } catch {
+      if (!disposed) copyFailed = true;
+    }
   };
 
   const handleBadgeClick = () => {
     if (!dialogOpen) expanded = !expanded;
+  };
+
+  const openDiagnostics = () => {
+    expanded = false;
+    showDiagnostics = true;
+  };
+
+  const closeDiagnostics = async () => {
+    showDiagnostics = false;
+    await tick();
+    badge?.focus();
+  };
+
+  // Keep the small panel within the viewport, even when the badge is near an edge.
+  const positionPopover = (node: HTMLDivElement) => {
+    const position = () => {
+      const anchor = badge.getBoundingClientRect();
+      const panel = node.getBoundingClientRect();
+      const margin = 8;
+      node.style.left = `${Math.max(margin, Math.min(anchor.right - panel.width, window.innerWidth - panel.width - margin))}px`;
+      const below = anchor.bottom + 4;
+      node.style.top = `${Math.max(margin, Math.min(below, window.innerHeight - panel.height - margin))}px`;
+    };
+    const observer = new ResizeObserver(position);
+    observer.observe(node);
+    observer.observe(badge);
+    window.addEventListener('resize', position);
+    window.addEventListener('scroll', position, true);
+    position();
+    return {
+      destroy() {
+        observer.disconnect();
+        window.removeEventListener('resize', position);
+        window.removeEventListener('scroll', position, true);
+      },
+    };
   };
 </script>
 
@@ -84,28 +127,28 @@
     aria-label="MCP session"
     aria-expanded={expanded}
     aria-controls={expanded ? 'mcp-session-details' : undefined}
-    disabled={busy || dialogOpen}
+    disabled={busy || dialogOpen || showDiagnostics}
     onclick={handleBadgeClick}
   >
     <span class="dot"></span>
     <span class="name">MCP</span>
     <span class="status">{labels[state]}</span>
-    {#if state === 'connected'}<span class="count">{snapshot.clients}</span
-      >{/if}
   </button>
 
   {#if expanded}
     <div
       class="popover"
+      use:positionPopover
       id="mcp-session-details"
       role="region"
-      aria-label="MCP development session"
+      aria-label="MCP session controls"
     >
       <div class="popover-title">
-        <div>
-          <div class="eyebrow">TRACE KERNEL</div>
-          <strong>MCP Development Session</strong>
-        </div>
+        <strong
+          >MCP <span class="generation"
+            >gen {PRODUCT_INFO.bridgeProtocolGen}</span
+          ></strong
+        >
         <button
           class="close"
           aria-label="Close"
@@ -114,8 +157,21 @@
       </div>
 
       <div class="state-line {state}">
-        <span class="dot"></span>{labels[state]}
+        <span class="dot"></span>
+        {#if state === 'available'}
+          Ready to receive requests
+        {:else if state === 'verified'}
+          Compatible request received (history)
+        {:else}
+          {labels[state]}
+        {/if}
       </div>
+
+      {#if diagnosticError}
+        <div class="notice">MCP status needs attention. See diagnostics.</div>
+      {:else if diagnostics.session && !diagnostics.published}
+        <div class="notice">Cleanup pending. Retry Stop MCP.</div>
+      {/if}
 
       {#if !isOpenProject}
         <div class="notice">Open a project to publish an MCP session.</div>
@@ -134,33 +190,42 @@
             >
           </div>
         </div>
-        <div class="field">
-          <span>Endpoint</span>
-          <div class="value">
-            <code>{session.endpoint}</code><button
-              onclick={() => copy('endpoint', session.endpoint)}
-              >{copied === 'endpoint' ? 'Copied' : 'Copy'}</button
-            >
-          </div>
+      {/if}
+
+      {#if copyFailed}
+        <div class="notice" role="status">
+          Copy failed. See diagnostics to copy manually.
         </div>
       {/if}
 
-      <div class="metrics">
-        <div><b>{snapshot.clients}</b><span>Clients</span></div>
-        <div><b>{snapshot.requestCount}</b><span>Requests</span></div>
-        <div><b>{formatLastRequest()}</b><span>Last request</span></div>
+      <div class="diagnostic-link">
+        {#if diagnostics.rejectedRequests > 0}
+          <span class="warning"
+            >Compatibility rejects: {diagnostics.rejectedRequests}</span
+          >
+        {:else}
+          <span></span>
+        {/if}
+        <button class="details" onclick={openDiagnostics}>Diagnostics</button>
       </div>
       <button
         class="toggle"
         disabled={!isOpenProject || busy}
-        onclick={onToggle}
-        >{state === 'stopped' || state === 'error'
-          ? 'Publish MCP'
-          : 'Stop MCP'}</button
+        onclick={onToggle}>{session ? 'Stop MCP' : 'Publish MCP'}</button
       >
     </div>
   {/if}
 </div>
+
+{#if showDiagnostics}
+  <McpDiagnosticsDialog
+    {state}
+    {session}
+    {diagnostics}
+    {diagnosticError}
+    onClose={closeDiagnostics}
+  />
+{/if}
 
 <style>
   .mcp-root {
@@ -207,11 +272,11 @@
     background: #7bd8ff;
     box-shadow: 0 0 0 2px #7bd8ff66;
   }
-  .connected {
+  .verified {
     border-color: #63e6a0;
     background: #12633f;
   }
-  .connected .dot {
+  .verified .dot {
     background: #8affbd;
     box-shadow: 0 0 0 2px #8affbd66;
   }
@@ -233,22 +298,13 @@
     background: #ffb0b6;
     box-shadow: 0 0 0 2px #ffb0b666;
   }
-  .count {
-    min-width: 14px;
-    padding: 0 3px;
-    border-radius: 8px;
-    text-align: center;
-    background: #49d28b;
-    color: #14251e;
-    font-size: 10px;
-  }
   .popover {
-    position: absolute;
+    position: fixed;
     z-index: 1;
-    top: 100%;
-    right: 0;
-    width: 310px;
-    padding: 14px;
+    width: 320px;
+    max-width: calc(100vw - 16px);
+    box-sizing: border-box;
+    padding: 12px;
     border: 1px solid #56617d;
     border-radius: 8px;
     color: #e8ebf5;
@@ -262,10 +318,10 @@
     align-items: center;
     justify-content: space-between;
   }
-  .eyebrow {
-    color: #8993ad;
-    font-size: 9px;
-    letter-spacing: 0.12em;
+  .generation {
+    margin-left: 8px;
+    color: #aeb6ca;
+    font-weight: 400;
   }
   .close {
     border: 0;
@@ -277,10 +333,10 @@
   .state-line {
     justify-content: flex-start;
     gap: 7px;
-    margin: 14px 0;
+    margin: 8px 0;
     color: #aeb6ca;
   }
-  .state-line.connected {
+  .state-line.verified {
     color: #65dda0;
   }
   .state-line.available {
@@ -290,13 +346,17 @@
     color: #f48b94;
   }
   .field {
-    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 8px 0;
     color: #929bb1;
     font-size: 10px;
   }
   .value {
     gap: 6px;
-    margin-top: 4px;
+    min-width: 0;
   }
   .value code {
     overflow: hidden;
@@ -313,31 +373,6 @@
     font-size: 10px;
     cursor: pointer;
   }
-  .metrics {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
-    margin: 14px 0;
-  }
-  .metrics div {
-    padding: 7px 4px;
-    border-radius: 4px;
-    text-align: center;
-    background: #2a3144;
-  }
-  .metrics b,
-  .metrics span {
-    display: block;
-  }
-  .metrics b {
-    color: #eef1f8;
-    font-size: 12px;
-  }
-  .metrics span {
-    margin-top: 3px;
-    color: #929bb1;
-    font-size: 9px;
-  }
   .notice {
     padding: 8px;
     border: 1px solid #665d3e;
@@ -345,6 +380,25 @@
     color: #f0d88a;
     background: #40391f;
     font-size: 11px;
+  }
+  .diagnostic-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 8px 0;
+    font-size: 11px;
+  }
+  .warning {
+    color: #ead39d;
+  }
+  .details {
+    padding: 2px 0;
+    border: 0;
+    color: #a8caff;
+    background: transparent;
+    text-decoration: underline;
+    cursor: pointer;
   }
   .toggle {
     width: 100%;

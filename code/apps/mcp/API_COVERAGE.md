@@ -98,9 +98,11 @@ traceable and checked.
 
 ## Progress
 
-- Phase 1 is complete for built-in Work APIs: a script extracts members
-  reachable from the real channel, runtime, state, parser, filesystem, and
-  network declarations, then checks family documentation, implementation
+- Phase 1 is complete for built-in Work APIs: a script calls the shared
+  `runtime-core/src/declarations/api-declarations.ts` factory used by
+  `get_work_context` and extracts members reachable from its complete channel,
+  runtime, state, parser, filesystem, and network declarations. It checks family
+  documentation, implementation
   sources, and this ledger. Workspace-defined context shapes remain live and
   are checked through `get_work_context` rather than a static inventory.
 - Phase 2 has completed an initial audit for validation, parser, filesystem,
@@ -108,12 +110,24 @@ traceable and checked.
 - Phase 3 has a first baseline: all 15 current TypeScript examples compile
   against declarations from the current API sources, with controlled ambient
   inputs for workspace-specific names.
-- Phase 4 now includes five representative negative checks for output argument
+- Phase 4 now includes eleven representative negative checks for output argument
   types, channel table records, nullable Excel sheets, plain/channel method
-  separation, and the Pro-only filesystem API. Per-API negative cases and
+  separation, the Pro-only filesystem API, and six network argument/response
+  misuse cases. Network request/response aliases are included in both coverage
+  and example compilation (currently 15 reachable network members). Every
+  generated declaration is checked semantically, including a regression that
+  unresolved aliases must fail rather than silently becoming `any`.
+  Per-API negative cases and
   license variants beyond the basic Pro gate remain.
 - The coverage script runs as part of the desktop `check` command. There is no
   repository CI workflow in this checkout to wire separately yet.
+- MCP Rust source-traceability tests embed the actual shared TypeScript sources
+  under `#[cfg(test)]`, not the Desktop re-export/transport adapters. These are
+  test inputs, not implementation sources served to agents. Production MCP
+  serves embedded Markdown guidance and obtains authoritative live declarations
+  from Desktop's shared declaration factory. Run the Rust tests separately from
+  desktop `check`: `cargo test --locked --manifest-path code/apps/mcp/Cargo.toml`
+  from the repository root.
 - A no-dependency behavior script now executes the production Table, JSON,
   Runtime, and State namespaces plus the Excel parser wrapper with mocked
   native calls. It checks row/column and type errors, JSON paths and exports,
