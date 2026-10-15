@@ -1,0 +1,105 @@
+import PathUtil from "../../../data/path-util";
+import RuntimeUtil from "../../../execution/runtime-cache";
+import TxPathValidate from "./tx-path-validate";
+
+namespace CopyFile {
+  export const byPath = (
+    vfs: RuntimeUtil.VFSState,
+    from: string,
+    dest: string,
+  ): void => {
+    const { fileTable, pathIndex, reservedPaths } = vfs;
+
+    if (reservedPaths.has(dest)) {
+      throw new Error(`destination path is already reserved: ${dest}`);
+    }
+
+    if (pathIndex.has(dest)) {
+      throw new Error(
+        `destination path is already used in transaction: ${dest}`,
+      );
+    }
+
+    const token = pathIndex.get(from);
+    if (token) {
+      let state: RuntimeUtil.FileState | undefined;
+      state = fileTable.get(token);
+      if (!state) {
+        throw new Error("corrupted transaction state");
+      }
+
+      // open済み（snapshotあり）は token経由のみ許可
+      if (state.snapshot) {
+        throw new Error(`opened file must be copied via token: ${from}`);
+      }
+    }
+
+    core(vfs, from, dest);
+  };
+
+  export const byToken = (
+    vfs: RuntimeUtil.VFSState,
+    token: RuntimeUtil.FileToken,
+    dest: string,
+  ): void => {
+    const { fileTable } = vfs;
+
+    const state = fileTable.get(token);
+
+    if (!state) {
+      throw new Error("invalid file token");
+    }
+
+    if (state.intent != null) {
+      throw new Error(`cannot copy file with pending changes: ${state.path}`);
+    }
+    core(vfs, state.path, dest);
+  };
+
+  export const core = (
+    vfs: RuntimeUtil.VFSState,
+    from: string,
+    dest: string,
+  ): void => {
+    TxPathValidate.windowsPath(from);
+    TxPathValidate.windowsPath(dest);
+
+    const { pathIndex, reservedPaths, copyOps, dirTable } = vfs;
+
+    let existVirtualDir = false;
+    const parent = PathUtil.normalize(PathUtil.dirname(dest));
+
+    for (const [path, entry] of dirTable.entries()) {
+      // 親ディレクトリに対する祖先判定
+      if (
+        PathUtil.samePath(path, parent) ||
+        PathUtil.isAncestor(path, parent)
+      ) {
+        if (entry.intent === "create") {
+          existVirtualDir = true;
+          break;
+        } else if (entry.intent === "delete") {
+          throw new Error(
+            `Ancestor directory is scheduled for deletion: ${path}`,
+          );
+        }
+      }
+    }
+
+    if (reservedPaths.has(dest)) {
+      throw new Error(`destination path is already reserved: ${dest}`);
+    }
+
+    if (pathIndex.has(dest)) {
+      throw new Error(
+        `destination path is already used in transaction: ${dest}`,
+      );
+    }
+
+    // 予約
+    reservedPaths.add(dest);
+
+    copyOps.push({ from, dest, existVirtualDir });
+  };
+}
+export default CopyFile;

@@ -1,0 +1,41 @@
+namespace NativeIoPolicy {
+  const ownedCommands = new Set([
+    'run_process',
+    'load_http',
+    'load_html_from_url',
+    'scan_directory',
+    'excel_parse_file',
+    'add_channel',
+    'append_lines',
+    'dom_parse',
+    'dom_parse_html',
+    'dom_root',
+    'dom_query',
+    'dom_query_from_node',
+    'dom_node_name',
+    'dom_node_text',
+    'dom_node_attr',
+    'dom_node_children',
+    'dom_node_parent',
+    'dom_info',
+    'dom_dispose',
+    'exists_path',
+    'glob_path',
+    'read_binary',
+    'read_file',
+    'read_tail_file',
+    'read_dir',
+    'stat',
+    'save_text',
+    'save_binary',
+    'rename',
+    'copy_file',
+    'make_dir',
+    'delete_file',
+    'delete_dir',
+    'delete_dir_all',
+  ]);
+
+  export const isOwnedCommand = (command: string) => ownedCommands.has(command);
+}
+export default NativeIoPolicy;
