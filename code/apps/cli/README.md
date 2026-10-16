@@ -120,7 +120,7 @@ node code/apps/cli/scripts/collect-release-notices.mjs
 その後PartitionAllocの元tree/本文を照合し、未解決OSS表記は3件になった。[44_公開準備](../../../ai_context/develop/task/2_runtime_foundation/44_公開準備_OSS表記とクリーンWindows検証.md)に証拠・candidate ZIPと残作業を記録した。
 
 - 開発環境のないWindowsでの確認：[CLEAN-WINDOWS-CHECK.md](distribution/CLEAN-WINDOWS-CHECK.md)。Windows標準PowerShell 5.1を使用する。開発PCでのscript検証済み、別Windowsでの実行は未確認。
-- 製品方針の確認用：[TERMS-DRAFT.md](distribution/TERMS-DRAFT.md)。利用単位・再配布等は未確定であり、配布ZIPへは同梱しない。
+- 製品方針の確認用：[TERMS-DRAFT.md](distribution/TERMS-DRAFT.md)。Professionalの利用単位とZIP再配布範囲は決定済み。正式な利用許諾文ではなく、配布ZIPへは同梱しない。
 - 上流への未送信文案：[UPSTREAM-NOTICE-QUESTIONS.md](distribution/UPSTREAM-NOTICE-QUESTIONS.md)。
 
 既存ZIPを保持して別folderへ梱包する場合は、`package-windows.ps1 -InternalPreview -OutputDirectory <新しいdirectory>`を使用できる。`verify-package.ps1 -Archive <生成したZIP>`で検証する。製品CLIの引数とは別の開発用scriptのoption。

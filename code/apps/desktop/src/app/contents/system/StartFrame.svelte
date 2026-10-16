@@ -22,7 +22,6 @@
 <RecordDiv surplus={24}>
   <div class="wrap">
     <div class="version-info">
-      <div>{`version ${FileUtil.VERSION}`}</div>
       <div>{`workspace gen: ${CURRENT_GEN.workspace}`}</div>
       <div>{`api gen: ${CURRENT_GEN.api}`}</div>
       <div>{`mcp gen: ${PRODUCT_INFO.bridgeProtocolGen}`}</div>
